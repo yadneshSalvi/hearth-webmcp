@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-28T23:01:54.689Z",
+  "generatedAt": "2026-08-28T23:23:24.481Z",
   "storeDomain": "hearth-studio.myshopify.com",
   "apiVersion": "2026-07",
   "products": [
@@ -9,8 +9,8 @@
       "category": "armchair",
       "dims": {
         "w": 72,
-        "d": 78,
-        "h": 80
+        "d": 77,
+        "h": 88
       },
       "clearanceFront": 75,
       "seatCount": 1,
@@ -54,7 +54,7 @@
       "dims": {
         "w": 84,
         "d": 86,
-        "h": 82
+        "h": 57
       },
       "clearanceFront": 75,
       "seatCount": 1,
@@ -161,7 +161,7 @@
       "dims": {
         "w": 76,
         "d": 80,
-        "h": 76
+        "h": 93
       },
       "clearanceFront": 75,
       "seatCount": 1,
@@ -213,8 +213,8 @@
       "category": "armchair",
       "dims": {
         "w": 80,
-        "d": 84,
-        "h": 88
+        "d": 92,
+        "h": 111
       },
       "clearanceFront": 75,
       "seatCount": 1,
@@ -268,7 +268,7 @@
       "dims": {
         "w": 140,
         "d": 200,
-        "h": 98
+        "h": 77
       },
       "clearanceFront": 60,
       "glb": "/assets/glb/bed-ask.glb",
@@ -312,7 +312,7 @@
       "dims": {
         "w": 160,
         "d": 200,
-        "h": 105
+        "h": 63
       },
       "clearanceFront": 60,
       "glb": "/assets/glb/bed-birk.glb",
@@ -420,7 +420,7 @@
       "dims": {
         "w": 180,
         "d": 200,
-        "h": 102
+        "h": 58
       },
       "clearanceFront": 60,
       "glb": "/assets/glb/bed-siv.glb",
@@ -474,7 +474,7 @@
       "dims": {
         "w": 180,
         "d": 200,
-        "h": 110
+        "h": 71
       },
       "clearanceFront": 60,
       "glb": "/assets/glb/bed-viggo.glb",
@@ -774,7 +774,7 @@
       "dims": {
         "w": 40,
         "d": 40,
-        "h": 45
+        "h": 30
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/decor-basket.glb",
@@ -931,8 +931,8 @@
       "category": "decor",
       "dims": {
         "w": 36,
-        "d": 24,
-        "h": 5
+        "d": 22,
+        "h": 0.8
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/decor-tray.glb",
@@ -1187,7 +1187,7 @@
       "dims": {
         "w": 120,
         "d": 60,
-        "h": 74
+        "h": 70
       },
       "clearanceFront": 90,
       "glb": "/assets/glb/desk-soren.glb",
@@ -1284,7 +1284,7 @@
       "dims": {
         "w": 35,
         "d": 35,
-        "h": 165
+        "h": 251
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/floor-lamp-arc.glb",
@@ -1326,7 +1326,7 @@
       "dims": {
         "w": 32,
         "d": 32,
-        "h": 158
+        "h": 124
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/floor-lamp-havn.glb",
@@ -1778,7 +1778,7 @@
       "category": "rug",
       "dims": {
         "w": 160,
-        "d": 230,
+        "d": 253,
         "h": 2
       },
       "clearanceFront": 0,
@@ -1884,7 +1884,7 @@
       "dims": {
         "w": 240,
         "d": 340,
-        "h": 2
+        "h": 4
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/rug-mark.glb",
@@ -1937,7 +1937,7 @@
       "dims": {
         "w": 200,
         "d": 300,
-        "h": 2
+        "h": 3
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/rug-siv.glb",
@@ -2086,7 +2086,7 @@
       "dims": {
         "w": 80,
         "d": 30,
-        "h": 180
+        "h": 146
       },
       "clearanceFront": 70,
       "glb": "/assets/glb/shelf-lund.glb",
@@ -2343,7 +2343,7 @@
       "dims": {
         "w": 260,
         "d": 100,
-        "h": 82
+        "h": 94
       },
       "clearanceFront": 75,
       "seatCount": 4,
@@ -2453,7 +2453,7 @@
       "dims": {
         "w": 240,
         "d": 98,
-        "h": 84
+        "h": 104
       },
       "clearanceFront": 75,
       "seatCount": 3,
@@ -2562,7 +2562,7 @@
       "dims": {
         "w": 120,
         "d": 80,
-        "h": 74
+        "h": 40
       },
       "clearanceFront": 75,
       "glb": "/assets/glb/table-ake.glb",
@@ -2598,13 +2598,67 @@
       ]
     },
     {
+      "id": "table-bord",
+      "name": "Bord Side Table",
+      "category": "table",
+      "dims": {
+        "w": 45,
+        "d": 45,
+        "h": 40
+      },
+      "clearanceFront": 75,
+      "glb": "/assets/glb/table-bord.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "japandi",
+        "modern"
+      ],
+      "price": 120,
+      "description": "A balanced dining table with durable joinery and comfortable knee room around every side.",
+      "handle": "table-bord",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626257436947",
+          "colorway": "oak",
+          "price": 120
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626257469715",
+          "colorway": "plaster",
+          "price": 120
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626257502483",
+          "colorway": "charcoal",
+          "price": 120
+        }
+      ]
+    },
+    {
       "id": "table-elm",
       "name": "Elm Table",
       "category": "table",
       "dims": {
         "w": 200,
         "d": 95,
-        "h": 76
+        "h": 59
       },
       "clearanceFront": 75,
       "glb": "/assets/glb/table-elm.glb",
@@ -2657,7 +2711,7 @@
       "dims": {
         "w": 22,
         "d": 22,
-        "h": 38
+        "h": 47
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/table-lamp-alva.glb",
@@ -2709,7 +2763,7 @@
       "dims": {
         "w": 21,
         "d": 21,
-        "h": 36
+        "h": 43
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/table-lamp-ember.glb",
@@ -2752,7 +2806,7 @@
       "dims": {
         "w": 24,
         "d": 24,
-        "h": 40
+        "h": 52
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/table-lamp-lune.glb",
@@ -2804,7 +2858,7 @@
       "dims": {
         "w": 23,
         "d": 23,
-        "h": 37
+        "h": 24
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/table-lamp-moss.glb",
@@ -2856,7 +2910,7 @@
       "dims": {
         "w": 20,
         "d": 20,
-        "h": 34
+        "h": 48
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/table-lamp-natt.glb",
@@ -2941,7 +2995,7 @@
       "dims": {
         "w": 160,
         "d": 90,
-        "h": 75
+        "h": 62
       },
       "clearanceFront": 75,
       "glb": "/assets/glb/table-rove.glb",
@@ -3079,7 +3133,7 @@
       "dims": {
         "w": 180,
         "d": 40,
-        "h": 50
+        "h": 36
       },
       "clearanceFront": 70,
       "glb": "/assets/glb/tv-unit-linje.glb",
@@ -3133,7 +3187,7 @@
       "dims": {
         "w": 200,
         "d": 42,
-        "h": 52
+        "h": 133
       },
       "clearanceFront": 70,
       "glb": "/assets/glb/tv-unit-nova.glb",
@@ -3185,7 +3239,7 @@
       "category": "tv-unit",
       "dims": {
         "w": 160,
-        "d": 38,
+        "d": 41.8,
         "h": 48
       },
       "clearanceFront": 70,
@@ -3238,7 +3292,7 @@
       "category": "tv-unit",
       "dims": {
         "w": 170,
-        "d": 40,
+        "d": 44,
         "h": 50
       },
       "clearanceFront": 70,
@@ -3293,7 +3347,7 @@
       "dims": {
         "w": 140,
         "d": 58,
-        "h": 200
+        "h": 256
       },
       "clearanceFront": 70,
       "glb": "/assets/glb/wardrobe-eira.glb",
@@ -3346,8 +3400,8 @@
       "category": "wardrobe",
       "dims": {
         "w": 160,
-        "d": 60,
-        "h": 200
+        "d": 54,
+        "h": 158
       },
       "clearanceFront": 70,
       "glb": "/assets/glb/wardrobe-hald.glb",
@@ -3445,7 +3499,7 @@
       "dims": {
         "w": 100,
         "d": 60,
-        "h": 190
+        "h": 146
       },
       "clearanceFront": 70,
       "glb": "/assets/glb/wardrobe-skive.glb",

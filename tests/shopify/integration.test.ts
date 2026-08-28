@@ -1,3 +1,4 @@
+import { catalogSource } from "../../data/catalog.source";
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { once } from "node:events";
@@ -52,7 +53,7 @@ describe.skipIf(!RUN_INTEGRATION)("Shopify live integration", () => {
 
   it("passes full Admin and Storefront verification", async () => {
     const report = await runVerify({ print: false });
-    expect(report).toMatchObject({ adminHearthProducts: 70, adminOtherProducts: 0, storefrontProducts: 70, definitions: 8 });
+    expect(report).toMatchObject({ adminHearthProducts: catalogSource.length, adminOtherProducts: 0, storefrontProducts: catalogSource.length, definitions: 8 });
   }, 60_000);
 
   it("returns seeded handles and creates a checkout-capable cart through Storefront", async () => {

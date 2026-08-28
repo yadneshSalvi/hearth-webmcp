@@ -67,6 +67,7 @@ export const sourceCollections = {
 
 const verifiedHashes = {
   "0uJQPU1oAK": "d7d8321e0ddde0420f8dd4a647b0b491ffaec7f43e16ada4680aaf9db217f1e6",
+  "A9vPgVUrF9": "6ebc62f3736c9c9c96337458683ef4b7b7720b7cdb1df86b77e4ec0df9411367",
   "1nKtMmYxLT": "e4a0e9677c1e8aeacf7d1be2c76124e9b325714fc250c35792888f6563b7290e",
   "7H5qKjuxVY": "cda873c6fd6769727687002e8f04c449d3002671a4d4587fd3f842e3f47b4ae6",
   "9L6lLUl9sD": "95ee87d1ff55e6ca9fa8366bd665851e35bd8f41808a605d39d4041a2fcb0d86",
@@ -116,6 +117,7 @@ export const polyPizzaModels: Readonly<Record<string, PolyPizzaModel>> = {
   oEArSZykyi: poly("oEArSZykyi", { name: "Table Round Small", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/c8fa18f9-e1e9-4aed-905d-cbc945cb44d9.glb", bytes: 25236 }),
   fFfoi1LNKY: poly("fFfoi1LNKY", { name: "Couch Medium", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/37ca9279-0fdf-44ac-984a-8ece7a28d30a.glb", bytes: 24232 }),
   G1H0wnCHQf: poly("G1H0wnCHQf", { name: "Drawer", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/81632e1d-e338-4bb1-90ed-626cb1b9cbab.glb", bytes: 15996 }),
+  A9vPgVUrF9: poly("A9vPgVUrF9", { name: "Night Stand", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/1c26c1fe-7fb1-4511-b5f0-3dd73ea10c86.glb", bytes: 107636 }),
   "7H5qKjuxVY": poly("7H5qKjuxVY", { name: "Rug", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/93588780-3405-40b7-acb4-9a87c88569f6.glb", bytes: 6020 }),
   VtJh4Irl4w: poly("VtJh4Irl4w", { name: "Houseplant", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/6e6e6b19-011d-4b1d-9cc0-07269adec9fa.glb", bytes: 14412 }),
   PPkR5hMOJp: poly("PPkR5hMOJp", { name: "Medium Pot", sourceKey: "isa-house-plants", downloadUrl: "https://static.poly.pizza/097ac1ef-9366-43c4-b960-b35c911d8d45.glb", bytes: 34288 }),

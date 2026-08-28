@@ -454,6 +454,24 @@
     "bytes": 21808
   },
   {
+    "id": "table-bord",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/1c26c1fe-7fb1-4511-b5f0-3dd73ea10c86.glb",
+    "license": "CC0",
+    "scale": 0.76568442,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 45,
+      "d": 38.79,
+      "h": 39.18
+    },
+    "materials": [
+      "DarkWood",
+      "Wood"
+    ],
+    "bytes": 38072
+  },
+  {
     "id": "desk-aalto",
     "source": "Kenney Furniture Kit 2.0",
     "sourceFile": "Models/GLTF format/desk.glb",

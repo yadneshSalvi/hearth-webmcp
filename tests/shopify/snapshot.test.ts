@@ -1,3 +1,4 @@
+import { catalogSource } from "../../data/catalog.source";
 import { describe, expect, it } from "vitest";
 import { snapshotByHandle, snapshotMetadata, snapshotProducts } from "../../src/shopify/snapshot";
 
@@ -8,7 +9,7 @@ describe("catalog snapshot", () => {
       storeDomain: "hearth-studio.myshopify.com",
       apiVersion: "2026-07",
     });
-    expect(products).toHaveLength(70);
+    expect(products).toHaveLength(catalogSource.length);
     expect(products.map(({ handle }) => handle)).toEqual([...products.map(({ handle }) => handle)].sort());
     expect(products.every((product) => product.variants.every(({ id, available }) => id.startsWith("gid://shopify/ProductVariant/") && available))).toBe(true);
   });

@@ -65,6 +65,7 @@ export const assetMappings: readonly AssetMapping[] = [
   pizza("table-elm", "gQFkiM8PlM", 90),
   pizza("table-rund", "oEArSZykyi"),
   kaykit("table-petit", "table_small"),
+  pizza("table-bord", "A9vPgVUrF9"),
 
   kenney("desk-aalto", "desk"),
   pizza("desk-soren", "V86Go2rlnq"),

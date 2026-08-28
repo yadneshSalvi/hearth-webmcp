@@ -34,6 +34,8 @@ export interface ShopifyCartLine {
 
 export interface ShopifyCart {
   id: string;
+  /** Storefront checkoutUrl when known (live client); absent for the local client. */
+  checkoutUrl?: string;
   lines: ShopifyCartLine[];
   subtotalUsd: number;
   count: number;
