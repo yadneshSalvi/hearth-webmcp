@@ -30,3 +30,20 @@ E2 should combine `footprint`, clearance and door polygons for conflict records.
 E3 should use `resolveWall`, `freeSpans`, `rotationForWall` and `backAgainstWall`
 for anchors and fitting. E4 can use catalog resolution and room metrics directly.
 R1 should convert room-local points through `roomToWorld`, then cm to metres once.
+
+## Rules
+
+`evaluateRoom` and `evaluateHome` return errors before warnings, then use stable
+kind/item ordering. Errors cover overlap, outside-room placement, heavily blocked
+clearance, door zones, missing/narrow accessible paths, and turning circles.
+Warnings cover partial clearance, standard traffic pinches, reach, and ghost overlap.
+
+Rugs may overlap non-rugs and never block clearance or traffic. Table lamps and
+decor may overlap a table, desk, shelf, or TV unit only while fully contained.
+Traffic uses a 10 cm occupancy grid and deterministic octile A* between every pair
+of doors/arches and from the primary opening to sofa, armchair, bed, and desk use
+points. Conflict `zone` stores the simplified raw path polyline for dotted rendering.
+One distance field supplies its narrowest width; standard/access paths require
+60/90 cm. Accessibility also checks 150 cm turning circles and 120 cm reach zones.
+The grid is `O(cells × obstacles)` to build and each path is `O(cells log cells)`;
+the canonical 520×440 cm room is designed for sub-frame evaluation.
