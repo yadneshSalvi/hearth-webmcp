@@ -30,19 +30,17 @@ describe("designReport", () => {
   it("snapshots the furnished living room", () => {
     expect(designReport(furnished2br(), "living", catalog, [])).toMatchInlineSnapshot(`
       {
-        "score": 93,
+        "score": 99,
         "scores": {
-          "balance": 6,
+          "balance": 10,
           "conversation": 10,
           "focal_point": 10,
           "lighting": 9,
           "storage": 10,
           "traffic": 10,
         },
-        "suggestions": [
-          "Shift sofa-1 40 cm toward the room centre to improve the visual balance.",
-        ],
-        "summary": "Living Room feels settled and practical. Conversation seating works best; balance needs the most care.",
+        "suggestions": [],
+        "summary": "Living Room feels settled and practical. Balance works best; lighting needs the most care.",
       }
     `);
   });
@@ -50,19 +48,37 @@ describe("designReport", () => {
   it("snapshots the furnished main bedroom", () => {
     expect(designReport(furnished2br(), "bed-1", catalog, [])).toMatchInlineSnapshot(`
       {
-        "score": 93,
+        "score": 96,
         "scores": {
-          "balance": 5,
+          "balance": 9,
           "conversation": 10,
           "focal_point": 10,
           "lighting": 10,
-          "storage": 10,
+          "storage": 8,
+          "traffic": 10,
+        },
+        "suggestions": [],
+        "summary": "Main Bedroom feels settled and practical. Calm is 10/10; storage needs the most care.",
+      }
+    `);
+  });
+
+  it("snapshots the furnished second bedroom", () => {
+    expect(designReport(furnished2br(), "bed-2", catalog, [])).toMatchInlineSnapshot(`
+      {
+        "score": 91,
+        "scores": {
+          "balance": 10,
+          "conversation": 10,
+          "focal_point": 10,
+          "lighting": 10,
+          "storage": 4,
           "traffic": 10,
         },
         "suggestions": [
-          "Shift bed-1 40 cm toward the room centre to improve the visual balance.",
+          "Add a wardrobe on a clear wall in bed-2, keeping 70 cm open in front.",
         ],
-        "summary": "Main Bedroom feels settled and practical. Lighting works best; balance needs the most care.",
+        "summary": "Second Bedroom feels settled and practical. Calm is 10/10; storage needs the most care.",
       }
     `);
   });
@@ -70,23 +86,27 @@ describe("designReport", () => {
   it("snapshots the furnished kitchen and dining room", () => {
     expect(designReport(furnished2br(), "kitchen", catalog, [])).toMatchInlineSnapshot(`
       {
-        "score": 43,
+        "score": 97,
         "scores": {
-          "balance": 5,
-          "conversation": 2,
-          "focal_point": 1,
-          "lighting": 2,
-          "storage": 6,
+          "balance": 8,
+          "conversation": 10,
+          "focal_point": 10,
+          "lighting": 10,
+          "storage": 7,
           "traffic": 10,
         },
-        "suggestions": [
-          "Give chair-1 a clear focus, such as a window or media unit, within 15°.",
-          "Place another seat within 250 cm of chair-1 and turn the two seats toward each other.",
-          "Add a floor lamp within 150 cm of chair-2 for dependable evening light.",
-        ],
-        "summary": "Kitchen & Dining needs a clearer plan. Traffic flow works best; focal direction needs the most care.",
+        "suggestions": [],
+        "summary": "Kitchen & Dining feels settled and practical. Table seating works best; balance needs the most care.",
       }
     `);
+  });
+
+  it("meets the furnished 2BR room calibration floors", () => {
+    const scene = furnished2br();
+    expect(designReport(scene, "living", catalog, []).score).toBeGreaterThanOrEqual(85);
+    expect(designReport(scene, "bed-1", catalog, []).score).toBeGreaterThanOrEqual(85);
+    expect(designReport(scene, "kitchen", catalog, []).score).toBeGreaterThanOrEqual(75);
+    expect(designReport(scene, "bed-2", catalog, []).score).toBeGreaterThanOrEqual(65);
   });
 
   it("snapshots an empty room", () => {
@@ -102,11 +122,11 @@ describe("designReport", () => {
           "traffic": 10,
         },
         "suggestions": [
-          "Start with two seats no more than 250 cm apart, facing each other.",
-          "Choose a main seat and aim it within 15° of a window or media focus.",
-          "Place the first large piece near a wall, leaving a 60 cm clear route.",
+          "Start with a sofa against a clear wall, keeping a 60 cm route between openings.",
+          "Add a warm floor lamp, keeping it within 150 cm of the room's main activity.",
+          "Add a shelf on a clear wall in living, keeping 70 cm open in front.",
         ],
-        "summary": "Living Room is ready for a first layout; furniture is needed before balance, lighting and function can settle.",
+        "summary": "Living Room is ready for its anchor piece; start there, then let warm light and clear routes shape the room.",
       }
     `);
   });
@@ -114,9 +134,9 @@ describe("designReport", () => {
   it("snapshots the adversarial room with traffic conflicts", () => {
     expect(designReport(worstCase2br(), "living", catalog, worstConflicts())).toMatchInlineSnapshot(`
       {
-        "score": 56,
+        "score": 62,
         "scores": {
-          "balance": 6,
+          "balance": 10,
           "conversation": 3,
           "focal_point": 10,
           "lighting": 7,
@@ -125,10 +145,10 @@ describe("designReport", () => {
         },
         "suggestions": [
           "Clear the route: move item-0 40 cm east.",
-          "Place another seat within 250 cm of sofa-1 and turn the two seats toward each other.",
-          "Shift sofa-1 40 cm toward the room centre to improve the visual balance.",
+          "Place another seat within 250 cm of sofa-1, with the two seats turned toward each other.",
+          "Add a warm lamp within 150 cm of chair-7 for a softer evening layer.",
         ],
-        "summary": "Living Room needs a clearer plan. Focal direction works best; traffic flow needs the most care.",
+        "summary": "Living Room is ready for a clearer plan. Balance works best; traffic flow needs the most care.",
       }
     `);
   });
@@ -142,6 +162,21 @@ describe("designReport", () => {
     expect(after.scores.lighting).toBe(7);
     expect(after.scores.lighting).toBeLessThan(before.scores.lighting);
     expect(after.score).toBeLessThan(before.score);
+  });
+
+  it("lowers focal point when the sofa turns away from the window", () => {
+    const scene = furnished2br();
+    scene.furniture = scene.furniture.filter((item) => item.id !== "tv-unit-1");
+    const sofa = scene.furniture.find((item) => item.id === "sofa-1");
+    if (!sofa) throw new Error("fixture is missing sofa-1");
+    sofa.pos = { x: 410, y: 330 };
+    sofa.rotation = 90;
+    const facing = designReport(scene, "living", catalog, []);
+    sofa.rotation = 270;
+    const away = designReport(scene, "living", catalog, []);
+    expect(facing.scores.focal_point).toBe(10);
+    expect(away.scores.focal_point).toBeLessThan(facing.scores.focal_point);
+    expect(away.score).toBeLessThan(facing.score);
   });
 
   it("raises bedroom storage when a wardrobe is added", () => {
@@ -158,9 +193,44 @@ describe("designReport", () => {
     });
     const after = designReport(scene, "bed-1", catalog, []);
     expect(before.scores.storage).toBe(0);
-    expect(after.scores.storage).toBe(10);
+    expect(after.scores.storage).toBe(8);
     expect(after.scores.storage).toBeGreaterThan(before.scores.storage);
     expect(after.score).toBeGreaterThan(before.score);
+  });
+
+  it("uses the room's anchor piece in empty-room guidance", () => {
+    const scene = emptyHome();
+    const kitchen = designReport(scene, "kitchen", catalog, []);
+    const bedroom = designReport(scene, "bed-1", catalog, []);
+    const living = scene.rooms.find((room) => room.id === "living");
+    if (!living) throw new Error("fixture is missing the living room");
+    living.type = "office";
+    const office = designReport(scene, "living", catalog, []);
+    expect(kitchen.score).toBeLessThanOrEqual(30);
+    expect(bedroom.score).toBeLessThanOrEqual(30);
+    expect(office.score).toBeLessThanOrEqual(30);
+    expect(kitchen.suggestions[0]).toContain("dining table");
+    expect(bedroom.suggestions[0]).toContain("bed headboard");
+    expect(office.suggestions[0]).toContain("desk");
+  });
+
+  it("scores an office desk under a window and lowers focus when its path is blocked", () => {
+    const scene = emptyHome();
+    const office = scene.rooms.find((room) => room.id === "living");
+    if (!office) throw new Error("fixture is missing the living room");
+    office.type = "office";
+    scene.furniture.push(
+      { id: "desk-office", catalogId: "desk-soren", roomId: "living", pos: { x: 420, y: 30 }, rotation: 0, colorway: "oak", status: "placed" },
+      { id: "shelf-office", catalogId: "shelf-lund", roomId: "living", pos: { x: 50, y: 15 }, rotation: 0, colorway: "plaster", status: "placed" },
+    );
+    const clear = designReport(scene, "living", catalog, []);
+    const pathConflict = { ...issue(20, "traffic", "warn"), items: ["desk-office"] };
+    const blocked = designReport(scene, "living", catalog, [pathConflict]);
+    expect(clear.scores.focal_point).toBe(10);
+    expect(clear.scores.conversation).toBe(10);
+    expect(clear.scores.storage).toBe(10);
+    expect(blocked.scores.conversation).toBeLessThan(clear.scores.conversation);
+    expect(blocked.summary).toContain("Focus");
   });
 
   it("subtracts only traffic, access-path and door-swing conflicts", () => {
@@ -195,6 +265,7 @@ describe("designReport", () => {
     const reports = [
       designReport(furnished2br(), "living", catalog, []),
       designReport(furnished2br(), "bed-1", catalog, []),
+      designReport(furnished2br(), "bed-2", catalog, []),
       designReport(furnished2br(), "kitchen", catalog, []),
       designReport(emptyHome(), "living", catalog, []),
       designReport(worstCase2br(), "living", catalog, worstConflicts()),
