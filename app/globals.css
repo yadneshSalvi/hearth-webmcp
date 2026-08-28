@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+/* Hearth tokens — mirror of src/tokens.ts (STYLE.md §1). No other colours exist. */
+@theme {
+  --color-*: initial;
+  --color-canvas-top: #f7f3ec;
+  --color-canvas-bottom: #efe7db;
+  --color-plaster: #f4efe6;
+  --color-oak: #d9c4a3;
+  --color-pale-oak: #e6d8bf;
+  --color-stone: #d8d3ca;
+  --color-terracotta: #c46a4a;
+  --color-sage: #8a9b7c;
+  --color-ochre: #c9a44c;
+  --color-dusty-blue: #7e93a8;
+  --color-plum: #8a6a7d;
+  --color-charcoal: #3e3a36;
+  --color-amber: #d9973b;
+  --color-rose: #c25e5e;
+  --color-ink: #3e3a36;
+  --color-ink-muted: rgb(62 58 54 / 0.62);
+  --color-ink-faint: rgb(62 58 54 / 0.4);
+  --color-hairline: rgb(62 58 54 / 0.14);
+  --color-glass: rgb(244 239 230 / 0.88);
+  --color-white: #fffdf9;
+  --color-transparent: transparent;
+
+  --font-display: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-sans: var(--font-inter), "Inter", system-ui, sans-serif;
+
+  --radius-panel: 16px;
+  --radius-chip: 10px;
+  --radius-pill: 999px;
+
+  --shadow-panel: 0 18px 48px -18px rgb(62 58 54 / 0.28), 0 2px 6px rgb(62 58 54 / 0.06);
+  --shadow-chip: 0 6px 18px -10px rgb(62 58 54 / 0.3), 0 1px 2px rgb(62 58 54 / 0.05);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --blur-glass: 14px;
+}
+
+:root {
+  color-scheme: light only;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: linear-gradient(180deg, var(--color-canvas-top) 0%, var(--color-canvas-bottom) 100%);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  overflow: hidden;
+}
+
+::selection {
+  background: rgb(201 164 76 / 0.35);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ochre);
+  outline-offset: 2px;
+  border-radius: var(--radius-chip);
+}
+
+/* Utilities shared by every panel (STYLE.md §1, §4). */
+@utility glass {
+  background: var(--color-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  border: 1px solid var(--color-hairline);
+  box-shadow: var(--shadow-panel);
+  border-radius: var(--radius-panel);
+}
+
+@utility label-caps {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+@utility numerals {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
