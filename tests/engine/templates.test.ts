@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catalogSource } from "../../data/catalog.source";
-import { createCatalog, createTemplate, footprint, openingClearZone, polyInside, polysOverlap, resolveWall, swingZone, walls } from "../../src/engine";
+import { createCatalog, createTemplate, evaluateHome, footprint, openingClearZone, polyInside, polysOverlap, resolveWall, swingZone, walls } from "../../src/engine";
 import { TEMPLATE_IDS } from "../../src/engine/types";
 import { emptyHome, furnished2br, loftScene, studioScene, worstCase2br } from "../fixtures/scenes";
 
@@ -70,9 +70,50 @@ describe("floor-plan templates", () => {
           const a = scene.furniture[left]!;
           const b = scene.furniture[right]!;
           if (a.roomId !== b.roomId) continue;
-          expect(polysOverlap(footprint(a, catalog.byId(a.catalogId)!), footprint(b, catalog.byId(b.catalogId)!)), `${id}: ${a.id} overlaps ${b.id}`).toBe(false);
+          const aProduct = catalog.byId(a.catalogId)!;
+          const bProduct = catalog.byId(b.catalogId)!;
+          const aFootprint = footprint(a, aProduct);
+          const bFootprint = footprint(b, bProduct);
+          const supportedStack = aProduct.category === "rug" && bProduct.category !== "rug"
+            || bProduct.category === "rug" && aProduct.category !== "rug"
+            || aProduct.category === "table-lamp" && bProduct.category === "table" && polyInside(bFootprint, aFootprint)
+            || bProduct.category === "table-lamp" && aProduct.category === "table" && polyInside(aFootprint, bFootprint);
+          expect(polysOverlap(aFootprint, bFootprint) && !supportedStack, `${id}: ${a.id} overlaps ${b.id}`).toBe(false);
         }
       }
+    }
+  });
+
+  it("ships a conflict-free furnished 2BR with supported bedside lamps", () => {
+    const scene = createTemplate("2br", { furnished: true });
+    expect(evaluateHome(scene, catalog, { accessibility: false })).toEqual([]);
+
+    const lamps = scene.furniture.filter((candidate) => catalog.byId(candidate.catalogId)?.category === "table-lamp");
+    const tables = scene.furniture.filter((candidate) => catalog.byId(candidate.catalogId)?.category === "table");
+    expect(lamps).toHaveLength(2);
+    for (const lamp of lamps) {
+      const lampFootprint = footprint(lamp, catalog.byId(lamp.catalogId)!);
+      expect(tables.some((table) => table.roomId === lamp.roomId
+        && polyInside(footprint(table, catalog.byId(table.catalogId)!), lampFootprint)), `${lamp.id} is not supported by a table`).toBe(true);
+    }
+
+    const accessible = evaluateHome(scene, catalog, { accessibility: true });
+    // Expected: 90 cm routes flag the sofa, armchair, and two beds; the centred main bed also lacks a 150 cm side turn.
+    expect(accessible.map((conflict) => [conflict.kind, conflict.items[0]])).toEqual([
+      ["access_path", "armchair-1"],
+      ["access_path", "bed-1"],
+      ["access_path", "bed-2"],
+      ["access_path", "sofa-1"],
+      ["turning_circle", "bed-1"],
+    ]);
+  });
+
+  it("keeps every other furnished template conflict-free", () => {
+    for (const id of ["studio", "1br", "loft"] as const) {
+      const scene = createTemplate(id, { furnished: true });
+      expect(scene.furniture.length).toBeGreaterThanOrEqual(6);
+      expect(scene.furniture.length).toBeLessThanOrEqual(14);
+      expect(evaluateHome(scene, catalog, { accessibility: false }), id).toEqual([]);
     }
   });
 
@@ -101,7 +142,7 @@ describe("floor-plan templates", () => {
       expect(Math.max(...xs) - Math.min(...xs)).toBe(dims[0]);
       expect(Math.max(...ys) - Math.min(...ys)).toBe(dims[1]);
     }
-    expect(scene.furniture).toHaveLength(23);
+    expect(scene.furniture).toHaveLength(24);
     expect(scene.rooms).toHaveLength(6);
     expect(scene.meta.activeRoomId).toBe("living");
     expect(scene.furniture.find((item) => item.id === "sofa-1")).toMatchObject({ catalogId: "sofa-endre", roomId: "living", rotation: 0 });

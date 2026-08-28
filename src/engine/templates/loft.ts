@@ -27,6 +27,7 @@ export function createLoftTemplate(furnished = false): Scene {
     item({ id: "tv-unit-1", catalogId: "tv-unit-nova", roomId: "loft", pos: { x: 250, y: 579 }, rotation: 180, colorway: "charcoal" }),
     item({ id: "table-1", catalogId: "table-rove", roomId: "loft", pos: { x: 650, y: 420 }, rotation: 90, colorway: "oak" }),
     item({ id: "plant-1", catalogId: "plant-fig", roomId: "loft", pos: { x: 750, y: 550 }, rotation: 0, colorway: "sage" }),
+    item({ id: "floor-lamp-1", catalogId: "floor-lamp-sol", roomId: "loft", pos: { x: 75, y: 125 }, rotation: 0, colorway: "ochre" }),
   ] : [];
   return makeScene("loft", "loft", rooms, openings, furniture);
 }
