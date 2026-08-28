@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { allToolDefinitions, allTools, pendingTools } from "../../src/tools/handlers";
+import { allToolDefinitions, allTools } from "../../src/tools/handlers";
 import { toolContext } from "./helpers";
 
 interface ContractTool {
@@ -21,14 +21,13 @@ function contractTools(): ContractTool[] {
 }
 
 describe("tool contract coverage", () => {
-  it("covers the 36 contract names with 18 implemented and 18 pending", () => {
+  it("implements all 36 contract names", () => {
     const contract = contractTools();
     const implemented = allTools(toolContext());
     expect(contract).toHaveLength(36);
-    expect(implemented).toHaveLength(18);
-    expect(pendingTools).toHaveLength(18);
-    expect(new Set([...implemented.map(({ name }) => name), ...pendingTools]).size).toBe(36);
-    expect([...implemented.map(({ name }) => name), ...pendingTools].sort()).toEqual(contract.map(({ name }) => name).sort());
+    expect(implemented).toHaveLength(36);
+    expect(new Set(implemented.map(({ name }) => name)).size).toBe(36);
+    expect(implemented.map(({ name }) => name).sort()).toEqual(contract.map(({ name }) => name).sort());
   });
 
   it("keeps implemented titles and descriptions verbatim", () => {

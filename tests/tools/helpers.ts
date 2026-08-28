@@ -17,7 +17,12 @@ export function resetStore(scene: Scene): void {
 }
 
 export function testUi(confirm: ToolUi["confirm"] = async () => true): ToolUi {
-  return { confirm, focus: vi.fn(), pulse: vi.fn() };
+  return {
+    confirm,
+    focus: vi.fn(),
+    pulse: vi.fn(),
+    exportBoard: vi.fn(async () => ({ items: 7, total_usd: 2_140, size_px: "1600x1000" })),
+  };
 }
 
 export function toolContext(ui = testUi()): ToolContext {

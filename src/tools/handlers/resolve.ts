@@ -1,6 +1,6 @@
 import { createCatalog } from "../../engine/catalog";
 import { resolveWall } from "../../engine/geometry";
-import type { Colorway, Furniture, Opening, Room, Scene, Variant, Wall } from "../../engine/types";
+import type { CatalogItem, Colorway, Furniture, Opening, Room, Scene, Variant, Wall } from "../../engine/types";
 import type { ShopifyCart } from "../../shopify/types";
 import type { HearthState } from "../../state/types";
 import { HearthError } from "../../state/types";
@@ -80,6 +80,11 @@ export function resolveItem(state: HearthState, ref: string): Furniture | Err {
     name: state.catalog.find((product) => product.id === item.catalogId)?.name ?? item.catalogId,
   }));
   return resolveCandidate(ref, candidates) ?? notFound("Item", ref, candidates);
+}
+
+export function resolveProduct(state: HearthState, ref: string): CatalogItem | Err {
+  const catalog = createCatalog(state.catalog);
+  return catalog.resolveProduct(ref) ?? notFound("Product", ref, state.catalog);
 }
 
 function itemCandidates(state: HearthState): Candidate[] {

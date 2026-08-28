@@ -18,7 +18,7 @@ export interface ConflictLite {
 
 export type Ok = {
   ok: true;
-  conflicts?: ConflictLite[] | number;
+  conflicts?: ConflictLite[] | number | { left: number; right: number };
   hint?: string;
   [data: string]: unknown;
 };
@@ -38,10 +38,17 @@ export type ToolResult = Ok | Err;
 
 export type ToolFocus = { kind: "room" | "item"; id: string };
 
+export interface ExportBoardResult {
+  items: number;
+  total_usd: number;
+  size_px: string;
+}
+
 export interface ToolUi {
   confirm(message: string): Promise<boolean>;
   focus(target: ToolFocus): void;
   pulse(ids: string[]): void;
+  exportBoard?(input: { roomId: string; title: string }): Promise<ExportBoardResult> | ExportBoardResult;
 }
 
 export interface ToolContext {

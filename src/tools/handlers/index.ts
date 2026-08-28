@@ -7,10 +7,20 @@ import {
   applyPaletteTool, clearRoomTool, loadVariantTool, saveVariantTool, setAccessibilityModeTool,
   setTimeOfDayTool, setViewTool, undoTool,
 } from "./design";
+import {
+  confirmPreviewTool, getCheckoutLinkTool, previewInRoomTool, updateCartTool,
+} from "./commerce";
+import { getProductTool, searchCatalogTool } from "./catalog";
 import { removeFurnitureTool, setColorwayTool } from "./furniture";
-import { pendingToolDefinitions, pendingTools } from "./pending";
+import { arrangeRoomTool, moveFurnitureTool, placeFurnitureTool } from "./placement";
 import { cancelPreviewTool } from "./preview";
+import { exportDesignBoardTool } from "./presentation";
+import {
+  getCartTool, getConflictsTool, getDesignReportTool, getRoomDetailsTool, getSceneSummaryTool,
+  getSelectionTool, measureTool,
+} from "./read";
 import { setModeTool } from "./set-mode";
+import { compareVariantsTool } from "./variants";
 
 function bindStandalone(tools: DefinedTool[], context: ToolContext): DefinedTool[] {
   for (const tool of tools) bindDefinedTool(tool, {
@@ -24,12 +34,24 @@ function bindStandalone(tools: DefinedTool[], context: ToolContext): DefinedTool
   return tools;
 }
 
-/** The first-round 18 fully implemented handler definitions. */
-export function allTools(_context: ToolContext): DefinedTool[] {
+/** All 36 fully implemented Hearth WebMCP handler definitions. */
+export function allTools(context: ToolContext): DefinedTool[] {
   return bindStandalone([
+    getSceneSummaryTool(),
+    getRoomDetailsTool(),
+    getSelectionTool(),
+    measureTool(),
+    getConflictsTool(),
+    getDesignReportTool(),
+    searchCatalogTool(),
+    getProductTool(),
+    getCartTool(),
     setModeTool(),
+    placeFurnitureTool(),
+    moveFurnitureTool(),
     removeFurnitureTool(),
     setColorwayTool(),
+    arrangeRoomTool(),
     applyPaletteTool(),
     setTimeOfDayTool(),
     setViewTool(),
@@ -38,19 +60,23 @@ export function allTools(_context: ToolContext): DefinedTool[] {
     saveVariantTool(),
     loadVariantTool(),
     clearRoomTool(),
+    previewInRoomTool(),
+    updateCartTool(),
+    exportDesignBoardTool(),
+    confirmPreviewTool(),
     cancelPreviewTool(),
+    compareVariantsTool(),
+    getCheckoutLinkTool(),
     applyTemplateTool(),
     createRoomTool(),
     updateRoomTool(),
     addOpeningTool(),
     moveOpeningTool(),
     removeOpeningTool(),
-  ], _context);
+  ], context);
 }
 
 /** All 36 static definitions used by the lifecycle registry. */
 export function allToolDefinitions(context: ToolContext): DefinedTool[] {
-  return bindStandalone([...allTools(context), ...pendingToolDefinitions()], context);
+  return allTools(context);
 }
-
-export { pendingTools };
