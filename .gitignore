@@ -50,3 +50,6 @@ plans/
 /test-results/
 /playwright-report/
 /evals/reports/*.tmp
+
+# downloaded source models (rebuilt by pnpm assets:fetch)
+/.cache/assets/

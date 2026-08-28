@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hearth asset thumbnail renderer</title>
+    <style>
+      html, body { margin: 0; background: #F4EFE6; color: #3E3A36; font-family: Inter, sans-serif; }
+      #stage { display: block; width: 512px; height: 384px; }
+      #contact-sheet { display: block; }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/node_modules/three/build/three.module.js",
+          "three/addons/": "/node_modules/three/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="stage" width="512" height="384"></canvas>
+    <script type="module">
+      import * as THREE from "three";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+      import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+
+      const WIDTH = 512;
+      const HEIGHT = 384;
+      const PALETTE = [
+        new THREE.Color("#D9C4A3"),
+        new THREE.Color("#8A9B7C"),
+        new THREE.Color("#C46A4A"),
+        new THREE.Color("#F4EFE6"),
+        new THREE.Color("#3E3A36"),
+        new THREE.Color("#C9A44C"),
+      ];
+      const canvas = document.querySelector("#stage");
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(1);
+      renderer.setSize(WIDTH, HEIGHT, false);
+      renderer.setClearColor("#F4EFE6", 1);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.08;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      const loader = new GLTFLoader();
+      loader.setMeshoptDecoder(MeshoptDecoder);
+
+      function paletteColor(material) {
+        const name = material.name.toLowerCase();
+        if (/leaf|plant|foliage|green/.test(name)) return PALETTE[1];
+        if (/wood|timber|frame|leg/.test(name)) return PALETTE[0];
+        if (/metal|handle|dark|black/.test(name)) return PALETTE[4];
+        if (/pot|ceramic|clay/.test(name)) return PALETTE[2];
+        if (/fabric|cloth|carpet|cushion|pillow/.test(name)) return PALETTE[1];
+        const source = material.color?.isColor ? material.color : PALETTE[0];
+        let best = PALETTE[0];
+        let bestDistance = Infinity;
+        for (const candidate of PALETTE) {
+          const distance = (source.r - candidate.r) ** 2 + (source.g - candidate.g) ** 2 + (source.b - candidate.b) ** 2;
+          if (distance < bestDistance) {
+            best = candidate;
+            bestDistance = distance;
+          }
+        }
+        return best;
+      }
+
+      function retint(root) {
+        root.traverse((object) => {
+          if (!object.isMesh) return;
+          object.castShadow = true;
+          object.receiveShadow = true;
+          const sourceMaterials = Array.isArray(object.material) ? object.material : [object.material];
+          const materials = sourceMaterials.map((source) => {
+            const material = new THREE.MeshStandardMaterial({
+              name: source.name,
+              color: paletteColor(source),
+              roughness: 0.9,
+              metalness: 0,
+              side: source.side,
+              transparent: source.transparent,
+              opacity: source.opacity,
+              alphaTest: source.alphaTest,
+            });
+            return material;
+          });
+          object.material = Array.isArray(object.material) ? materials : materials[0];
+        });
+      }
+
+      function frameCamera(camera, box) {
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const target = new THREE.Vector3(center.x, box.min.y + size.y * 0.43, center.z);
+        const direction = new THREE.Vector3(1.45, 1.08, -1.75).normalize();
+        camera.position.copy(target).addScaledVector(direction, 6);
+        camera.lookAt(target);
+        camera.updateMatrixWorld(true);
+
+        const corners = [];
+        for (const x of [box.min.x, box.max.x]) {
+          for (const y of [box.min.y, box.max.y]) {
+            for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
+          }
+        }
+        let halfWidth = 0;
+        let halfHeight = 0;
+        for (const corner of corners) {
+          corner.applyMatrix4(camera.matrixWorldInverse);
+          halfWidth = Math.max(halfWidth, Math.abs(corner.x));
+          halfHeight = Math.max(halfHeight, Math.abs(corner.y));
+        }
+        halfWidth = Math.max(halfWidth * 1.22, halfHeight * WIDTH / HEIGHT * 1.22, 0.18);
+        halfHeight = Math.max(halfHeight * 1.22, halfWidth * HEIGHT / WIDTH, 0.135);
+        camera.left = -halfWidth;
+        camera.right = halfWidth;
+        camera.top = halfHeight;
+        camera.bottom = -halfHeight;
+        camera.near = 0.01;
+        camera.far = 20;
+        camera.updateProjectionMatrix();
+      }
+
+      async function loadGltf(url) {
+        return new Promise((resolve, reject) => loader.load(url, resolve, undefined, reject));
+      }
+
+      window.renderAsset = async (id) => {
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color("#F4EFE6");
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 20);
+        const gltf = await loadGltf(`/assets/glb/${id}.glb`);
+        const model = gltf.scene;
+        retint(model);
+        scene.add(model);
+
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        frameCamera(camera, box);
+
+        scene.add(new THREE.HemisphereLight("#F7F3EC", "#D9C4A3", 1.65));
+        const key = new THREE.DirectionalLight("#F7F3EC", 3.4);
+        key.position.set(-3.2, 5.5, -4.3);
+        key.castShadow = true;
+        key.shadow.mapSize.set(1024, 1024);
+        const shadowExtent = Math.max(size.x, size.z, 0.5) * 1.8;
+        key.shadow.camera.left = -shadowExtent;
+        key.shadow.camera.right = shadowExtent;
+        key.shadow.camera.top = shadowExtent;
+        key.shadow.camera.bottom = -shadowExtent;
+        key.shadow.camera.near = 0.1;
+        key.shadow.camera.far = 15;
+        scene.add(key);
+
+        const planeSize = Math.max(size.x, size.z, 0.5) * 4;
+        const plane = new THREE.Mesh(
+          new THREE.PlaneGeometry(planeSize, planeSize),
+          new THREE.ShadowMaterial({ color: "#3E3A36", opacity: 0.16 }),
+        );
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.y = box.min.y - Math.max(size.y * 0.004, 0.002);
+        plane.receiveShadow = true;
+        scene.add(plane);
+
+        renderer.render(scene, camera);
+        renderer.render(scene, camera);
+        return { width: size.x, depth: size.z, height: size.y };
+      };
+
+      function loadImage(url) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+          image.src = url;
+        });
+      }
+
+      window.renderContactSheet = async (ids) => {
+        document.querySelector("#contact-sheet")?.remove();
+        const tileWidth = 256;
+        const imageHeight = 192;
+        const labelHeight = 30;
+        const sheet = document.createElement("canvas");
+        sheet.id = "contact-sheet";
+        sheet.width = tileWidth * 5;
+        sheet.height = (imageHeight + labelHeight) * 4;
+        document.body.append(sheet);
+        const context = sheet.getContext("2d");
+        context.fillStyle = "#F4EFE6";
+        context.fillRect(0, 0, sheet.width, sheet.height);
+        context.font = "600 15px Inter, sans-serif";
+        context.textBaseline = "middle";
+        for (let index = 0; index < ids.length; index += 1) {
+          const id = ids[index];
+          const column = index % 5;
+          const row = Math.floor(index / 5);
+          const x = column * tileWidth;
+          const y = row * (imageHeight + labelHeight);
+          const image = await loadImage(`/assets/thumbs/${id}.png`);
+          context.drawImage(image, x, y, tileWidth, imageHeight);
+          context.fillStyle = "#EFE7DB";
+          context.fillRect(x, y + imageHeight, tileWidth, labelHeight);
+          context.fillStyle = "#3E3A36";
+          context.fillText(id, x + 10, y + imageHeight + labelHeight / 2);
+        }
+        return true;
+      };
+    </script>
+  </body>
+</html>

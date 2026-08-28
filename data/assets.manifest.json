@@ -1,0 +1,1301 @@
+[
+  {
+    "id": "sofa-endre",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/fcf68889-d20f-4128-b8a9-4ae28556e819.glb",
+    "license": "CC0",
+    "scale": 0.51874072,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 220,
+      "d": 92.53,
+      "h": 78.21
+    },
+    "materials": [
+      "Sofa",
+      "Legs"
+    ],
+    "bytes": 46328
+  },
+  {
+    "id": "sofa-fjord",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/433ac6c3-e7ae-45e8-b1bf-f28e6dea79ef.glb",
+    "license": "CC0",
+    "scale": 0.64957018,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 260,
+      "d": 100.09,
+      "h": 94.35
+    },
+    "materials": [
+      "Sofa",
+      "Legs"
+    ],
+    "bytes": 70516
+  },
+  {
+    "id": "sofa-liva",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/92a2404e-10d5-4c6a-a188-18b556474f8f.glb",
+    "license": "CC0",
+    "scale": 0.38394735,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 180,
+      "d": 84.6,
+      "h": 73.34
+    },
+    "materials": [
+      "Couch_Blue",
+      "Black"
+    ],
+    "bytes": 21988
+  },
+  {
+    "id": "sofa-maren",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/37ca9279-0fdf-44ac-984a-8ece7a28d30a.glb",
+    "license": "CC0",
+    "scale": 0.53113057,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 240,
+      "d": 106.2,
+      "h": 104.07
+    },
+    "materials": [
+      "Couch_Mustard",
+      "Wood"
+    ],
+    "bytes": 19808
+  },
+  {
+    "id": "sofa-svale",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/fcf68889-d20f-4128-b8a9-4ae28556e819.glb",
+    "license": "CC0",
+    "scale": 0.47158247,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 200,
+      "d": 84.11,
+      "h": 71.1
+    },
+    "materials": [
+      "Sofa",
+      "Legs"
+    ],
+    "bytes": 46256
+  },
+  {
+    "id": "armchair-nook",
+    "source": "Household Props 001 via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/2584a961-1b06-4fb7-ba7d-1074b52ca908.glb",
+    "license": "CC0",
+    "scale": 1.32625192,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 78,
+      "d": 71.4,
+      "h": 94.98
+    },
+    "materials": [
+      "Material"
+    ],
+    "bytes": 12896
+  },
+  {
+    "id": "armchair-elsa",
+    "source": "Household Props 001 via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/2584a961-1b06-4fb7-ba7d-1074b52ca908.glb",
+    "license": "CC0",
+    "scale": 1.22423254,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 72,
+      "d": 65.91,
+      "h": 87.67
+    },
+    "materials": [
+      "Material"
+    ],
+    "bytes": 12904
+  },
+  {
+    "id": "armchair-kyst",
+    "source": "KayKit Furniture Bits 1.0",
+    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/armchair_pillows.gltf",
+    "license": "CC0",
+    "scale": 0.46666662,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 84,
+      "d": 74.67,
+      "h": 57.12
+    },
+    "materials": [
+      "furniture_texture"
+    ],
+    "bytes": 34004
+  },
+  {
+    "id": "armchair-ro",
+    "source": "Household Props 001 via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/2584a961-1b06-4fb7-ba7d-1074b52ca908.glb",
+    "license": "CC0",
+    "scale": 1.29224546,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 76,
+      "d": 69.57,
+      "h": 92.55
+    },
+    "materials": [
+      "Material"
+    ],
+    "bytes": 12904
+  },
+  {
+    "id": "armchair-tuva",
+    "source": "Household Props 001 via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/18d3cbd3-6123-48dd-84f7-ce64c2479127.glb",
+    "license": "CC0",
+    "scale": 1.61261722,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 80,
+      "d": 103.3,
+      "h": 111.11
+    },
+    "materials": [
+      "Material"
+    ],
+    "bytes": 26712
+  },
+  {
+    "id": "bed-birk",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/bedDouble.glb",
+    "license": "CC0",
+    "scale": 1.67364022,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 160,
+      "d": 188.28,
+      "h": 62.76
+    },
+    "materials": [
+      "carpetWhite",
+      "wood",
+      "metal",
+      "carpet"
+    ],
+    "bytes": 12756
+  },
+  {
+    "id": "bed-ask",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/c742a711-d307-4e30-ad86-83a0ddca850d.glb",
+    "license": "CC0",
+    "scale": 0.49542354,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 140,
+      "d": 210.98,
+      "h": 77.16
+    },
+    "materials": [
+      "PillowCover",
+      "ComforterLight",
+      "Comforter",
+      "Mattress",
+      "DarkWood",
+      "Wood"
+    ],
+    "bytes": 89888
+  },
+  {
+    "id": "bed-viggo",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/bedDouble.glb",
+    "license": "CC0",
+    "scale": 1.88284524,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 180,
+      "d": 211.82,
+      "h": 70.61
+    },
+    "materials": [
+      "carpetWhite",
+      "wood",
+      "metal",
+      "carpet"
+    ],
+    "bytes": 12688
+  },
+  {
+    "id": "bed-lyng",
+    "source": "Household Props 001 via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/44976488-9b2d-4ffb-b07d-b64c2768a1bc.glb",
+    "license": "CC0",
+    "scale": 1.08280593,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 160,
+      "d": 211.34,
+      "h": 89.05
+    },
+    "materials": [
+      "Material"
+    ],
+    "bytes": 28360
+  },
+  {
+    "id": "bed-siv",
+    "source": "KayKit Furniture Bits 1.0",
+    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/bed_double_A.gltf",
+    "license": "CC0",
+    "scale": 0.58064518,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 180,
+      "d": 174.19,
+      "h": 58.06
+    },
+    "materials": [
+      "furniture_texture"
+    ],
+    "bytes": 30936
+  },
+  {
+    "id": "wardrobe-hald",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/bookcaseClosedWide.glb",
+    "license": "CC0",
+    "scale": 1.99999997,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 160,
+      "d": 50,
+      "h": 158
+    },
+    "materials": [
+      "wood"
+    ],
+    "bytes": 5840
+  },
+  {
+    "id": "wardrobe-skive",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/9d3b575e-1d1e-43b0-bdcc-186dfbbecfe7.glb",
+    "license": "CC0",
+    "scale": 0.64412132,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 100,
+      "d": 58.41,
+      "h": 146
+    },
+    "materials": [
+      "DarkWood",
+      "Metal",
+      "Wood"
+    ],
+    "bytes": 76588
+  },
+  {
+    "id": "wardrobe-nord",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/bookcaseClosedWide.glb",
+    "license": "CC0",
+    "scale": 2.49999996,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 200,
+      "d": 62.5,
+      "h": 197.5
+    },
+    "materials": [
+      "wood"
+    ],
+    "bytes": 5776
+  },
+  {
+    "id": "wardrobe-eira",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/7d59d0aa-6447-4bbb-afc7-0452e9a34353.glb",
+    "license": "CC0",
+    "scale": 0.76007004,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 140,
+      "d": 50.5,
+      "h": 256.24
+    },
+    "materials": [
+      "Wood1",
+      "Wood2",
+      "DarkWood",
+      "Cover1",
+      "Pages",
+      "Cover6",
+      "Cover2",
+      "Cover3",
+      "Cover4",
+      "Cover5",
+      "Metal"
+    ],
+    "bytes": 160616
+  },
+  {
+    "id": "wardrobe-tor",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/bookcaseClosedWide.glb",
+    "license": "CC0",
+    "scale": 2.24999997,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 180,
+      "d": 56.25,
+      "h": 177.75
+    },
+    "materials": [
+      "wood"
+    ],
+    "bytes": 5844
+  },
+  {
+    "id": "table-rove",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/table.glb",
+    "license": "CC0",
+    "scale": 1.90139385,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 160,
+      "d": 85.06,
+      "h": 62.12
+    },
+    "materials": [
+      "wood"
+    ],
+    "bytes": 3344
+  },
+  {
+    "id": "table-ake",
+    "source": "KayKit Furniture Bits 1.0",
+    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/table_medium_long.gltf",
+    "license": "CC0",
+    "scale": 0.4,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 120,
+      "d": 80,
+      "h": 40
+    },
+    "materials": [
+      "furniture_texture"
+    ],
+    "bytes": 21732
+  },
+  {
+    "id": "table-elm",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/4353724c-2da2-4eb3-b370-f93726a9fb89.glb",
+    "license": "CC0",
+    "scale": 0.71936614,
+    "rotationY": 90,
+    "bbox_cm": {
+      "w": 200,
+      "d": 102.03,
+      "h": 59.31
+    },
+    "materials": [
+      "DarkWood",
+      "Wood"
+    ],
+    "bytes": 16832
+  },
+  {
+    "id": "table-rund",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/c8fa18f9-e1e9-4aed-905d-cbc945cb44d9.glb",
+    "license": "CC0",
+    "scale": 0.56672192,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 110,
+      "d": 110,
+      "h": 68.45
+    },
+    "materials": [
+      "Wood"
+    ],
+    "bytes": 16008
+  },
+  {
+    "id": "table-petit",
+    "source": "KayKit Furniture Bits 1.0",
+    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/table_small.gltf",
+    "license": "CC0",
+    "scale": 0.8,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 80,
+      "d": 80,
+      "h": 80
+    },
+    "materials": [
+      "furniture_texture"
+    ],
+    "bytes": 21808
+  },
+  {
+    "id": "desk-aalto",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/desk.glb",
+    "license": "CC0",
+    "scale": 1.90612227,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 140,
+      "d": 74.78,
+      "h": 73.27
+    },
+    "materials": [
+      "wood",
+      "metal"
+    ],
+    "bytes": 6588
+  },
+  {
+    "id": "desk-soren",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/91c2bf8d-0876-4801-abd3-8dd5d017ecbd.glb",
+    "license": "CC0",
+    "scale": 0.65850746,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 120,
+      "d": 55.75,
+      "h": 60.75
+    },
+    "materials": [
+      "DarkWood",
+      "Wood"
+    ],
+    "bytes": 45848
+  },
+  {
+    "id": "desk-kari",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/91c2bf8d-0876-4801-abd3-8dd5d017ecbd.glb",
+    "license": "CC0",
+    "scale": 0.87800995,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 160,
+      "d": 74.33,
+      "h": 81
+    },
+    "materials": [
+      "DarkWood",
+      "Wood"
+    ],
+    "bytes": 46132
+  },
+  {
+    "id": "desk-linn",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/desk.glb",
+    "license": "CC0",
+    "scale": 1.76997068,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 130,
+      "d": 69.44,
+      "h": 68.04
+    },
+    "materials": [
+      "wood",
+      "metal"
+    ],
+    "bytes": 6588
+  },
+  {
+    "id": "desk-varde",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/desk.glb",
+    "license": "CC0",
+    "scale": 2.04227386,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 150,
+      "d": 80.12,
+      "h": 78.51
+    },
+    "materials": [
+      "wood",
+      "metal"
+    ],
+    "bytes": 6544
+  },
+  {
+    "id": "chair-finn",
+    "source": "KayKit Furniture Bits 1.0",
+    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/chair_A.gltf",
+    "license": "CC0",
+    "scale": 0.6,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 45,
+      "d": 50.71,
+      "h": 75.5
+    },
+    "materials": [
+      "furniture_texture"
+    ],
+    "bytes": 25156
+  },
+  {
+    "id": "chair-ida",
+    "source": "KayKit Furniture Bits 1.0",
+    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/chair_A_wood.gltf",
+    "license": "CC0",
+    "scale": 0.61333333,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 46,
+      "d": 51.83,
+      "h": 77.18
+    },
+    "materials": [
+      "furniture_texture"
+    ],
+    "bytes": 25116
+  },
+  {
+    "id": "chair-lars",
+    "source": "KayKit Furniture Bits 1.0",
+    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/chair_B.gltf",
+    "license": "CC0",
+    "scale": 0.64,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 48,
+      "d": 54.09,
+      "h": 80.53
+    },
+    "materials": [
+      "furniture_texture"
+    ],
+    "bytes": 27356
+  },
+  {
+    "id": "chair-mysa",
+    "source": "KayKit Furniture Bits 1.0",
+    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/chair_C.gltf",
+    "license": "CC0",
+    "scale": 0.58666667,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 44,
+      "d": 54.89,
+      "h": 70.57
+    },
+    "materials": [
+      "furniture_texture"
+    ],
+    "bytes": 25636
+  },
+  {
+    "id": "chair-olve",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/chairDesk.glb",
+    "license": "CC0",
+    "scale": 1.40319451,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 47,
+      "d": 44.1,
+      "h": 85.26
+    },
+    "materials": [
+      "metalMedium",
+      "carpet"
+    ],
+    "bytes": 11064
+  },
+  {
+    "id": "shelf-kant",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/7d59d0aa-6447-4bbb-afc7-0452e9a34353.glb",
+    "license": "CC0",
+    "scale": 0.54290717,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 100,
+      "d": 36.07,
+      "h": 183.03
+    },
+    "materials": [
+      "Wood1",
+      "Wood2",
+      "DarkWood",
+      "Cover1",
+      "Pages",
+      "Cover6",
+      "Cover2",
+      "Cover3",
+      "Cover4",
+      "Cover5",
+      "Metal"
+    ],
+    "bytes": 160972
+  },
+  {
+    "id": "shelf-lund",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/7d59d0aa-6447-4bbb-afc7-0452e9a34353.glb",
+    "license": "CC0",
+    "scale": 0.43432574,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 80,
+      "d": 28.86,
+      "h": 146.42
+    },
+    "materials": [
+      "Wood1",
+      "Wood2",
+      "DarkWood",
+      "Cover1",
+      "Pages",
+      "Cover6",
+      "Cover2",
+      "Cover3",
+      "Cover4",
+      "Cover5",
+      "Metal"
+    ],
+    "bytes": 160960
+  },
+  {
+    "id": "shelf-rune",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/7d59d0aa-6447-4bbb-afc7-0452e9a34353.glb",
+    "license": "CC0",
+    "scale": 0.65148861,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 120,
+      "d": 43.29,
+      "h": 219.64
+    },
+    "materials": [
+      "Wood1",
+      "Wood2",
+      "DarkWood",
+      "Cover1",
+      "Pages",
+      "Cover6",
+      "Cover2",
+      "Cover3",
+      "Cover4",
+      "Cover5",
+      "Metal"
+    ],
+    "bytes": 161092
+  },
+  {
+    "id": "shelf-saga",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/7d59d0aa-6447-4bbb-afc7-0452e9a34353.glb",
+    "license": "CC0",
+    "scale": 0.48861645,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 90,
+      "d": 32.46,
+      "h": 164.73
+    },
+    "materials": [
+      "Wood1",
+      "Wood2",
+      "DarkWood",
+      "Cover1",
+      "Pages",
+      "Cover6",
+      "Cover2",
+      "Cover3",
+      "Cover4",
+      "Cover5",
+      "Metal"
+    ],
+    "bytes": 160492
+  },
+  {
+    "id": "shelf-vik",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/7d59d0aa-6447-4bbb-afc7-0452e9a34353.glb",
+    "license": "CC0",
+    "scale": 0.59719789,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 110,
+      "d": 39.68,
+      "h": 201.33
+    },
+    "materials": [
+      "Wood1",
+      "Wood2",
+      "DarkWood",
+      "Cover1",
+      "Pages",
+      "Cover6",
+      "Cover2",
+      "Cover3",
+      "Cover4",
+      "Cover5",
+      "Metal"
+    ],
+    "bytes": 161104
+  },
+  {
+    "id": "tv-unit-linje",
+    "source": "KayKit Furniture Bits 1.0",
+    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/shelf_B_large.gltf",
+    "license": "CC0",
+    "scale": 0.89999995,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 180,
+      "d": 45,
+      "h": 36
+    },
+    "materials": [
+      "furniture_texture"
+    ],
+    "bytes": 23496
+  },
+  {
+    "id": "tv-unit-form",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/cabinetTelevisionDoors.glb",
+    "license": "CC0",
+    "scale": 1.74999997,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 140,
+      "d": 45.5,
+      "h": 54.25
+    },
+    "materials": [
+      "wood",
+      "metal"
+    ],
+    "bytes": 8700
+  },
+  {
+    "id": "tv-unit-nova",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/televisionModern.glb",
+    "license": "CC0",
+    "scale": 2.92056062,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 200,
+      "d": 37.5,
+      "h": 132.81
+    },
+    "materials": [
+      "metalDark",
+      "metal"
+    ],
+    "bytes": 3768
+  },
+  {
+    "id": "tv-unit-sund",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/81632e1d-e338-4bb1-90ed-626cb1b9cbab.glb",
+    "license": "CC0",
+    "scale": 0.39651079,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 160,
+      "d": 44.35,
+      "h": 51.74
+    },
+    "materials": [
+      "Wood",
+      "Wood_Light",
+      "Wood_Dark"
+    ],
+    "bytes": 11592
+  },
+  {
+    "id": "tv-unit-ved",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/81632e1d-e338-4bb1-90ed-626cb1b9cbab.glb",
+    "license": "CC0",
+    "scale": 0.42129271,
+    "rotationY": 180,
+    "bbox_cm": {
+      "w": 170,
+      "d": 47.13,
+      "h": 54.98
+    },
+    "materials": [
+      "Wood",
+      "Wood_Light",
+      "Wood_Dark"
+    ],
+    "bytes": 11596
+  },
+  {
+    "id": "rug-loop",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/rugRectangle.glb",
+    "license": "CC0",
+    "scale": 2.173913,
+    "rotationY": 90,
+    "bbox_cm": {
+      "w": 200,
+      "d": 341.3,
+      "h": 2.17
+    },
+    "materials": [
+      "carpet",
+      "carpetDarker"
+    ],
+    "bytes": 3328
+  },
+  {
+    "id": "rug-flette",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/rugRounded.glb",
+    "license": "CC0",
+    "scale": 1.7391304,
+    "rotationY": 90,
+    "bbox_cm": {
+      "w": 160,
+      "d": 273.04,
+      "h": 1.74
+    },
+    "materials": [
+      "carpetDarker",
+      "carpet"
+    ],
+    "bytes": 5224
+  },
+  {
+    "id": "rug-mark",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/93588780-3405-40b7-acb4-9a87c88569f6.glb",
+    "license": "CC0",
+    "scale": 1.12611002,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 240,
+      "d": 348.33,
+      "h": 4.13
+    },
+    "materials": [
+      "DarkRed",
+      "LightOrange"
+    ],
+    "bytes": 5124
+  },
+  {
+    "id": "rug-siv",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/93588780-3405-40b7-acb4-9a87c88569f6.glb",
+    "license": "CC0",
+    "scale": 0.93842502,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 200,
+      "d": 290.27,
+      "h": 3.44
+    },
+    "materials": [
+      "DarkRed",
+      "LightOrange"
+    ],
+    "bytes": 5124
+  },
+  {
+    "id": "rug-ull",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/93588780-3405-40b7-acb4-9a87c88569f6.glb",
+    "license": "CC0",
+    "scale": 0.75074002,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 160,
+      "d": 232.22,
+      "h": 2.75
+    },
+    "materials": [
+      "DarkRed",
+      "LightOrange"
+    ],
+    "bytes": 5140
+  },
+  {
+    "id": "lamp-glow",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/19259c43-99cb-43c6-aaee-dcf8d1d36fdb.glb",
+    "license": "CC0",
+    "scale": 1.06802365,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 30,
+      "d": 31.54,
+      "h": 171.23
+    },
+    "materials": [
+      "Grey",
+      "LightMetal",
+      "Light"
+    ],
+    "bytes": 8248
+  },
+  {
+    "id": "floor-lamp-arc",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/lampSquareFloor.glb",
+    "license": "CC0",
+    "scale": 2.91666655,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 35,
+      "d": 35,
+      "h": 250.83
+    },
+    "materials": [
+      "lamp",
+      "metal"
+    ],
+    "bytes": 3780
+  },
+  {
+    "id": "floor-lamp-sol",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/19259c43-99cb-43c6-aaee-dcf8d1d36fdb.glb",
+    "license": "CC0",
+    "scale": 1.06802365,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 30,
+      "d": 31.54,
+      "h": 171.23
+    },
+    "materials": [
+      "Grey",
+      "LightMetal",
+      "Light"
+    ],
+    "bytes": 8248
+  },
+  {
+    "id": "floor-lamp-lyst",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/19259c43-99cb-43c6-aaee-dcf8d1d36fdb.glb",
+    "license": "CC0",
+    "scale": 0.99682208,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 28,
+      "d": 29.44,
+      "h": 159.82
+    },
+    "materials": [
+      "Grey",
+      "LightMetal",
+      "Light"
+    ],
+    "bytes": 8256
+  },
+  {
+    "id": "floor-lamp-havn",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/88fb336e-a7b0-4c76-8ca8-34c4655d7a87.glb",
+    "license": "CC0",
+    "scale": 0.41377457,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 32,
+      "d": 33.65,
+      "h": 123.88
+    },
+    "materials": [
+      "LightMetal",
+      "White"
+    ],
+    "bytes": 7756
+  },
+  {
+    "id": "table-lamp-alva",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/lampSquareTable.glb",
+    "license": "CC0",
+    "scale": 1.83333326,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 22,
+      "d": 22,
+      "h": 53.17
+    },
+    "materials": [
+      "lamp",
+      "metal"
+    ],
+    "bytes": 3820
+  },
+  {
+    "id": "table-lamp-natt",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/lampSquareTable.glb",
+    "license": "CC0",
+    "scale": 1.6666666,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 20,
+      "d": 20,
+      "h": 48.33
+    },
+    "materials": [
+      "lamp",
+      "metal"
+    ],
+    "bytes": 3832
+  },
+  {
+    "id": "table-lamp-lune",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/dabc8a0b-f94e-4d9b-8e55-10d0d6327c44.glb",
+    "license": "CC0",
+    "scale": 0.68428095,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 24,
+      "d": 24,
+      "h": 52.22
+    },
+    "materials": [
+      "White",
+      "LightMetal"
+    ],
+    "bytes": 7752
+  },
+  {
+    "id": "table-lamp-ember",
+    "source": "Household Props 001 via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/cc9fbab2-f93f-4dfc-947b-b91f10a7b6bb.glb",
+    "license": "CC0",
+    "scale": 1.3378776,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 21,
+      "d": 21,
+      "h": 43.47
+    },
+    "materials": [
+      "Material"
+    ],
+    "bytes": 31312
+  },
+  {
+    "id": "table-lamp-moss",
+    "source": "KayKit Furniture Bits 1.0",
+    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/lamp_table.gltf",
+    "license": "CC0",
+    "scale": 0.23,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 23,
+      "d": 23,
+      "h": 23.5
+    },
+    "materials": [
+      "furniture_texture"
+    ],
+    "bytes": 29656
+  },
+  {
+    "id": "plant-fern",
+    "source": "House Plants set via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/25d724aa-c4b6-4bae-8421-1db1eebd454d.glb",
+    "license": "CC0",
+    "scale": 0.31742128,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 50,
+      "d": 52.14,
+      "h": 108.7
+    },
+    "materials": [
+      "tiny_treats_1"
+    ],
+    "bytes": 239516
+  },
+  {
+    "id": "plant-fig",
+    "source": "House Plants set via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/7aa38bdd-fa5e-4b90-87fd-f4a920f67b37.glb",
+    "license": "CC0",
+    "scale": 1.19999957,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 60,
+      "d": 66.65,
+      "h": 158.56
+    },
+    "materials": [
+      "tiny_treats_1"
+    ],
+    "bytes": 63644
+  },
+  {
+    "id": "plant-pilea",
+    "source": "House Plants set via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/8e0f9c34-b4d2-4488-aa47-2c032b8ced88.glb",
+    "license": "CC0",
+    "scale": 0.55483639,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 40,
+      "d": 37.91,
+      "h": 56.17
+    },
+    "materials": [
+      "tiny_treats_1"
+    ],
+    "bytes": 71820
+  },
+  {
+    "id": "plant-palm",
+    "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/6e6e6b19-011d-4b1d-9cc0-07269adec9fa.glb",
+    "license": "CC0",
+    "scale": 1.62598512,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 55,
+      "d": 55,
+      "h": 150.95
+    },
+    "materials": [
+      "Black",
+      "Brown",
+      "Plant_Green"
+    ],
+    "bytes": 10500
+  },
+  {
+    "id": "plant-ivy",
+    "source": "House Plants set via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/1aaddfb7-aed8-49f8-88ad-0e010f6dc1b2.glb",
+    "license": "CC0",
+    "scale": 0.25393702,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 40,
+      "d": 39.32,
+      "h": 67.02
+    },
+    "materials": [
+      "tiny_treats_1"
+    ],
+    "bytes": 231704
+  },
+  {
+    "id": "decor-bowl",
+    "source": "Household Props 001 via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/624d2a89-d69d-4f64-beea-b78d9464222f.glb",
+    "license": "CC0",
+    "scale": 1.25861942,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 28,
+      "d": 31.98,
+      "h": 12.27
+    },
+    "materials": [
+      "Material"
+    ],
+    "bytes": 33372
+  },
+  {
+    "id": "decor-vase",
+    "source": "Household Props 001 via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/4acfeb27-62bf-46fe-b3fc-d16690adfa8b.glb",
+    "license": "CC0",
+    "scale": 2.59871211,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 22,
+      "d": 22,
+      "h": 31.07
+    },
+    "materials": [
+      "Material"
+    ],
+    "bytes": 18172
+  },
+  {
+    "id": "decor-tray",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/rugDoormat.glb",
+    "license": "CC0",
+    "scale": 0.8385744,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 36,
+      "d": 19.87,
+      "h": 0.84
+    },
+    "materials": [
+      "wood"
+    ],
+    "bytes": 4096
+  },
+  {
+    "id": "decor-sculpture",
+    "source": "Household Props 001 via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/b56b0827-c9f6-46e6-9a5d-160225686ee7.glb",
+    "license": "CC0",
+    "scale": 1.5130431,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 25,
+      "d": 17.95,
+      "h": 44.22
+    },
+    "materials": [
+      "Material"
+    ],
+    "bytes": 22928
+  },
+  {
+    "id": "decor-basket",
+    "source": "House Plants set via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/097ac1ef-9366-43c4-b960-b35c911d8d45.glb",
+    "license": "CC0",
+    "scale": 0.39999928,
+    "rotationY": 0,
+    "bbox_cm": {
+      "w": 40,
+      "d": 38.98,
+      "h": 30
+    },
+    "materials": [
+      "tiny_treats_1"
+    ],
+    "bytes": 32232
+  }
+]
