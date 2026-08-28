@@ -129,7 +129,7 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 {"ok":true,"room":{"id":"living","name":"Living Room","type":"living","size_cm":"520x440","area_m2":22.9,"floor":"oak","wall_color":"plaster"},
  "walls":[{"id":"w0","side":"north","length_cm":520,"free_spans":"0-140,260-520"}],
  "openings":[{"id":"door-1","kind":"door","wall":"w3","offset_cm":40,"width_cm":90,"swing":"in","hinge":"left"}],
- "items":["sofa-1 Endre Sofa @260,410 r0 220x95 oak","rug-1 Loop Rug @260,300 r0 200x140 sage"],
+ "items":["sofa-1 Endre Sofa @260,410 r0 220x95 oak","rug-1 Loop Rug @260,240 r90 200x300 terracotta"],
  "more":0,"conflicts":1,"hint":"Items are 'id name @x,y rotation WxD colorway'. measure gives gaps and spans."}
 ```
 **Budget:** items as compact strings, ≤ 12 then `more`; walls ≤ 6 (L-rooms); openings ≤ 8.

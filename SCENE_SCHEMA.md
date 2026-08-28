@@ -117,3 +117,9 @@ realistic door swings and windows; `2br` also ships the **pre-furnished golden-h
 - Rotation ∈ {0,90,180,270}; dims are positive; ids unique across the scene.
 - Store mutations go through actions in `src/state/store.ts`; tools and pointer share them; every
   mutating action is undoable (zundo) and tagged with `source: "human" | "agent"` for the activity log.
+
+## Stacking (added Aug 29)
+`table-lamp` and `decor` items may sit on `table | desk | shelf | tv-unit` surfaces (their footprint fully inside the
+surface's footprint); `rug` may lie under anything. The scene stores no elevation: the **renderer elevates** a stackable
+item to the top of the surface beneath it (surface `dims.h`), and the conflict engine treats these pairs as non-overlapping.
+Conflict `detail`/`fix` are kept ≤ 80 chars in practice so tool outputs need no truncation.
