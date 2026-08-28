@@ -30,3 +30,20 @@ E2 should combine `footprint`, clearance and door polygons for conflict records.
 E3 should use `resolveWall`, `freeSpans`, `rotationForWall` and `backAgainstWall`
 for anchors and fitting. E4 can use catalog resolution and room metrics directly.
 R1 should convert room-local points through `roomToWorld`, then cm to metres once.
+
+## Placement
+
+`resolveAnchor` translates wall/along, under-window, centred, next-to and facing
+semantics into room-local centres. Position comes from wall → under → centred →
+next-to; facing then sets rotation, and raw `pos`/`rotation` win last.
+
+Wall anchors clamp the whole footprint to the wall. Hard-invalid candidates nudge
+in alternating 5 cm wall steps or a 5 cm two-axis spiral, up to 60 cm. A blocked
+result names obstacles and returns fitting free spans with an actionable midpoint.
+Rugs may stack below anything; lamps/decor may stack fully inside supported surfaces.
+
+`arrangeRoom` classifies anchors, media, surfaces, storage, seating, soft goods,
+lighting, greenery and decor, then rebuilds unlocked items around fixed obstacles.
+Conversation faces a focal point, media pairs opposite sofa/TV walls, open clears
+the centre, and work prioritises a window desk. Seeded tie-breaks make every style
+deterministic and idempotent; rugs, lamps, plants and decor finish the composition.
