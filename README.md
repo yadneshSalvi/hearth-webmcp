@@ -1,0 +1,97 @@
+# Hearth Studio — design a home *with* your agent
+
+> A warm 3D interior-design studio that humans and AI agents share. Your agent sees the rooms, places furniture,
+> checks clearances and door swings, shops a real Shopify catalog, and prepares checkout — through **36 WebMCP tools**
+> registered on the page with `document.modelContext.registerTool`. You drag, it plans; both of you see the same scene.
+
+**Live:** https://hearth.yadneshsalvi.com · **Video:** _coming_ · **Tools contract:** [TOOLS.md](TOOLS.md) · Licence: MIT
+
+<!-- hero GIF placeholder: docs/hero.gif -->
+
+## Try it with your agent (2 minutes)
+
+**ChatGPT desktop (recommended):** open the built-in browser (⌘⇧B), go to the live URL, and make sure *Settings → Browser →
+Permissions → Enable site tools* is on (needs a GPT-5.6 Sol/Terra model). The address-bar arrow turns grey when Hearth's
+tools are available. Then ask:
+
+- "What rooms are in this home and what's in the living room?"
+- "Find a sofa under $800 that fits the north wall and put it there facing the window."
+- "Make the main bedroom wheelchair friendly and fix whatever gets in the way."
+- "Set up the living room for movie nights, then show me the evening light."
+- "Save this as *Before*, rearrange for conversation, save as *After*, and compare them."
+- "Add everything in the living room to the cart and give me the checkout link."
+
+**Chrome 152+ (no agent needed to see the tools):** enable `chrome://flags/#enable-webmcp-testing`, open the live URL, then
+*DevTools → Application → WebMCP* lists every tool and lets you run them by hand. The **Model Context Tool Inspector**
+extension works too. The production origin ships a WebMCP origin-trial token, so plain Chrome 149+ also exposes the tools.
+
+**No WebMCP browser?** Click *Agent tools → Hearth Assistant*: an in-page agent (Chrome's WebMCP polyfill + `getTools()` /
+`executeTool()`) drives the exact same tools, so the orb, receipts and undo behave identically.
+
+## What the agent can do
+
+26 tools are registered the moment the page loads; 10 more appear when they make sense (a preview exists, two layouts are
+saved, the cart has lines, or you switch to Build mode). Every tool description is ≤ 500 characters, every result ≤ 1.5 K,
+per Chrome's guidance — enforced in CI. Full contract: [TOOLS.md](TOOLS.md).
+
+| Read the scene | Design | Shop | Build |
+|---|---|---|---|
+| `get_scene_summary`, `get_room_details`, `get_selection`, `measure`, `get_conflicts`, `get_design_report` | `place_furniture`, `move_furniture` (semantic anchors: *against the north wall, facing the window, next to the sofa*), `arrange_room`, `apply_palette`, `set_time_of_day`, `set_view`, `set_accessibility_mode`, `save_variant`, `load_variant`, `compare_variants`, `undo`, `clear_room` | `search_catalog`, `get_product`, `preview_in_room`, `confirm_preview`, `update_cart`, `get_cart`, `get_checkout_link` | `apply_template`, `create_room`, `update_room`, `add_opening`, `move_opening`, `remove_opening` |
+
+```ts
+// src/tools/registry.ts — one AbortController per tool group; groups appear/disappear with app state
+document.modelContext.registerTool(
+  {
+    name: "place_furniture",
+    title: "Place furniture",
+    description: "Places a catalog product in a room as a new item. Position it with an anchor in words …",
+    inputSchema, // zod → JSON Schema (draft-7), parameter descriptions ≤ 150 chars
+    annotations: { readOnlyHint: false },
+    async execute(input) {
+      const parsed = schema.safeParse(input);           // validate strictly in code, loosely in schema
+      if (!parsed.success) return { ok: false, error: "invalid", detail: firstIssue(parsed) };
+      const placed = resolveAnchor(scene, room, product, parsed.data);   // engine does the geometry
+      if (!placed.ok) return { ok: false, error: "blocked", detail: placed.detail, free_spans: placed.freeSpans };
+      store.placeItem("agent", placed);                  // UI updates (orb flies, receipt logged) before we return
+      return { ok: true, room, item, nudged_cm: placed.nudgedCm, conflicts: evaluateRoom(...), hint };
+    },
+  },
+  { signal: groups.design.signal },
+);
+```
+
+## How it's built
+
+- **Engine** (`src/engine`, pure TypeScript, 180+ tests): room polygons → walls, footprints, free spans, door-swing arcs,
+  clearance zones, A\* traffic paths, accessibility rules (90 cm paths, Ø150 cm turning circles), semantic anchors,
+  four choreographed `arrange_room` styles, a design-report critic, and compact describers that keep every tool result
+  under budget.
+- **Store** (`src/state`): one zustand store with immer + zundo; every mutation is an action tagged `human | agent`, so
+  the activity log is a shared history and undo works for both.
+- **Registry** (`src/tools`): `defineTool` (zod → JSON Schema, budget assertions at definition time), group lifecycle
+  with abort deferral (Chrome < 153 cancels in-flight executions on abort, so we never abort while a tool runs), an
+  in-page confirmation gate for destructive tools, receipts, and a `toolchange` mirror that powers the Tools panel.
+- **Renderer** (`src/scene`): React-Three-Fiber, orthographic plan/dollhouse camera, one lighting rig with four times of
+  day, N8AO + ACES + restrained bloom, walls that fade when they block the view, CC0 low-poly furniture re-tinted
+  through the palette, and the agent **orb** that flies to every action.
+- **Shopify** (`src/shopify`, `app/api`): Storefront API 2026-07 (search, product, cart, checkout URL) behind route
+  handlers; catalog metafields (`hearth.dims_cm`, `hearth.colorways`, …); a committed snapshot keeps browsing and
+  previews working offline.
+- **Quality**: `pnpm typecheck && pnpm lint && pnpm test` (engine, tools, budgets), Playwright smoke, `webmcp-evals`
+  prompt suite in [`evals/`](evals/), Lighthouse's *Registered WebMCP tools* audit.
+
+## Run it locally
+
+```bash
+pnpm install
+cp .env.example .env            # Shopify tokens optional: the catalog snapshot and a local cart work offline
+pnpm dev                        # http://localhost:3000
+pnpm test                       # engine + tools + budgets
+pnpm test:e2e                   # Playwright (loads the WebMCP polyfill)
+```
+
+## Credits
+
+Furniture models: CC0 sets by Kenney, Quaternius, Kay Lousberg (KayKit) and poly.pizza contributors — see
+[`public/assets/CREDITS.md`](public/assets/CREDITS.md). WebMCP polyfill © Google LLC, Apache-2.0. Fonts: Fraunces, Inter (OFL).
+Built for the WebMCP Challenge, 2026.
