@@ -7,12 +7,21 @@ import { footprint, polyBBox, polyInside } from "../engine/geometry";
 import { createTemplate } from "../engine/templates";
 import type { Furniture, Opening, Room } from "../engine/types";
 import { palettePresets } from "../tokens";
+import { toolActivityIsActive } from "../tools/activity-scope";
 import {
-  actionActivity as activity, assertRotation, cloneScene, nextOpeningId, notchPoly, placedOrigin, prependActivity as prepend,
+  actionActivity as activity, assertRotation, cloneScene, nextOpeningId, notchPoly, placedOrigin, prependActivity,
   productName, recomputeCart, requiredItem, requiredOpening, requiredRoom, storeCatalog as catalog, uniqueRoomId, validateOpening,
 } from "./store-helpers";
 import { HearthError } from "./types";
 import type { HearthStore, ToolMirror } from "./types";
+
+function prepend(
+  target: Parameters<typeof prependActivity>[0],
+  entry: Parameters<typeof prependActivity>[1],
+): void {
+  if (toolActivityIsActive() && entry.source !== "human" && !entry.tool) return;
+  prependActivity(target, entry);
+}
 
 const initialScene = createTemplate("2br", { furnished: true });
 
