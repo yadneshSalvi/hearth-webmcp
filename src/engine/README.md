@@ -30,3 +30,17 @@ E2 should combine `footprint`, clearance and door polygons for conflict records.
 E3 should use `resolveWall`, `freeSpans`, `rotationForWall` and `backAgainstWall`
 for anchors and fitting. E4 can use catalog resolution and room metrics directly.
 R1 should convert room-local points through `roomToWorld`, then cm to metres once.
+
+## Describe/report
+
+`describe.ts` is the compact serialization boundary used by read tools. Dimensions,
+positions, walls, spans, room rows, selections and carts are kept in the exact
+`TOOLS.md` shapes; every final payload must pass the 1,500-character budget check.
+
+`measure.ts` resolves wall sides/ids, item ids/names/selection and opening ids. It
+reports dimensions, free spans, gaps and edge-to-edge distances in centimetres.
+
+`report.ts` scores balance, focal direction, conversation, light, storage and
+traffic with deterministic room-aware heuristics. Reports stay below the summary
+and suggestion limits. `variants.ts` compares saved layouts by catalog display
+name, including duplicate counts, movement and colorway changes.
