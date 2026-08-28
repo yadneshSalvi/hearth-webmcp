@@ -13,7 +13,11 @@
     "test:e2e": "playwright test",
     "seed": "tsx scripts/shopify/seed.ts",
     "shopify:verify": "tsx scripts/shopify/verify.ts",
-    "evals": "bash scripts/evals/run.sh"
+    "evals": "bash scripts/evals/run.sh",
+    "assets:fetch": "tsx scripts/assets/fetch.ts",
+    "assets:build": "tsx scripts/assets/build.ts",
+    "assets:thumbs": "tsx scripts/assets/thumbs.ts",
+    "assets": "pnpm assets:fetch && pnpm assets:build && pnpm assets:thumbs"
   },
   "dependencies": {
     "@react-spring/three": "10.1.2",
@@ -35,6 +39,9 @@
     "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@gltf-transform/cli": "4.4.2",
+    "@gltf-transform/core": "4.4.2",
+    "@gltf-transform/functions": "4.4.2",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.20.1",

@@ -1,0 +1,135 @@
+import type { PolyPizzaModel, SourceCollection, SourceKey } from "./types";
+
+const cc0 = "https://creativecommons.org/publicdomain/zero/1.0/";
+
+export const sourceCollections = {
+  "kenney-furniture": {
+    key: "kenney-furniture",
+    label: "Kenney Furniture Kit 2.0",
+    author: "Kenney",
+    license: "CC0",
+    licenseUrl: cc0,
+    pageUrl: "https://kenney.nl/assets/furniture-kit",
+    archive: {
+      url: "https://kenney.nl/media/pages/assets/furniture-kit/440e0608a4-1677580847/kenney_furniture-kit.zip",
+      fileName: "kenney-furniture-kit.zip",
+      extractDir: "kenney",
+      sha256: "e67652d0932cee41683f74711c03d3e192a2af9979ef8e6b237711f5482d46b0",
+    },
+  },
+  "kaykit-furniture": {
+    key: "kaykit-furniture",
+    label: "KayKit Furniture Bits 1.0",
+    author: "Kay Lousberg",
+    license: "CC0",
+    licenseUrl: "https://raw.githubusercontent.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/main/LICENSE.txt",
+    pageUrl: "https://kaylousberg.itch.io/furniture-bits",
+    archive: {
+      url: "https://github.com/KayKit-Game-Assets/KayKit-Furniture-Bits-1.0/archive/refs/heads/main.zip",
+      fileName: "kaykit-furniture-bits.zip",
+      extractDir: "kaykit",
+      sha256: "973ba87b154d7e734531253314df07e8b1bf2d76cda2a79dc63ee9bc07af9a02",
+    },
+  },
+  "quaternius-furniture": {
+    key: "quaternius-furniture",
+    label: "Quaternius Furniture Pack via poly.pizza",
+    author: "Quaternius",
+    license: "CC0",
+    licenseUrl: cc0,
+    pageUrl: "https://poly.pizza/bundle/Furniture-Pack-pgvx8Zkq8v",
+  },
+  "quaternius-interior": {
+    key: "quaternius-interior",
+    label: "Quaternius Ultimate House Interior Pack via poly.pizza",
+    author: "Quaternius",
+    license: "CC0",
+    licenseUrl: cc0,
+    pageUrl: "https://poly.pizza/bundle/Ultimate-House-Interior-Pack-2SXnFbwFzm",
+  },
+  "isa-house-plants": {
+    key: "isa-house-plants",
+    label: "House Plants set via poly.pizza",
+    author: "Isa Lousberg",
+    license: "CC0",
+    licenseUrl: cc0,
+    pageUrl: "https://poly.pizza/bundle/House-Plants-set-Kpj32c7VmF",
+  },
+  "creative-household": {
+    key: "creative-household",
+    label: "Household Props 001 via poly.pizza",
+    author: "CreativeTrio",
+    license: "CC0",
+    licenseUrl: cc0,
+    pageUrl: "https://poly.pizza/bundle/Household-Props-001-KsNBhP96PT",
+  },
+} as const satisfies Record<SourceKey, SourceCollection>;
+
+const verifiedHashes = {
+  "0uJQPU1oAK": "d7d8321e0ddde0420f8dd4a647b0b491ffaec7f43e16ada4680aaf9db217f1e6",
+  "1nKtMmYxLT": "e4a0e9677c1e8aeacf7d1be2c76124e9b325714fc250c35792888f6563b7290e",
+  "7H5qKjuxVY": "cda873c6fd6769727687002e8f04c449d3002671a4d4587fd3f842e3f47b4ae6",
+  "9L6lLUl9sD": "95ee87d1ff55e6ca9fa8366bd665851e35bd8f41808a605d39d4041a2fcb0d86",
+  "9Mo3JruPHY": "53f6037d1fa45ab2c45bec09e88fffbc1915eb0dd984aae5f7b6a5ce679b58a9",
+  AhEloSUxKH: "114df7eabc7e0cb066b9fc9a6cf795d5483a2593b5f1ea3150f1de868060c8c6",
+  BuRay4fVFr: "e2bbb906e6f97f181017e10f1ca33f39beda517e0fca1d0a07d36835e6f86581",
+  G1H0wnCHQf: "97add5f1302003d2c9466a263a46c32a84cb93ee94fa52c085dfb9f148812171",
+  G6FktIrBkj: "4c0733c08e47f35da1ad3494f5b387a29801cd9ce339c50daff7424c0c7ea6ee",
+  Gnst85J3vK: "8f1c9c5e9072644aab9f12c35709d381d3d7fcbaec4b8a6df19d585d7f859703",
+  JVoJ2itVzh: "bc85cb47f189f2002f0499845aa27cb33374647303df1a2e1dad3ad28b06cd54",
+  ND4Z53Ne4C: "bdb155441792340ba1aee528debcc2e2866053d790e9b6ed1fb1b111ea500740",
+  PPkR5hMOJp: "30fc1d0340f3b5d8173bcf0b2d29ec09fddabd69e06c8e7f837504f538ad11a9",
+  V86Go2rlnq: "3878f6d93d946d77f3e1be55919627a81435696252137ae33c22391c0411f3ce",
+  VtJh4Irl4w: "2fae615bc57539dddc8494e482b3e13f9efe30392ff099a52b241e580e133006",
+  XGe3q5zQ5s: "06d62797a176448f080eac14d7a5f76bbd5c57340c2da5bd6aeadad78dc8a798",
+  eBQtooeh43: "72d57153e3f1f57e9d920cba1b83fbcd3882cc81769d5ccac64010c04a95b5e8",
+  fFfoi1LNKY: "174d1c1d2df65c0f9b94b3d10bccfef56d6128308a833a9516ee055751a4fcc2",
+  fLy8KmmD1t: "81c34ea241b8c670185c6ecd24c75053278f31cedb3109f091494190ae354c2f",
+  gQFkiM8PlM: "1c7aa0c16e83ad6e76158254767708e9d088b85c6e0fa5034adab27f811dc530",
+  kaZVETMphs: "8b8bfd24e82559a6930b1039fffad0580d4b5f8356b42e2995560b3ccd16fc06",
+  l84E3NzGSF: "77ba2e485372b64b99a5e14c904a479cc7f330e6e4771d4db4baab636d69314f",
+  mWgQ94zhDZ: "7003e8c52669c171090231f8589aa23090d53eb9a4bb8d4b3adecef93561c30d",
+  myd1WSucAz: "07f945112f71ca1a2b3aff817e5009c081adf9c2bd093ac723935674245ecc4b",
+  oEArSZykyi: "7f57ea17c9f54f761535d2e66bcd925de93546a42942b4bbf030aab93b0b4406",
+  rXo5Rkl5LC: "bf02694bfcf007bdd49f615da5a318c67a60bb9b0d3170aca5a6d9fc7f2ac5c8",
+  tACDGJ4CGW: "d2e2cd56498bec39dae1d8cf0b776bbfaaf25694a2abb845633515a248b0e5de",
+  vuo7KBehok: "bae7821f9c97ff21c90d8f05dae0730cddd82ca0734d744a583971a78545cc63",
+} as const;
+
+type PolyId = keyof typeof verifiedHashes;
+type PolySeed = Omit<PolyPizzaModel, "id" | "pageUrl" | "sha256">;
+
+function poly(id: PolyId, seed: PolySeed): PolyPizzaModel {
+  return { id, pageUrl: `https://poly.pizza/m/${id}`, sha256: verifiedHashes[id], ...seed };
+}
+
+export const polyPizzaModels: Readonly<Record<string, PolyPizzaModel>> = {
+  gQFkiM8PlM: poly("gQFkiM8PlM", { name: "Table", sourceKey: "quaternius-furniture", downloadUrl: "https://static.poly.pizza/4353724c-2da2-4eb3-b370-f93726a9fb89.glb", bytes: 52156 }),
+  V86Go2rlnq: poly("V86Go2rlnq", { name: "Desk", sourceKey: "quaternius-furniture", downloadUrl: "https://static.poly.pizza/91c2bf8d-0876-4801-abd3-8dd5d017ecbd.glb", bytes: 135916 }),
+  BuRay4fVFr: poly("BuRay4fVFr", { name: "Bed Double", sourceKey: "quaternius-furniture", downloadUrl: "https://static.poly.pizza/c742a711-d307-4e30-ad86-83a0ddca850d.glb", bytes: 258208 }),
+  ND4Z53Ne4C: poly("ND4Z53Ne4C", { name: "Short Closet", sourceKey: "quaternius-furniture", downloadUrl: "https://static.poly.pizza/9d3b575e-1d1e-43b0-bdcc-186dfbbecfe7.glb", bytes: 223944 }),
+  mWgQ94zhDZ: poly("mWgQ94zhDZ", { name: "Couch Medium", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/92a2404e-10d5-4c6a-a188-18b556474f8f.glb", bytes: 22940 }),
+  "9L6lLUl9sD": poly("9L6lLUl9sD", { name: "Light Stand", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/88fb336e-a7b0-4c76-8ca8-34c4655d7a87.glb", bytes: 10920 }),
+  "9Mo3JruPHY": poly("9Mo3JruPHY", { name: "Table Lamp", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/dabc8a0b-f94e-4d9b-8e55-10d0d6327c44.glb", bytes: 10152 }),
+  eBQtooeh43: poly("eBQtooeh43", { name: "Light Floor", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/19259c43-99cb-43c6-aaee-dcf8d1d36fdb.glb", bytes: 10112 }),
+  tACDGJ4CGW: poly("tACDGJ4CGW", { name: "Bookcase with Books", sourceKey: "quaternius-furniture", downloadUrl: "https://static.poly.pizza/7d59d0aa-6447-4bbb-afc7-0452e9a34353.glb", bytes: 589464 }),
+  oEArSZykyi: poly("oEArSZykyi", { name: "Table Round Small", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/c8fa18f9-e1e9-4aed-905d-cbc945cb44d9.glb", bytes: 25236 }),
+  fFfoi1LNKY: poly("fFfoi1LNKY", { name: "Couch Medium", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/37ca9279-0fdf-44ac-984a-8ece7a28d30a.glb", bytes: 24232 }),
+  G1H0wnCHQf: poly("G1H0wnCHQf", { name: "Drawer", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/81632e1d-e338-4bb1-90ed-626cb1b9cbab.glb", bytes: 15996 }),
+  "7H5qKjuxVY": poly("7H5qKjuxVY", { name: "Rug", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/93588780-3405-40b7-acb4-9a87c88569f6.glb", bytes: 6020 }),
+  VtJh4Irl4w: poly("VtJh4Irl4w", { name: "Houseplant", sourceKey: "quaternius-interior", downloadUrl: "https://static.poly.pizza/6e6e6b19-011d-4b1d-9cc0-07269adec9fa.glb", bytes: 14412 }),
+  PPkR5hMOJp: poly("PPkR5hMOJp", { name: "Medium Pot", sourceKey: "isa-house-plants", downloadUrl: "https://static.poly.pizza/097ac1ef-9366-43c4-b960-b35c911d8d45.glb", bytes: 34288 }),
+  JVoJ2itVzh: poly("JVoJ2itVzh", { name: "Pothos Plant Small", sourceKey: "isa-house-plants", downloadUrl: "https://static.poly.pizza/8e0f9c34-b4d2-4488-aa47-2c032b8ced88.glb", bytes: 92144 }),
+  AhEloSUxKH: poly("AhEloSUxKH", { name: "ZZ Plant", sourceKey: "isa-house-plants", downloadUrl: "https://static.poly.pizza/7aa38bdd-fa5e-4b90-87fd-f4a920f67b37.glb", bytes: 81248 }),
+  kaZVETMphs: poly("kaZVETMphs", { name: "Zz Plant", sourceKey: "isa-house-plants", downloadUrl: "https://static.poly.pizza/1aaddfb7-aed8-49f8-88ad-0e010f6dc1b2.glb", bytes: 330952 }),
+  "0uJQPU1oAK": poly("0uJQPU1oAK", { name: "ZZ Plant Pot", sourceKey: "isa-house-plants", downloadUrl: "https://static.poly.pizza/25d724aa-c4b6-4bae-8421-1db1eebd454d.glb", bytes: 347320 }),
+  Gnst85J3vK: poly("Gnst85J3vK", { name: "Rocking Chair", sourceKey: "creative-household", downloadUrl: "https://static.poly.pizza/18d3cbd3-6123-48dd-84f7-ce64c2479127.glb", bytes: 57848 }),
+  "1nKtMmYxLT": poly("1nKtMmYxLT", { name: "Lamp With Shade", sourceKey: "creative-household", downloadUrl: "https://static.poly.pizza/cc9fbab2-f93f-4dfc-947b-b91f10a7b6bb.glb", bytes: 63624 }),
+  rXo5Rkl5LC: poly("rXo5Rkl5LC", { name: "Bed", sourceKey: "creative-household", downloadUrl: "https://static.poly.pizza/44976488-9b2d-4ffb-b07d-b64c2768a1bc.glb", bytes: 63684 }),
+  fLy8KmmD1t: poly("fLy8KmmD1t", { name: "Trophy", sourceKey: "creative-household", downloadUrl: "https://static.poly.pizza/b56b0827-c9f6-46e6-9a5d-160225686ee7.glb", bytes: 44456 }),
+  XGe3q5zQ5s: poly("XGe3q5zQ5s", { name: "Jar", sourceKey: "creative-household", downloadUrl: "https://static.poly.pizza/4acfeb27-62bf-46fe-b3fc-d16690adfa8b.glb", bytes: 29748 }),
+  myd1WSucAz: poly("myd1WSucAz", { name: "Armchair", sourceKey: "creative-household", downloadUrl: "https://static.poly.pizza/2584a961-1b06-4fb7-ba7d-1074b52ca908.glb", bytes: 19404 }),
+  G6FktIrBkj: poly("G6FktIrBkj", { name: "Fruit Bowl", sourceKey: "creative-household", downloadUrl: "https://static.poly.pizza/624d2a89-d69d-4f64-beea-b78d9464222f.glb", bytes: 66548 }),
+  l84E3NzGSF: poly("l84E3NzGSF", { name: "Sofa", sourceKey: "quaternius-furniture", downloadUrl: "https://static.poly.pizza/fcf68889-d20f-4128-b8a9-4ae28556e819.glb", bytes: 129812 }),
+  vuo7KBehok: poly("vuo7KBehok", { name: "Sofa", sourceKey: "quaternius-furniture", downloadUrl: "https://static.poly.pizza/433ac6c3-e7ae-45e8-b1bf-f28e6dea79ef.glb", bytes: 200528 }),
+};
