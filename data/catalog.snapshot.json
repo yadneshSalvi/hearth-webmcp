@@ -1,0 +1,3538 @@
+{
+  "generatedAt": "2026-08-28T23:01:54.689Z",
+  "storeDomain": "hearth-studio.myshopify.com",
+  "apiVersion": "2026-07",
+  "products": [
+    {
+      "id": "armchair-elsa",
+      "name": "Elsa Armchair",
+      "category": "armchair",
+      "dims": {
+        "w": 72,
+        "d": 78,
+        "h": 80
+      },
+      "clearanceFront": 75,
+      "seatCount": 1,
+      "glb": "/assets/glb/armchair-elsa.glb",
+      "colorways": [
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "coastal",
+        "modern"
+      ],
+      "price": 320,
+      "description": "A compact lounge chair with a supportive back, rounded arms and a warm timber detail.",
+      "handle": "armchair-elsa",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626227749139",
+          "colorway": "dusty-blue",
+          "price": 320
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227781907",
+          "colorway": "plaster",
+          "price": 320
+        }
+      ]
+    },
+    {
+      "id": "armchair-kyst",
+      "name": "Kyst Armchair",
+      "category": "armchair",
+      "dims": {
+        "w": 84,
+        "d": 86,
+        "h": 82
+      },
+      "clearanceFront": 75,
+      "seatCount": 1,
+      "glb": "/assets/glb/armchair-kyst.glb",
+      "colorways": [
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "mid-century"
+      ],
+      "price": 460,
+      "description": "A compact lounge chair with a supportive back, rounded arms and a warm timber detail.",
+      "handle": "armchair-kyst",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626227847443",
+          "colorway": "ochre",
+          "price": 460
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227880211",
+          "colorway": "charcoal",
+          "price": 460
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227912979",
+          "colorway": "oak",
+          "price": 460
+        }
+      ]
+    },
+    {
+      "id": "armchair-nook",
+      "name": "Nook Armchair",
+      "category": "armchair",
+      "dims": {
+        "w": 78,
+        "d": 82,
+        "h": 84
+      },
+      "clearanceFront": 75,
+      "seatCount": 1,
+      "glb": "/assets/glb/armchair-nook.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "japandi"
+      ],
+      "price": 390,
+      "description": "A compact lounge chair with a supportive back, rounded arms and a warm timber detail.",
+      "handle": "armchair-nook",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626227585299",
+          "colorway": "sage",
+          "price": 390
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227618067",
+          "colorway": "terracotta",
+          "price": 390
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227650835",
+          "colorway": "plaster",
+          "price": 390
+        }
+      ]
+    },
+    {
+      "id": "armchair-ro",
+      "name": "Ro Armchair",
+      "category": "armchair",
+      "dims": {
+        "w": 76,
+        "d": 80,
+        "h": 76
+      },
+      "clearanceFront": 75,
+      "seatCount": 1,
+      "glb": "/assets/glb/armchair-ro.glb",
+      "colorways": [
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 350,
+      "description": "A compact lounge chair with a supportive back, rounded arms and a warm timber detail.",
+      "handle": "armchair-ro",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626228011283",
+          "colorway": "plum",
+          "price": 350
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228044051",
+          "colorway": "sage",
+          "price": 350
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228076819",
+          "colorway": "plaster",
+          "price": 350
+        }
+      ]
+    },
+    {
+      "id": "armchair-tuva",
+      "name": "Tuva Armchair",
+      "category": "armchair",
+      "dims": {
+        "w": 80,
+        "d": 84,
+        "h": 88
+      },
+      "clearanceFront": 75,
+      "seatCount": 1,
+      "glb": "/assets/glb/armchair-tuva.glb",
+      "colorways": [
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "scandinavian"
+      ],
+      "price": 420,
+      "description": "A compact lounge chair with a supportive back, rounded arms and a warm timber detail.",
+      "handle": "armchair-tuva",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626228142355",
+          "colorway": "terracotta",
+          "price": 420
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228175123",
+          "colorway": "oak",
+          "price": 420
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228207891",
+          "colorway": "charcoal",
+          "price": 420
+        }
+      ]
+    },
+    {
+      "id": "bed-ask",
+      "name": "Ask Bed",
+      "category": "bed",
+      "dims": {
+        "w": 140,
+        "d": 200,
+        "h": 98
+      },
+      "clearanceFront": 60,
+      "glb": "/assets/glb/bed-ask.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        }
+      ],
+      "styleTags": [
+        "coastal",
+        "scandinavian"
+      ],
+      "price": 690,
+      "description": "A low upholstered bed with a quiet headboard and practical clearance beneath the frame.",
+      "againstWall": true,
+      "handle": "bed-ask",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626228404499",
+          "colorway": "plaster",
+          "price": 690
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228437267",
+          "colorway": "dusty-blue",
+          "price": 690
+        }
+      ]
+    },
+    {
+      "id": "bed-birk",
+      "name": "Birk Bed",
+      "category": "bed",
+      "dims": {
+        "w": 160,
+        "d": 200,
+        "h": 105
+      },
+      "clearanceFront": 60,
+      "glb": "/assets/glb/bed-birk.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "japandi"
+      ],
+      "price": 990,
+      "description": "A low upholstered bed with a quiet headboard and practical clearance beneath the frame.",
+      "againstWall": true,
+      "handle": "bed-birk",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626228273427",
+          "colorway": "oak",
+          "price": 990
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228306195",
+          "colorway": "sage",
+          "price": 990
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228338963",
+          "colorway": "plaster",
+          "price": 990
+        }
+      ]
+    },
+    {
+      "id": "bed-lyng",
+      "name": "Lyng Bed",
+      "category": "bed",
+      "dims": {
+        "w": 160,
+        "d": 200,
+        "h": 95
+      },
+      "clearanceFront": 60,
+      "glb": "/assets/glb/bed-lyng.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "japandi"
+      ],
+      "price": 890,
+      "description": "A low upholstered bed with a quiet headboard and practical clearance beneath the frame.",
+      "againstWall": true,
+      "handle": "bed-lyng",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626228666643",
+          "colorway": "sage",
+          "price": 890
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228699411",
+          "colorway": "oak",
+          "price": 890
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228732179",
+          "colorway": "ochre",
+          "price": 890
+        }
+      ]
+    },
+    {
+      "id": "bed-siv",
+      "name": "Siv Bed",
+      "category": "bed",
+      "dims": {
+        "w": 180,
+        "d": 200,
+        "h": 102
+      },
+      "clearanceFront": 60,
+      "glb": "/assets/glb/bed-siv.glb",
+      "colorways": [
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "modern"
+      ],
+      "price": 1190,
+      "description": "A low upholstered bed with a quiet headboard and practical clearance beneath the frame.",
+      "againstWall": true,
+      "handle": "bed-siv",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626228797715",
+          "colorway": "terracotta",
+          "price": 1190
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228830483",
+          "colorway": "plaster",
+          "price": 1190
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228863251",
+          "colorway": "charcoal",
+          "price": 1190
+        }
+      ]
+    },
+    {
+      "id": "bed-viggo",
+      "name": "Viggo Bed",
+      "category": "bed",
+      "dims": {
+        "w": 180,
+        "d": 200,
+        "h": 110
+      },
+      "clearanceFront": 60,
+      "glb": "/assets/glb/bed-viggo.glb",
+      "colorways": [
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "modern",
+        "mid-century"
+      ],
+      "price": 1490,
+      "description": "A low upholstered bed with a quiet headboard and practical clearance beneath the frame.",
+      "againstWall": true,
+      "handle": "bed-viggo",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626228535571",
+          "colorway": "charcoal",
+          "price": 1490
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228568339",
+          "colorway": "plum",
+          "price": 1490
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228601107",
+          "colorway": "oak",
+          "price": 1490
+        }
+      ]
+    },
+    {
+      "id": "chair-finn",
+      "name": "Finn Chair",
+      "category": "chair",
+      "dims": {
+        "w": 45,
+        "d": 50,
+        "h": 82
+      },
+      "clearanceFront": 45,
+      "seatCount": 1,
+      "glb": "/assets/glb/chair-finn.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "scandinavian"
+      ],
+      "price": 140,
+      "description": "A light dining chair with a supportive curved back and a footprint that is easy to move around.",
+      "handle": "chair-finn",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626230862099",
+          "colorway": "oak",
+          "price": 140
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230894867",
+          "colorway": "sage",
+          "price": 140
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230927635",
+          "colorway": "charcoal",
+          "price": 140
+        }
+      ]
+    },
+    {
+      "id": "chair-ida",
+      "name": "Ida Chair",
+      "category": "chair",
+      "dims": {
+        "w": 46,
+        "d": 52,
+        "h": 80
+      },
+      "clearanceFront": 45,
+      "seatCount": 1,
+      "glb": "/assets/glb/chair-ida.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        }
+      ],
+      "styleTags": [
+        "coastal"
+      ],
+      "price": 120,
+      "description": "A light dining chair with a supportive curved back and a footprint that is easy to move around.",
+      "handle": "chair-ida",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626230993171",
+          "colorway": "plaster",
+          "price": 120
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231025939",
+          "colorway": "dusty-blue",
+          "price": 120
+        }
+      ]
+    },
+    {
+      "id": "chair-lars",
+      "name": "Lars Chair",
+      "category": "chair",
+      "dims": {
+        "w": 48,
+        "d": 52,
+        "h": 84
+      },
+      "clearanceFront": 45,
+      "seatCount": 1,
+      "glb": "/assets/glb/chair-lars.glb",
+      "colorways": [
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "mid-century"
+      ],
+      "price": 190,
+      "description": "A light dining chair with a supportive curved back and a footprint that is easy to move around.",
+      "handle": "chair-lars",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626231091475",
+          "colorway": "terracotta",
+          "price": 190
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231124243",
+          "colorway": "oak",
+          "price": 190
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231157011",
+          "colorway": "charcoal",
+          "price": 190
+        }
+      ]
+    },
+    {
+      "id": "chair-mysa",
+      "name": "Mysa Chair",
+      "category": "chair",
+      "dims": {
+        "w": 44,
+        "d": 49,
+        "h": 79
+      },
+      "clearanceFront": 45,
+      "seatCount": 1,
+      "glb": "/assets/glb/chair-mysa.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 110,
+      "description": "A light dining chair with a supportive curved back and a footprint that is easy to move around.",
+      "handle": "chair-mysa",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626231222547",
+          "colorway": "sage",
+          "price": 110
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231255315",
+          "colorway": "plaster",
+          "price": 110
+        }
+      ]
+    },
+    {
+      "id": "chair-olve",
+      "name": "Olve Chair",
+      "category": "chair",
+      "dims": {
+        "w": 47,
+        "d": 51,
+        "h": 83
+      },
+      "clearanceFront": 45,
+      "seatCount": 1,
+      "glb": "/assets/glb/chair-olve.glb",
+      "colorways": [
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "modern"
+      ],
+      "price": 160,
+      "description": "A light dining chair with a supportive curved back and a footprint that is easy to move around.",
+      "handle": "chair-olve",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626231353619",
+          "colorway": "ochre",
+          "price": 160
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231386387",
+          "colorway": "oak",
+          "price": 160
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231419155",
+          "colorway": "plum",
+          "price": 160
+        }
+      ]
+    },
+    {
+      "id": "decor-basket",
+      "name": "Ull Basket Decor",
+      "category": "decor",
+      "dims": {
+        "w": 40,
+        "d": 40,
+        "h": 45
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/decor-basket.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "scandinavian"
+      ],
+      "price": 65,
+      "description": "A small, tactile object with a natural finish for adding scale and warmth to an open surface.",
+      "handle": "decor-basket",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626236727571",
+          "colorway": "oak",
+          "price": 65
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626236760339",
+          "colorway": "terracotta",
+          "price": 65
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626236793107",
+          "colorway": "sage",
+          "price": 65
+        }
+      ]
+    },
+    {
+      "id": "decor-bowl",
+      "name": "Kyst Bowl Decor",
+      "category": "decor",
+      "dims": {
+        "w": 28,
+        "d": 28,
+        "h": 12
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/decor-bowl.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "coastal"
+      ],
+      "price": 45,
+      "description": "A small, tactile object with a natural finish for adding scale and warmth to an open surface.",
+      "handle": "decor-bowl",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626236072211",
+          "colorway": "oak",
+          "price": 45
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626236104979",
+          "colorway": "plaster",
+          "price": 45
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626236137747",
+          "colorway": "sage",
+          "price": 45
+        }
+      ]
+    },
+    {
+      "id": "decor-sculpture",
+      "name": "Ro Sculpture Decor",
+      "category": "decor",
+      "dims": {
+        "w": 25,
+        "d": 20,
+        "h": 42
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/decor-sculpture.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "mid-century"
+      ],
+      "price": 120,
+      "description": "A small, tactile object with a natural finish for adding scale and warmth to an open surface.",
+      "handle": "decor-sculpture",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626236596499",
+          "colorway": "plaster",
+          "price": 120
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626236629267",
+          "colorway": "ochre",
+          "price": 120
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626236662035",
+          "colorway": "charcoal",
+          "price": 120
+        }
+      ]
+    },
+    {
+      "id": "decor-tray",
+      "name": "Lin Tray Decor",
+      "category": "decor",
+      "dims": {
+        "w": 36,
+        "d": 24,
+        "h": 5
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/decor-tray.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 35,
+      "description": "A small, tactile object with a natural finish for adding scale and warmth to an open surface.",
+      "handle": "decor-tray",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626236432659",
+          "colorway": "oak",
+          "price": 35
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626236465427",
+          "colorway": "charcoal",
+          "price": 35
+        }
+      ]
+    },
+    {
+      "id": "decor-vase",
+      "name": "Mira Vase Decor",
+      "category": "decor",
+      "dims": {
+        "w": 22,
+        "d": 22,
+        "h": 34
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/decor-vase.glb",
+      "colorways": [
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "modern"
+      ],
+      "price": 55,
+      "description": "A small, tactile object with a natural finish for adding scale and warmth to an open surface.",
+      "handle": "decor-vase",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626236236051",
+          "colorway": "terracotta",
+          "price": 55
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626236268819",
+          "colorway": "plum",
+          "price": 55
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626236301587",
+          "colorway": "plaster",
+          "price": 55
+        }
+      ]
+    },
+    {
+      "id": "desk-aalto",
+      "name": "Aalto Desk",
+      "category": "desk",
+      "dims": {
+        "w": 140,
+        "d": 70,
+        "h": 75
+      },
+      "clearanceFront": 90,
+      "glb": "/assets/glb/desk-aalto.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "japandi"
+      ],
+      "price": 490,
+      "description": "A straightforward work desk with a calm surface, cable space and room for a proper task chair.",
+      "againstWall": true,
+      "handle": "desk-aalto",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626230206739",
+          "colorway": "oak",
+          "price": 490
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230239507",
+          "colorway": "sage",
+          "price": 490
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230272275",
+          "colorway": "charcoal",
+          "price": 490
+        }
+      ]
+    },
+    {
+      "id": "desk-kari",
+      "name": "Kari Desk",
+      "category": "desk",
+      "dims": {
+        "w": 160,
+        "d": 80,
+        "h": 76
+      },
+      "clearanceFront": 90,
+      "glb": "/assets/glb/desk-kari.glb",
+      "colorways": [
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        }
+      ],
+      "styleTags": [
+        "mid-century"
+      ],
+      "price": 690,
+      "description": "A straightforward work desk with a calm surface, cable space and room for a proper task chair.",
+      "againstWall": true,
+      "handle": "desk-kari",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626230436115",
+          "colorway": "charcoal",
+          "price": 690
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230468883",
+          "colorway": "oak",
+          "price": 690
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230501651",
+          "colorway": "terracotta",
+          "price": 690
+        }
+      ]
+    },
+    {
+      "id": "desk-linn",
+      "name": "Linn Desk",
+      "category": "desk",
+      "dims": {
+        "w": 130,
+        "d": 65,
+        "h": 75
+      },
+      "clearanceFront": 90,
+      "glb": "/assets/glb/desk-linn.glb",
+      "colorways": [
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "coastal",
+        "scandinavian"
+      ],
+      "price": 450,
+      "description": "A straightforward work desk with a calm surface, cable space and room for a proper task chair.",
+      "againstWall": true,
+      "handle": "desk-linn",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626230567187",
+          "colorway": "dusty-blue",
+          "price": 450
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230599955",
+          "colorway": "plaster",
+          "price": 450
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230632723",
+          "colorway": "oak",
+          "price": 450
+        }
+      ]
+    },
+    {
+      "id": "desk-soren",
+      "name": "Soren Desk",
+      "category": "desk",
+      "dims": {
+        "w": 120,
+        "d": 60,
+        "h": 74
+      },
+      "clearanceFront": 90,
+      "glb": "/assets/glb/desk-soren.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "modern"
+      ],
+      "price": 390,
+      "description": "A straightforward work desk with a calm surface, cable space and room for a proper task chair.",
+      "againstWall": true,
+      "handle": "desk-soren",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626230337811",
+          "colorway": "plaster",
+          "price": 390
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230370579",
+          "colorway": "oak",
+          "price": 390
+        }
+      ]
+    },
+    {
+      "id": "desk-varde",
+      "name": "Varde Desk",
+      "category": "desk",
+      "dims": {
+        "w": 150,
+        "d": 75,
+        "h": 75
+      },
+      "clearanceFront": 90,
+      "glb": "/assets/glb/desk-varde.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "japandi"
+      ],
+      "price": 590,
+      "description": "A straightforward work desk with a calm surface, cable space and room for a proper task chair.",
+      "againstWall": true,
+      "handle": "desk-varde",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626230731027",
+          "colorway": "sage",
+          "price": 590
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230763795",
+          "colorway": "oak",
+          "price": 590
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230796563",
+          "colorway": "plum",
+          "price": 590
+        }
+      ]
+    },
+    {
+      "id": "floor-lamp-arc",
+      "name": "Arc Floor Lamp",
+      "category": "floor-lamp",
+      "dims": {
+        "w": 35,
+        "d": 35,
+        "h": 165
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/floor-lamp-arc.glb",
+      "colorways": [
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "mid-century"
+      ],
+      "price": 260,
+      "description": "A slender floor lamp that gives warm, local light without taking much usable floor space.",
+      "handle": "floor-lamp-arc",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626233843987",
+          "colorway": "charcoal",
+          "price": 260
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233876755",
+          "colorway": "plaster",
+          "price": 260
+        }
+      ]
+    },
+    {
+      "id": "floor-lamp-havn",
+      "name": "Havn Floor Lamp",
+      "category": "floor-lamp",
+      "dims": {
+        "w": 32,
+        "d": 32,
+        "h": 158
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/floor-lamp-havn.glb",
+      "colorways": [
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "coastal",
+        "modern"
+      ],
+      "price": 220,
+      "description": "A slender floor lamp that gives warm, local light without taking much usable floor space.",
+      "handle": "floor-lamp-havn",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626234302739",
+          "colorway": "dusty-blue",
+          "price": 220
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234335507",
+          "colorway": "charcoal",
+          "price": 220
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234368275",
+          "colorway": "plaster",
+          "price": 220
+        }
+      ]
+    },
+    {
+      "id": "floor-lamp-lyst",
+      "name": "Lyst Floor Lamp",
+      "category": "floor-lamp",
+      "dims": {
+        "w": 28,
+        "d": 28,
+        "h": 145
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/floor-lamp-lyst.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 140,
+      "description": "A slender floor lamp that gives warm, local light without taking much usable floor space.",
+      "handle": "floor-lamp-lyst",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626234138899",
+          "colorway": "plaster",
+          "price": 140
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234171667",
+          "colorway": "oak",
+          "price": 140
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234204435",
+          "colorway": "sage",
+          "price": 140
+        }
+      ]
+    },
+    {
+      "id": "floor-lamp-sol",
+      "name": "Sol Floor Lamp",
+      "category": "floor-lamp",
+      "dims": {
+        "w": 30,
+        "d": 30,
+        "h": 155
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/floor-lamp-sol.glb",
+      "colorways": [
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "scandinavian"
+      ],
+      "price": 170,
+      "description": "A slender floor lamp that gives warm, local light without taking much usable floor space.",
+      "handle": "floor-lamp-sol",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626233975059",
+          "colorway": "ochre",
+          "price": 170
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234007827",
+          "colorway": "terracotta",
+          "price": 170
+        }
+      ]
+    },
+    {
+      "id": "lamp-glow",
+      "name": "Glow Floor Lamp",
+      "category": "floor-lamp",
+      "dims": {
+        "w": 30,
+        "d": 30,
+        "h": 150
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/lamp-glow.glb",
+      "colorways": [
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "modern"
+      ],
+      "price": 190,
+      "description": "A slender floor lamp that gives warm, local light without taking much usable floor space.",
+      "handle": "lamp-glow",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626233712915",
+          "colorway": "ochre",
+          "price": 190
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233745683",
+          "colorway": "charcoal",
+          "price": 190
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233778451",
+          "colorway": "oak",
+          "price": 190
+        }
+      ]
+    },
+    {
+      "id": "plant-fern",
+      "name": "Fern Plant",
+      "category": "plant",
+      "dims": {
+        "w": 50,
+        "d": 50,
+        "h": 110
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/plant-fern.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "coastal"
+      ],
+      "price": 75,
+      "description": "A leafy indoor plant in a simple matte pot, sized to soften a corner without crowding a walkway.",
+      "handle": "plant-fern",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626235253011",
+          "colorway": "sage",
+          "price": 75
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235285779",
+          "colorway": "terracotta",
+          "price": 75
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235318547",
+          "colorway": "plaster",
+          "price": 75
+        }
+      ]
+    },
+    {
+      "id": "plant-fig",
+      "name": "Fig Plant",
+      "category": "plant",
+      "dims": {
+        "w": 60,
+        "d": 60,
+        "h": 160
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/plant-fig.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "modern"
+      ],
+      "price": 120,
+      "description": "A leafy indoor plant in a simple matte pot, sized to soften a corner without crowding a walkway.",
+      "handle": "plant-fig",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626235416851",
+          "colorway": "sage",
+          "price": 120
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235449619",
+          "colorway": "charcoal",
+          "price": 120
+        }
+      ]
+    },
+    {
+      "id": "plant-ivy",
+      "name": "Ivy Plant",
+      "category": "plant",
+      "dims": {
+        "w": 40,
+        "d": 40,
+        "h": 70
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/plant-ivy.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "scandinavian"
+      ],
+      "price": 35,
+      "description": "A leafy indoor plant in a simple matte pot, sized to soften a corner without crowding a walkway.",
+      "handle": "plant-ivy",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626235908371",
+          "colorway": "sage",
+          "price": 35
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235941139",
+          "colorway": "plum",
+          "price": 35
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235973907",
+          "colorway": "plaster",
+          "price": 35
+        }
+      ]
+    },
+    {
+      "id": "plant-palm",
+      "name": "Palm Plant",
+      "category": "plant",
+      "dims": {
+        "w": 55,
+        "d": 55,
+        "h": 145
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/plant-palm.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        }
+      ],
+      "styleTags": [
+        "coastal"
+      ],
+      "price": 95,
+      "description": "A leafy indoor plant in a simple matte pot, sized to soften a corner without crowding a walkway.",
+      "handle": "plant-palm",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626235744531",
+          "colorway": "sage",
+          "price": 95
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235777299",
+          "colorway": "oak",
+          "price": 95
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235810067",
+          "colorway": "terracotta",
+          "price": 95
+        }
+      ]
+    },
+    {
+      "id": "plant-pilea",
+      "name": "Pilea Plant",
+      "category": "plant",
+      "dims": {
+        "w": 40,
+        "d": 40,
+        "h": 55
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/plant-pilea.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 45,
+      "description": "A leafy indoor plant in a simple matte pot, sized to soften a corner without crowding a walkway.",
+      "handle": "plant-pilea",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626235547923",
+          "colorway": "sage",
+          "price": 45
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235580691",
+          "colorway": "ochre",
+          "price": 45
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235613459",
+          "colorway": "plaster",
+          "price": 45
+        }
+      ]
+    },
+    {
+      "id": "rug-flette",
+      "name": "Flette Rug",
+      "category": "rug",
+      "dims": {
+        "w": 160,
+        "d": 230,
+        "h": 2
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/rug-flette.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        }
+      ],
+      "styleTags": [
+        "coastal"
+      ],
+      "price": 240,
+      "description": "A flat-woven rug with a soft hand and a quiet pattern that settles a seating or dining group.",
+      "handle": "rug-flette",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626233024787",
+          "colorway": "oak",
+          "price": 240
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233057555",
+          "colorway": "plaster",
+          "price": 240
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233090323",
+          "colorway": "dusty-blue",
+          "price": 240
+        }
+      ]
+    },
+    {
+      "id": "rug-loop",
+      "name": "Loop Rug",
+      "category": "rug",
+      "dims": {
+        "w": 200,
+        "d": 300,
+        "h": 2
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/rug-loop.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "japandi"
+      ],
+      "price": 390,
+      "description": "A flat-woven rug with a soft hand and a quiet pattern that settles a seating or dining group.",
+      "handle": "rug-loop",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626232860947",
+          "colorway": "sage",
+          "price": 390
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232893715",
+          "colorway": "terracotta",
+          "price": 390
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232926483",
+          "colorway": "plaster",
+          "price": 390
+        }
+      ]
+    },
+    {
+      "id": "rug-mark",
+      "name": "Mark Rug",
+      "category": "rug",
+      "dims": {
+        "w": 240,
+        "d": 340,
+        "h": 2
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/rug-mark.glb",
+      "colorways": [
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        }
+      ],
+      "styleTags": [
+        "modern",
+        "mid-century"
+      ],
+      "price": 590,
+      "description": "A flat-woven rug with a soft hand and a quiet pattern that settles a seating or dining group.",
+      "handle": "rug-mark",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626233221395",
+          "colorway": "charcoal",
+          "price": 590
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233254163",
+          "colorway": "terracotta",
+          "price": 590
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233286931",
+          "colorway": "ochre",
+          "price": 590
+        }
+      ]
+    },
+    {
+      "id": "rug-siv",
+      "name": "Siv Rug",
+      "category": "rug",
+      "dims": {
+        "w": 200,
+        "d": 300,
+        "h": 2
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/rug-siv.glb",
+      "colorways": [
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 420,
+      "description": "A flat-woven rug with a soft hand and a quiet pattern that settles a seating or dining group.",
+      "handle": "rug-siv",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626233418003",
+          "colorway": "plum",
+          "price": 420
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233450771",
+          "colorway": "sage",
+          "price": 420
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233483539",
+          "colorway": "plaster",
+          "price": 420
+        }
+      ]
+    },
+    {
+      "id": "rug-ull",
+      "name": "Ull Rug",
+      "category": "rug",
+      "dims": {
+        "w": 160,
+        "d": 230,
+        "h": 3
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/rug-ull.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "scandinavian"
+      ],
+      "price": 290,
+      "description": "A flat-woven rug with a soft hand and a quiet pattern that settles a seating or dining group.",
+      "handle": "rug-ull",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626233581843",
+          "colorway": "oak",
+          "price": 290
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233614611",
+          "colorway": "ochre",
+          "price": 290
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626233647379",
+          "colorway": "charcoal",
+          "price": 290
+        }
+      ]
+    },
+    {
+      "id": "shelf-kant",
+      "name": "Kant Shelf",
+      "category": "shelf",
+      "dims": {
+        "w": 100,
+        "d": 35,
+        "h": 190
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/shelf-kant.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "modern"
+      ],
+      "price": 390,
+      "description": "An open storage shelf with steady proportions for books, baskets and a few personal objects.",
+      "againstWall": true,
+      "handle": "shelf-kant",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626231484691",
+          "colorway": "oak",
+          "price": 390
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231517459",
+          "colorway": "charcoal",
+          "price": 390
+        }
+      ]
+    },
+    {
+      "id": "shelf-lund",
+      "name": "Lund Shelf",
+      "category": "shelf",
+      "dims": {
+        "w": 80,
+        "d": 30,
+        "h": 180
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/shelf-lund.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 290,
+      "description": "An open storage shelf with steady proportions for books, baskets and a few personal objects.",
+      "againstWall": true,
+      "handle": "shelf-lund",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626231582995",
+          "colorway": "plaster",
+          "price": 290
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231615763",
+          "colorway": "oak",
+          "price": 290
+        }
+      ]
+    },
+    {
+      "id": "shelf-rune",
+      "name": "Rune Shelf",
+      "category": "shelf",
+      "dims": {
+        "w": 120,
+        "d": 40,
+        "h": 200
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/shelf-rune.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "rustic"
+      ],
+      "price": 490,
+      "description": "An open storage shelf with steady proportions for books, baskets and a few personal objects.",
+      "againstWall": true,
+      "handle": "shelf-rune",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626231681299",
+          "colorway": "oak",
+          "price": 490
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231714067",
+          "colorway": "terracotta",
+          "price": 490
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231746835",
+          "colorway": "charcoal",
+          "price": 490
+        }
+      ]
+    },
+    {
+      "id": "shelf-saga",
+      "name": "Saga Shelf",
+      "category": "shelf",
+      "dims": {
+        "w": 90,
+        "d": 32,
+        "h": 185
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/shelf-saga.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "coastal",
+        "scandinavian"
+      ],
+      "price": 340,
+      "description": "An open storage shelf with steady proportions for books, baskets and a few personal objects.",
+      "againstWall": true,
+      "handle": "shelf-saga",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626231812371",
+          "colorway": "sage",
+          "price": 340
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231845139",
+          "colorway": "plaster",
+          "price": 340
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231877907",
+          "colorway": "oak",
+          "price": 340
+        }
+      ]
+    },
+    {
+      "id": "shelf-vik",
+      "name": "Vik Shelf",
+      "category": "shelf",
+      "dims": {
+        "w": 110,
+        "d": 38,
+        "h": 195
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/shelf-vik.glb",
+      "colorways": [
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "mid-century"
+      ],
+      "price": 440,
+      "description": "An open storage shelf with steady proportions for books, baskets and a few personal objects.",
+      "againstWall": true,
+      "handle": "shelf-vik",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626231943443",
+          "colorway": "plum",
+          "price": 440
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626231976211",
+          "colorway": "charcoal",
+          "price": 440
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232008979",
+          "colorway": "oak",
+          "price": 440
+        }
+      ]
+    },
+    {
+      "id": "sofa-endre",
+      "name": "Endre Sofa",
+      "category": "sofa",
+      "dims": {
+        "w": 220,
+        "d": 95,
+        "h": 85
+      },
+      "clearanceFront": 75,
+      "seatCount": 3,
+      "glb": "/assets/glb/sofa-endre.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        }
+      ],
+      "styleTags": [
+        "scandinavian"
+      ],
+      "price": 790,
+      "description": "A deep, softly structured sofa with a timber base and enough firmness for everyday sitting.",
+      "againstWall": true,
+      "handle": "sofa-endre",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626226864403",
+          "colorway": "oak",
+          "price": 790
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626226897171",
+          "colorway": "sage",
+          "price": 790
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626226929939",
+          "colorway": "terracotta",
+          "price": 790
+        }
+      ]
+    },
+    {
+      "id": "sofa-fjord",
+      "name": "Fjord Sofa",
+      "category": "sofa",
+      "dims": {
+        "w": 260,
+        "d": 100,
+        "h": 82
+      },
+      "clearanceFront": 75,
+      "seatCount": 4,
+      "glb": "/assets/glb/sofa-fjord.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "coastal"
+      ],
+      "price": 1290,
+      "description": "A deep, softly structured sofa with a timber base and enough firmness for everyday sitting.",
+      "againstWall": true,
+      "handle": "sofa-fjord",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626227028243",
+          "colorway": "plaster",
+          "price": 1290
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227061011",
+          "colorway": "dusty-blue",
+          "price": 1290
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227093779",
+          "colorway": "charcoal",
+          "price": 1290
+        }
+      ]
+    },
+    {
+      "id": "sofa-liva",
+      "name": "Liva Sofa",
+      "category": "sofa",
+      "dims": {
+        "w": 180,
+        "d": 88,
+        "h": 80
+      },
+      "clearanceFront": 75,
+      "seatCount": 2,
+      "glb": "/assets/glb/sofa-liva.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        }
+      ],
+      "styleTags": [
+        "japandi",
+        "modern"
+      ],
+      "price": 690,
+      "description": "A deep, softly structured sofa with a timber base and enough firmness for everyday sitting.",
+      "againstWall": true,
+      "handle": "sofa-liva",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626227159315",
+          "colorway": "sage",
+          "price": 690
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227192083",
+          "colorway": "plaster",
+          "price": 690
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227224851",
+          "colorway": "ochre",
+          "price": 690
+        }
+      ]
+    },
+    {
+      "id": "sofa-maren",
+      "name": "Maren Sofa",
+      "category": "sofa",
+      "dims": {
+        "w": 240,
+        "d": 98,
+        "h": 84
+      },
+      "clearanceFront": 75,
+      "seatCount": 3,
+      "glb": "/assets/glb/sofa-maren.glb",
+      "colorways": [
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "mid-century"
+      ],
+      "price": 1090,
+      "description": "A deep, softly structured sofa with a timber base and enough firmness for everyday sitting.",
+      "againstWall": true,
+      "handle": "sofa-maren",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626227323155",
+          "colorway": "terracotta",
+          "price": 1090
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227355923",
+          "colorway": "plum",
+          "price": 1090
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227388691",
+          "colorway": "charcoal",
+          "price": 1090
+        }
+      ]
+    },
+    {
+      "id": "sofa-svale",
+      "name": "Svale Sofa",
+      "category": "sofa",
+      "dims": {
+        "w": 200,
+        "d": 92,
+        "h": 78
+      },
+      "clearanceFront": 75,
+      "seatCount": 3,
+      "glb": "/assets/glb/sofa-svale.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "japandi"
+      ],
+      "price": 890,
+      "description": "A deep, softly structured sofa with a timber base and enough firmness for everyday sitting.",
+      "againstWall": true,
+      "handle": "sofa-svale",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626227454227",
+          "colorway": "plaster",
+          "price": 890
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227486995",
+          "colorway": "oak",
+          "price": 890
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626227519763",
+          "colorway": "dusty-blue",
+          "price": 890
+        }
+      ]
+    },
+    {
+      "id": "table-ake",
+      "name": "Ake Table",
+      "category": "table",
+      "dims": {
+        "w": 120,
+        "d": 80,
+        "h": 74
+      },
+      "clearanceFront": 75,
+      "glb": "/assets/glb/table-ake.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 420,
+      "description": "A balanced dining table with durable joinery and comfortable knee room around every side.",
+      "handle": "table-ake",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626229682451",
+          "colorway": "oak",
+          "price": 420
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229715219",
+          "colorway": "plaster",
+          "price": 420
+        }
+      ]
+    },
+    {
+      "id": "table-elm",
+      "name": "Elm Table",
+      "category": "table",
+      "dims": {
+        "w": 200,
+        "d": 95,
+        "h": 76
+      },
+      "clearanceFront": 75,
+      "glb": "/assets/glb/table-elm.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "mid-century"
+      ],
+      "price": 890,
+      "description": "A balanced dining table with durable joinery and comfortable knee room around every side.",
+      "handle": "table-elm",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626229780755",
+          "colorway": "oak",
+          "price": 890
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229813523",
+          "colorway": "terracotta",
+          "price": 890
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229846291",
+          "colorway": "charcoal",
+          "price": 890
+        }
+      ]
+    },
+    {
+      "id": "table-lamp-alva",
+      "name": "Alva Table Lamp",
+      "category": "table-lamp",
+      "dims": {
+        "w": 22,
+        "d": 22,
+        "h": 38
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/table-lamp-alva.glb",
+      "colorways": [
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "scandinavian"
+      ],
+      "price": 120,
+      "description": "A small table lamp with a shaded, warm pool of light for a desk, shelf or bedside surface.",
+      "handle": "table-lamp-alva",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626234466579",
+          "colorway": "ochre",
+          "price": 120
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234499347",
+          "colorway": "plaster",
+          "price": 120
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234532115",
+          "colorway": "oak",
+          "price": 120
+        }
+      ]
+    },
+    {
+      "id": "table-lamp-ember",
+      "name": "Ember Table Lamp",
+      "category": "table-lamp",
+      "dims": {
+        "w": 21,
+        "d": 21,
+        "h": 36
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/table-lamp-ember.glb",
+      "colorways": [
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "mid-century"
+      ],
+      "price": 130,
+      "description": "A small table lamp with a shaded, warm pool of light for a desk, shelf or bedside surface.",
+      "handle": "table-lamp-ember",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626234925331",
+          "colorway": "terracotta",
+          "price": 130
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234958099",
+          "colorway": "oak",
+          "price": 130
+        }
+      ]
+    },
+    {
+      "id": "table-lamp-lune",
+      "name": "Lune Table Lamp",
+      "category": "table-lamp",
+      "dims": {
+        "w": 24,
+        "d": 24,
+        "h": 40
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/table-lamp-lune.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        },
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        }
+      ],
+      "styleTags": [
+        "coastal"
+      ],
+      "price": 150,
+      "description": "A small table lamp with a shaded, warm pool of light for a desk, shelf or bedside surface.",
+      "handle": "table-lamp-lune",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626234761491",
+          "colorway": "plaster",
+          "price": 150
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234794259",
+          "colorway": "dusty-blue",
+          "price": 150
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234827027",
+          "colorway": "ochre",
+          "price": 150
+        }
+      ]
+    },
+    {
+      "id": "table-lamp-moss",
+      "name": "Moss Table Lamp",
+      "category": "table-lamp",
+      "dims": {
+        "w": 23,
+        "d": 23,
+        "h": 37
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/table-lamp-moss.glb",
+      "colorways": [
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 140,
+      "description": "A small table lamp with a shaded, warm pool of light for a desk, shelf or bedside surface.",
+      "handle": "table-lamp-moss",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626235089171",
+          "colorway": "sage",
+          "price": 140
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235121939",
+          "colorway": "plaster",
+          "price": 140
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626235154707",
+          "colorway": "charcoal",
+          "price": 140
+        }
+      ]
+    },
+    {
+      "id": "table-lamp-natt",
+      "name": "Natt Table Lamp",
+      "category": "table-lamp",
+      "dims": {
+        "w": 20,
+        "d": 20,
+        "h": 34
+      },
+      "clearanceFront": 0,
+      "glb": "/assets/glb/table-lamp-natt.glb",
+      "colorways": [
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        }
+      ],
+      "styleTags": [
+        "modern"
+      ],
+      "price": 90,
+      "description": "A small table lamp with a shaded, warm pool of light for a desk, shelf or bedside surface.",
+      "handle": "table-lamp-natt",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626234630419",
+          "colorway": "charcoal",
+          "price": 90
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626234663187",
+          "colorway": "plum",
+          "price": 90
+        }
+      ]
+    },
+    {
+      "id": "table-petit",
+      "name": "Petit Table",
+      "category": "table",
+      "dims": {
+        "w": 80,
+        "d": 80,
+        "h": 74
+      },
+      "clearanceFront": 75,
+      "glb": "/assets/glb/table-petit.glb",
+      "colorways": [
+        {
+          "id": "ochre",
+          "name": "Ochre",
+          "hex": "#C9A44C"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "modern",
+        "coastal"
+      ],
+      "price": 330,
+      "description": "A balanced dining table with durable joinery and comfortable knee room around every side.",
+      "handle": "table-petit",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626230075667",
+          "colorway": "ochre",
+          "price": 330
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626230108435",
+          "colorway": "oak",
+          "price": 330
+        }
+      ]
+    },
+    {
+      "id": "table-rove",
+      "name": "Rove Table",
+      "category": "table",
+      "dims": {
+        "w": 160,
+        "d": 90,
+        "h": 75
+      },
+      "clearanceFront": 75,
+      "glb": "/assets/glb/table-rove.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "modern"
+      ],
+      "price": 590,
+      "description": "A balanced dining table with durable joinery and comfortable knee room around every side.",
+      "handle": "table-rove",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626229584147",
+          "colorway": "oak",
+          "price": 590
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229616915",
+          "colorway": "charcoal",
+          "price": 590
+        }
+      ]
+    },
+    {
+      "id": "table-rund",
+      "name": "Rund Table",
+      "category": "table",
+      "dims": {
+        "w": 110,
+        "d": 110,
+        "h": 75
+      },
+      "clearanceFront": 75,
+      "glb": "/assets/glb/table-rund.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "scandinavian"
+      ],
+      "price": 490,
+      "description": "A balanced dining table with durable joinery and comfortable knee room around every side.",
+      "handle": "table-rund",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626229911827",
+          "colorway": "plaster",
+          "price": 490
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229944595",
+          "colorway": "sage",
+          "price": 490
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229977363",
+          "colorway": "oak",
+          "price": 490
+        }
+      ]
+    },
+    {
+      "id": "tv-unit-form",
+      "name": "Form TV Unit",
+      "category": "tv-unit",
+      "dims": {
+        "w": 140,
+        "d": 40,
+        "h": 48
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/tv-unit-form.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 430,
+      "description": "A low media cabinet with closed storage, cable access and a top deep enough for a television.",
+      "againstWall": true,
+      "handle": "tv-unit-form",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626232238355",
+          "colorway": "plaster",
+          "price": 430
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232271123",
+          "colorway": "oak",
+          "price": 430
+        }
+      ]
+    },
+    {
+      "id": "tv-unit-linje",
+      "name": "Linje TV Unit",
+      "category": "tv-unit",
+      "dims": {
+        "w": 180,
+        "d": 40,
+        "h": 50
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/tv-unit-linje.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "modern"
+      ],
+      "price": 590,
+      "description": "A low media cabinet with closed storage, cable access and a top deep enough for a television.",
+      "againstWall": true,
+      "handle": "tv-unit-linje",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626232107283",
+          "colorway": "oak",
+          "price": 590
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232140051",
+          "colorway": "charcoal",
+          "price": 590
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232172819",
+          "colorway": "plaster",
+          "price": 590
+        }
+      ]
+    },
+    {
+      "id": "tv-unit-nova",
+      "name": "Nova TV Unit",
+      "category": "tv-unit",
+      "dims": {
+        "w": 200,
+        "d": 42,
+        "h": 52
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/tv-unit-nova.glb",
+      "colorways": [
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "mid-century"
+      ],
+      "price": 720,
+      "description": "A low media cabinet with closed storage, cable access and a top deep enough for a television.",
+      "againstWall": true,
+      "handle": "tv-unit-nova",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626232369427",
+          "colorway": "charcoal",
+          "price": 720
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232402195",
+          "colorway": "plum",
+          "price": 720
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232434963",
+          "colorway": "oak",
+          "price": 720
+        }
+      ]
+    },
+    {
+      "id": "tv-unit-sund",
+      "name": "Sund TV Unit",
+      "category": "tv-unit",
+      "dims": {
+        "w": 160,
+        "d": 38,
+        "h": 48
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/tv-unit-sund.glb",
+      "colorways": [
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "coastal"
+      ],
+      "price": 510,
+      "description": "A low media cabinet with closed storage, cable access and a top deep enough for a television.",
+      "againstWall": true,
+      "handle": "tv-unit-sund",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626232533267",
+          "colorway": "dusty-blue",
+          "price": 510
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232566035",
+          "colorway": "plaster",
+          "price": 510
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232598803",
+          "colorway": "oak",
+          "price": 510
+        }
+      ]
+    },
+    {
+      "id": "tv-unit-ved",
+      "name": "Ved TV Unit",
+      "category": "tv-unit",
+      "dims": {
+        "w": 170,
+        "d": 40,
+        "h": 50
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/tv-unit-ved.glb",
+      "colorways": [
+        {
+          "id": "terracotta",
+          "name": "Terracotta",
+          "hex": "#C46A4A"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "rustic",
+        "modern"
+      ],
+      "price": 560,
+      "description": "A low media cabinet with closed storage, cable access and a top deep enough for a television.",
+      "againstWall": true,
+      "handle": "tv-unit-ved",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626232697107",
+          "colorway": "terracotta",
+          "price": 560
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232729875",
+          "colorway": "oak",
+          "price": 560
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626232762643",
+          "colorway": "charcoal",
+          "price": 560
+        }
+      ]
+    },
+    {
+      "id": "wardrobe-eira",
+      "name": "Eira Wardrobe",
+      "category": "wardrobe",
+      "dims": {
+        "w": 140,
+        "d": 58,
+        "h": 200
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/wardrobe-eira.glb",
+      "colorways": [
+        {
+          "id": "dusty-blue",
+          "name": "Dusty blue",
+          "hex": "#7E93A8"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "coastal",
+        "modern"
+      ],
+      "price": 760,
+      "description": "A full-height wardrobe with simple doors, useful interior depth and a restrained timber face.",
+      "againstWall": true,
+      "handle": "wardrobe-eira",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626229289235",
+          "colorway": "dusty-blue",
+          "price": 760
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229322003",
+          "colorway": "plaster",
+          "price": 760
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229354771",
+          "colorway": "oak",
+          "price": 760
+        }
+      ]
+    },
+    {
+      "id": "wardrobe-hald",
+      "name": "Hald Wardrobe",
+      "category": "wardrobe",
+      "dims": {
+        "w": 160,
+        "d": 60,
+        "h": 200
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/wardrobe-hald.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "modern"
+      ],
+      "price": 890,
+      "description": "A full-height wardrobe with simple doors, useful interior depth and a restrained timber face.",
+      "againstWall": true,
+      "handle": "wardrobe-hald",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626228961555",
+          "colorway": "oak",
+          "price": 890
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626228994323",
+          "colorway": "plaster",
+          "price": 890
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229027091",
+          "colorway": "charcoal",
+          "price": 890
+        }
+      ]
+    },
+    {
+      "id": "wardrobe-nord",
+      "name": "Nord Wardrobe",
+      "category": "wardrobe",
+      "dims": {
+        "w": 200,
+        "d": 60,
+        "h": 210
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/wardrobe-nord.glb",
+      "colorways": [
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        }
+      ],
+      "styleTags": [
+        "scandinavian",
+        "rustic"
+      ],
+      "price": 1190,
+      "description": "A full-height wardrobe with simple doors, useful interior depth and a restrained timber face.",
+      "againstWall": true,
+      "handle": "wardrobe-nord",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626229190931",
+          "colorway": "oak",
+          "price": 1190
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229223699",
+          "colorway": "charcoal",
+          "price": 1190
+        }
+      ]
+    },
+    {
+      "id": "wardrobe-skive",
+      "name": "Skive Wardrobe",
+      "category": "wardrobe",
+      "dims": {
+        "w": 100,
+        "d": 60,
+        "h": 190
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/wardrobe-skive.glb",
+      "colorways": [
+        {
+          "id": "plaster",
+          "name": "Plaster",
+          "hex": "#F4EFE6"
+        },
+        {
+          "id": "sage",
+          "name": "Sage",
+          "hex": "#8A9B7C"
+        }
+      ],
+      "styleTags": [
+        "japandi"
+      ],
+      "price": 590,
+      "description": "A full-height wardrobe with simple doors, useful interior depth and a restrained timber face.",
+      "againstWall": true,
+      "handle": "wardrobe-skive",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626229092627",
+          "colorway": "plaster",
+          "price": 590
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229125395",
+          "colorway": "sage",
+          "price": 590
+        }
+      ]
+    },
+    {
+      "id": "wardrobe-tor",
+      "name": "Tor Wardrobe",
+      "category": "wardrobe",
+      "dims": {
+        "w": 180,
+        "d": 62,
+        "h": 205
+      },
+      "clearanceFront": 70,
+      "glb": "/assets/glb/wardrobe-tor.glb",
+      "colorways": [
+        {
+          "id": "plum",
+          "name": "Plum",
+          "hex": "#8A6A7D"
+        },
+        {
+          "id": "charcoal",
+          "name": "Charcoal",
+          "hex": "#3E3A36"
+        },
+        {
+          "id": "oak",
+          "name": "Oak",
+          "hex": "#D9C4A3"
+        }
+      ],
+      "styleTags": [
+        "mid-century"
+      ],
+      "price": 990,
+      "description": "A full-height wardrobe with simple doors, useful interior depth and a restrained timber face.",
+      "againstWall": true,
+      "handle": "wardrobe-tor",
+      "variants": [
+        {
+          "id": "gid://shopify/ProductVariant/54626229420307",
+          "colorway": "plum",
+          "price": 990
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229453075",
+          "colorway": "charcoal",
+          "price": 990
+        },
+        {
+          "id": "gid://shopify/ProductVariant/54626229485843",
+          "colorway": "oak",
+          "price": 990
+        }
+      ]
+    }
+  ]
+}
