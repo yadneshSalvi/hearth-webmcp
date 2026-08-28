@@ -68,6 +68,7 @@ const specs: Spec[] = [
   { id: "table-elm", name: "Elm Table", category: "table", dims: [200, 95, 76], price: 890, colors: ["oak", "terracotta", "charcoal"], styles: ["rustic", "mid-century"] },
   { id: "table-rund", name: "Rund Table", category: "table", dims: [110, 110, 75], price: 490, colors: ["plaster", "sage", "oak"], styles: ["scandinavian"] },
   { id: "table-petit", name: "Petit Table", category: "table", dims: [80, 80, 74], price: 330, colors: ["ochre", "oak"], styles: ["modern", "coastal"] },
+  { id: "table-bord", name: "Bord Side Table", category: "table", dims: [45, 45, 55], price: 120, colors: ["oak", "plaster", "charcoal"], styles: ["scandinavian", "japandi", "modern"] },
 
   { id: "desk-aalto", name: "Aalto Desk", category: "desk", dims: [140, 70, 75], price: 490, colors: ["oak", "sage", "charcoal"], styles: ["scandinavian", "japandi"] },
   { id: "desk-soren", name: "Soren Desk", category: "desk", dims: [120, 60, 74], price: 390, colors: ["plaster", "oak"], styles: ["modern"] },

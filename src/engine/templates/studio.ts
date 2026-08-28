@@ -17,8 +17,9 @@ export function createStudioTemplate(furnished = false): Scene {
     item({ id: "sofa-1", catalogId: "sofa-liva", roomId: "studio", pos: { x: 170, y: 44 }, rotation: 0, colorway: "sage" }),
     item({ id: "rug-1", catalogId: "rug-flette", roomId: "studio", pos: { x: 190, y: 220 }, rotation: 90, colorway: "plaster" }),
     item({ id: "desk-1", catalogId: "desk-aalto", roomId: "studio", pos: { x: 450, y: 180 }, rotation: 90, colorway: "oak" }),
-    item({ id: "chair-1", catalogId: "chair-finn", roomId: "studio", pos: { x: 390, y: 180 }, rotation: 90, colorway: "charcoal" }),
+    item({ id: "chair-1", catalogId: "chair-finn", roomId: "studio", pos: { x: 390, y: 240 }, rotation: 90, colorway: "charcoal" }),
     item({ id: "plant-1", catalogId: "plant-fern", roomId: "studio", pos: { x: 480, y: 395 }, rotation: 0, colorway: "sage" }),
+    item({ id: "tv-unit-1", catalogId: "tv-unit-form", roomId: "studio", pos: { x: 200, y: 420 }, rotation: 180, colorway: "plaster" }),
   ] : [];
   return makeScene("studio", "studio", rooms, openings, furniture);
 }

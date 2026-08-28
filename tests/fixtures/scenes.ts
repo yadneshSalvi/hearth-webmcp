@@ -6,12 +6,39 @@ export function emptyHome(): Scene {
   return createTemplate("2br");
 }
 
-/** Returns a fresh copy of the golden-hour 23-item onboarding home. */
-export function furnished2br(): Scene {
-  return createTemplate("2br", { furnished: true });
+function move(scene: Scene, id: string, x: number, y: number, rotation?: Furniture["rotation"]): void {
+  const entry = scene.furniture.find((candidate) => candidate.id === id);
+  if (entry) {
+    entry.pos = { x, y };
+    if (rotation !== undefined) entry.rotation = rotation;
+  }
 }
 
-/** Returns a deliberately broken 40-item scene for conflict and output-budget tests. */
+/** Returns the historical warning-heavy 23-item scene retained by engine regression tests. */
+export function furnished2br(): Scene {
+  const scene = createTemplate("2br", { furnished: true });
+  scene.furniture = scene.furniture.filter((entry) => !entry.id.startsWith("side-table-"));
+  move(scene, "sofa-1", 260, 47.5);
+  move(scene, "floor-lamp-1", 440, 120);
+  move(scene, "table-1", 210, 240);
+  move(scene, "chair-1", 210, 165);
+  move(scene, "chair-2", 210, 315);
+  move(scene, "chair-3", 124, 240);
+  move(scene, "chair-4", 296, 240);
+  move(scene, "table-lamp-1", 215, 80);
+  move(scene, "table-lamp-2", 215, 280);
+  move(scene, "plant-3", 270, 170);
+  move(scene, "bed-2", 100, 160);
+  move(scene, "desk-1", 310, 80);
+  move(scene, "chair-5", 250, 80, 90);
+  move(scene, "shelf-2", 260, 305, 180);
+  scene.furniture.push({ id: "plant-4", catalogId: "plant-ivy", roomId: "hall", pos: { x: 60, y: 175 }, rotation: 0, colorway: "sage", status: "placed" });
+  const secondWindow = scene.openings.find((entry) => entry.id === "window-second-east");
+  if (secondWindow) secondWindow.offset = 20;
+  return scene;
+}
+
+/** Returns a broken 40-item scene with 45 conflicts: 6 overlap, 4 outside, 16 clearance, 6 door, and 13 traffic. */
 export function worstCase2br(): Scene {
   const scene = furnished2br();
   const extra: Furniture[] = [
