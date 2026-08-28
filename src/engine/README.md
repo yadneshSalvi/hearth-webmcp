@@ -63,3 +63,16 @@ lighting, greenery and decor, then rebuilds unlocked items around fixed obstacle
 Conversation faces a focal point, media pairs opposite sofa/TV walls, open clears
 the centre, and work prioritises a window desk. Seeded tie-breaks make every style
 deterministic and idempotent; rugs, lamps, plants and decor finish the composition.
+## Describe/report
+
+`describe.ts` is the compact serialization boundary used by read tools. Dimensions,
+positions, walls, spans, room rows, selections and carts are kept in the exact
+`TOOLS.md` shapes; every final payload must pass the 1,500-character budget check.
+
+`measure.ts` resolves wall sides/ids, item ids/names/selection and opening ids. It
+reports dimensions, free spans, gaps and edge-to-edge distances in centimetres.
+
+`report.ts` scores balance, focal direction, conversation, light, storage and
+traffic with deterministic room-aware heuristics. Reports stay below the summary
+and suggestion limits. `variants.ts` compares saved layouts by catalog display
+name, including duplicate counts, movement and colorway changes.
