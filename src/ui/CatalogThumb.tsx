@@ -41,6 +41,7 @@ export interface CatalogThumbProps {
 /** A 4:3 product tile: rendered asset when present, drawn silhouette when not. */
 export function CatalogThumb({ productId, category, colorway, name, className = "", width = 88, decorative = false }: CatalogThumbProps) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const height = Math.round((width * 3) / 4);
 
   if (failed) {
@@ -64,19 +65,30 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
   }
 
   return (
-    // A fixed-size local PNG: next/image would add no optimisation (these are pre-rendered at 512×384)
-    // and its dev-only LCP heuristic warns about lazy thumbnails in a scrolling list.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={`/assets/thumbs/${productId}.png`}
-      alt={decorative ? "" : name}
-      width={width}
-      height={height}
-      loading="lazy"
-      decoding="async"
-      onError={() => setFailed(true)}
-      className={`block shrink-0 rounded-chip bg-plaster object-cover ${className}`}
+    // A breathing plaster tile holds the space until the PNG has decoded, so a scrolling list never
+    // reflows and never shows a half-painted image (STYLE.md §4).
+    <span
+      className={`relative block shrink-0 overflow-hidden rounded-chip bg-plaster ${className}`}
       style={{ width, height }}
-    />
+    >
+      {/* A still tint, not a shimmer: `loading="lazy"` leaves most of a 71-row list unloaded, and
+          sixty-odd looping animations would keep the compositor busy for nothing. */}
+      {loaded ? null : <span className="absolute inset-0 bg-charcoal/8" aria-hidden="true" />}
+      {/* A fixed-size local PNG: next/image would add no optimisation (these are pre-rendered at
+          512×384) and its dev-only LCP heuristic warns about lazy thumbnails in a scrolling list. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/assets/thumbs/${productId}.png`}
+        alt={decorative ? "" : name}
+        width={width}
+        height={height}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={() => setFailed(true)}
+        className="block h-full w-full object-cover transition-opacity duration-200 ease-out-soft"
+        style={{ opacity: loaded ? 1 : 0 }}
+      />
+    </span>
   );
 }

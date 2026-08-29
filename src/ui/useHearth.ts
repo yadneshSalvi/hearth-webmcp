@@ -3,7 +3,7 @@
  * The studio's single wiring point: it starts the WebMCP registry, keeps the conflict overlays in
  * sync with the scene, owns the keyboard map and remembers whether this is a first run.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useStore } from "zustand";
 import { createCatalog } from "../engine/catalog";
 import { evaluateRoom } from "../engine/conflicts";
@@ -18,8 +18,9 @@ import { createCartOps } from "./cartOps";
 import type { CartOps } from "./cartOps";
 import { createToolUi } from "./toolUi";
 import type { HearthToolUi } from "./toolUi";
+import { useAssistantRegistry } from "./assistantTools";
+import { useFirstRun } from "./useFirstRun";
 
-const ONBOARDING_KEY = "hearth.onboarding.v1";
 const TIMES: readonly TimeOfDay[] = ["morning", "noon", "golden", "evening"];
 const YAWS: readonly Yaw[] = ["nw", "ne", "se", "sw"];
 const EMPTY_CONFLICTS: Conflict[] = [];
@@ -27,9 +28,10 @@ const EMPTY_CONFLICTS: Conflict[] = [];
 /**
  * Page-lifetime singletons. The registry, the confirmation gate and the cart client must outlive
  * any component remount, and this module only ever loads in the browser (AppShell is imported with
- * `ssr: false`).
+ * `ssr: false`). The cart client is shared with the fallback assistant's registry
+ * (src/ui/assistantTools.ts) so the two can never hold different carts.
  */
-const shopify = createLocalShopify(hearthStore.getState().catalog);
+export const shopify = createLocalShopify(hearthStore.getState().catalog);
 export const toolUi: HearthToolUi = createToolUi(studioApi, hearthStore);
 export const cartOps: CartOps = createCartOps(shopify, hearthStore);
 
@@ -67,13 +69,16 @@ function seedOpeningReceipt(): void {
   });
 }
 
-/** Whether the welcome card was dismissed on this browser. */
-function readDismissed(): boolean {
-  try {
-    return window.localStorage.getItem(ONBOARDING_KEY) === "dismissed";
-  } catch {
-    return false;
-  }
+/**
+ * `?webmcp=polyfill` opts this page load into the Apache-2.0 polyfill up front — the switch the
+ * demo and the end-to-end tests use. Without it the registry stays native-only, so the status chip
+ * tells the truth about a flagless browser until the human asks for the fallback assistant.
+ */
+function requestedMode(): "native-only" | "allow-polyfill" {
+  if (typeof window === "undefined") return "native-only";
+  return new URLSearchParams(window.location.search).get("webmcp") === "polyfill"
+    ? "allow-polyfill"
+    : "native-only";
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -142,20 +147,24 @@ export function redoSteps(steps = 1): void {
 }
 
 export function useHearth(): Hearth {
-  const { status, registry } = useWebMCP({ ui: toolUi, shopify, mode: "native-only" });
-  const [dismissed, setDismissed] = useState(readDismissed);
+  const { status, registry } = useWebMCP({ ui: toolUi, shopify, mode: requestedMode() });
+  const { firstRun, dismiss } = useFirstRun();
+  // When WebMCP was missing at mount the fallback assistant may have started the registry itself;
+  // either way the panels read tool groups and annotations from live definitions, never a guess.
+  const ownedRegistry = useAssistantRegistry();
+  const live = registry ?? ownedRegistry;
 
   const toolGroups = useMemo(() => {
     const map: Record<string, ToolGroup> = {};
-    for (const tool of registry?.list() ?? []) map[tool.name] = tool.group;
+    for (const tool of live?.list() ?? []) map[tool.name] = tool.group;
     return map;
-  }, [registry]);
+  }, [live]);
 
   const readOnlyTools = useMemo(() => {
     const names = new Set<string>();
-    for (const tool of registry?.list() ?? []) if (tool.annotations?.readOnlyHint) names.add(tool.name);
+    for (const tool of live?.list() ?? []) if (tool.annotations?.readOnlyHint) names.add(tool.name);
     return names;
-  }, [registry]);
+  }, [live]);
 
   // Honest status: when no registry starts there is nothing registered, and the chip must say so.
   useEffect(() => {
@@ -175,15 +184,6 @@ export function useHearth(): Hearth {
     return () => {
       delete target.__hearthStore;
     };
-  }, []);
-
-  const dismissFirstRun = useCallback(() => {
-    setDismissed(true);
-    try {
-      window.localStorage.setItem(ONBOARDING_KEY, "dismissed");
-    } catch {
-      // A blocked localStorage only costs the memory of the dismissal.
-    }
   }, []);
 
   useEffect(() => {
@@ -238,5 +238,5 @@ export function useHearth(): Hearth {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  return { status, toolGroups, readOnlyTools, firstRun: !dismissed, dismissFirstRun };
+  return { status, toolGroups, readOnlyTools, firstRun, dismissFirstRun: dismiss };
 }

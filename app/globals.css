@@ -132,6 +132,17 @@ body {
   }
 }
 
+/* The assistant's streaming caret: a calm pulse, never a hard blink (STYLE.md §3). */
+@keyframes hearth-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.16;
+  }
+}
+
 @keyframes hearth-breathe {
   0%,
   100% {
@@ -152,6 +163,10 @@ body {
 
 @utility breathe {
   animation: hearth-breathe 2.6s ease-in-out infinite;
+}
+
+@utility caret {
+  animation: hearth-caret 1.1s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -11,6 +11,7 @@ import { useSpring } from "@react-spring/three";
 import type { OrthographicCamera as OrthographicCameraImpl } from "three";
 import { motion as motionTokens } from "../tokens";
 import { setFocusTarget, useFocusTarget } from "./focus";
+import { introAzimuthOffset, markStudioPainted } from "./intro";
 import type { FocusTarget } from "./focus";
 import { useFramedBox } from "./framing";
 import {
@@ -145,7 +146,9 @@ export function CameraRig() {
   useFrame(() => {
     const camera = cameraRef.current;
     if (!camera) return;
-    const azimuth = spring.azimuth.get();
+    // The opening settle enters 15° off the resting yaw and sweeps in (src/scene/intro.ts). Plan
+    // view is north-up by definition, so it never inherits the sweep.
+    const azimuth = spring.azimuth.get() + (plan ? 0 : introAzimuthOffset());
     const pitch = spring.pitch.get();
     const half = spring.half.get() / zoom.current;
     const halfWidth = half * aspect;
@@ -167,6 +170,7 @@ export function CameraRig() {
     camera.top = half;
     camera.bottom = -half;
     camera.updateProjectionMatrix();
+    markStudioPainted();
   });
 
   return <OrthographicCamera ref={cameraRef} makeDefault manual near={1} far={DISTANCE * 3} left={-1} right={1} top={1} bottom={-1} />;

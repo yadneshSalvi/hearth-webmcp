@@ -11,6 +11,7 @@
 import Studio from "../scene/Studio";
 import { useHearthStore } from "../state/store";
 import { Activity } from "./Activity";
+import { Assistant } from "./Assistant";
 import { Cart } from "./Cart";
 import { Catalog } from "./Catalog";
 import { ConfirmModal } from "./ConfirmModal";
@@ -22,11 +23,13 @@ import { IconButton } from "./primitives";
 import { PromptBar } from "./PromptBar";
 import { ShortcutsSheet } from "./ShortcutsSheet";
 import { StatusChip } from "./StatusChip";
+import { StudioCurtain } from "./StudioCurtain";
 import { Toasts } from "./Toasts";
 import { ToolsPanel } from "./ToolsPanel";
 import { TopBar } from "./TopBar";
 import { hearthStore } from "../state/store";
 import { useConflictSync, useHearth } from "./useHearth";
+import { useOnboardingReveal } from "./useFirstRun";
 import { useViewportTier } from "./useViewportTier";
 import type { ViewportTier } from "./useViewportTier";
 
@@ -60,8 +63,11 @@ export default function AppShell() {
   const catalogCollapsed = useHearthStore((state) => state.ui.catalogCollapsed);
   const inspectorCollapsed = useHearthStore((state) => state.ui.inspectorCollapsed);
   const toolsOpen = useHearthStore((state) => state.ui.toolsPanelOpen);
-  // Exactly one of the log and the cart is expanded: three full panels never fit 900 px.
+  // Exactly one of the log, the cart and the assistant is expanded: three full panels never fit
+  // 900 px. The assistant takes the log's slot and links back to the rows it wrote.
   const cartOpen = useHearthStore((state) => state.ui.cartOpen ?? false);
+  const assistantOpen = useHearthStore((state) => state.ui.assistantOpen);
+  const revealed = useOnboardingReveal();
 
   const catalogVisible = panelVisible(tier, catalogCollapsed);
   const sideVisible = panelVisible(tier, inspectorCollapsed);
@@ -97,13 +103,18 @@ export default function AppShell() {
             // item and its conflicts, the log keeps two rows, the cart keeps its money and checkout —
             // then their own scrollers take over, and the column itself scrolls as a last resort.
             <div className="flex min-h-0 w-[344px] shrink-0 flex-col gap-3 overflow-y-auto panel-scroll">
-              <Inspector className="min-h-[300px]" collapsible />
-              <Activity
-                className={cartOpen ? "shrink-0" : "min-h-[152px] flex-1"}
-                collapsed={cartOpen}
-                onExpand={() => hearthStore.getState().setUi({ cartOpen: false })}
-                readOnlyTools={readOnlyTools}
-              />
+              {/* The assistant needs room to hold a conversation, so the inspector yields to it. */}
+              <Inspector className={assistantOpen ? "max-h-[27%] min-h-[148px]" : "min-h-[300px]"} collapsible />
+              {assistantOpen ? (
+                <Assistant className="min-h-[320px] flex-1" />
+              ) : (
+                <Activity
+                  className={cartOpen ? "shrink-0" : "min-h-[152px] flex-1"}
+                  collapsed={cartOpen}
+                  onExpand={() => hearthStore.getState().setUi({ cartOpen: false })}
+                  readOnlyTools={readOnlyTools}
+                />
+              )}
               <Cart className={cartOpen ? "min-h-[244px] max-h-[52%]" : "shrink-0"} />
             </div>
           ) : rails ? (
@@ -138,12 +149,13 @@ export default function AppShell() {
         <ToolsPanel toolGroups={toolGroups} />
       </div>
 
-      {firstRun ? (
+      {firstRun && revealed ? (
         <div className="pointer-events-none absolute top-[88px] left-1/2 z-40 -translate-x-1/2">
           <Onboarding status={status} onDismiss={dismissFirstRun} />
         </div>
       ) : null}
 
+      <StudioCurtain />
       <ConfirmModal />
       <EnableSheet />
       <ShortcutsSheet />

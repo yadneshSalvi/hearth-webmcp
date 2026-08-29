@@ -4,7 +4,8 @@
  * tool calls, every row carries a live fit note for the active room, and a row can be dragged onto
  * the canvas or placed with a button.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { resolveAnchor } from "../engine/anchors";
 import { fitNote, wallFits } from "../engine/fit";
 import { walls } from "../engine/geometry";
@@ -12,10 +13,13 @@ import type { CatalogItem, Category, Room, Scene } from "../engine/types";
 import { CATEGORIES } from "../engine/types";
 import { hearthStore, useHearthStore } from "../state/store";
 import { CatalogCard } from "./CatalogCard";
+import { CatalogSkeleton } from "./CatalogSkeleton";
+import { edgeFades, emptySuggestion, nextCardIndex } from "./catalogNav";
+import type { CatalogSuggestion } from "./catalogNav";
 import { catalogGroups, catalogResults, categoryLabel, styleTags } from "./catalogQuery";
 import { cartOps, historyMarker, undoTo } from "./useHearth";
 import { IconPanelLeft, IconSearch } from "./icons";
-import { Chip, EmptyState, Field, IconButton, Panel } from "./primitives";
+import { Chip, Field, IconButton, Panel } from "./primitives";
 import { pushToast } from "./toast-bus";
 
 type PriceCap = "any" | "500" | "1000";
@@ -66,16 +70,53 @@ function place(product: CatalogItem, colorway: string): void {
   });
 }
 
-/** A horizontally scrolling chip row with a plaster fade at the edge, so the overflow is visible. */
+/**
+ * A horizontally scrolling chip row. The plaster fade appears only on an edge that still has chips
+ * past it, so the affordance means something: no fade, no more chips that way.
+ */
 function ScrollRow({ label, children }: { label: string; children: React.ReactNode }) {
+  const track = useRef<HTMLDivElement>(null);
+  const [fades, setFades] = useState({ start: false, end: false });
+
+  const measure = (): void => {
+    const node = track.current;
+    if (!node) return;
+    setFades((current) => {
+      const next = edgeFades(node.scrollLeft, node.clientWidth, node.scrollWidth);
+      return next.start === current.start && next.end === current.end ? current : next;
+    });
+  };
+
+  // Chip rows change with the catalog and with the panel width, so both are watched.
+  useEffect(() => {
+    const node = track.current;
+    if (!node) return;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [children]);
+
   return (
     <div className="relative">
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 panel-scroll" role="group" aria-label={label}>
+      <div
+        ref={track}
+        onScroll={measure}
+        className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 panel-scroll"
+        role="group"
+        aria-label={label}
+      >
         {children}
       </div>
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-0 -right-1 w-6 bg-gradient-to-l from-glass to-transparent"
+        className="pointer-events-none absolute inset-y-0 -left-1 w-6 bg-gradient-to-r from-glass to-transparent transition-opacity duration-200 ease-out-soft"
+        style={{ opacity: fades.start ? 1 : 0 }}
+      />
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 -right-1 w-6 bg-gradient-to-l from-glass to-transparent transition-opacity duration-200 ease-out-soft"
+        style={{ opacity: fades.end ? 1 : 0 }}
       />
     </div>
   );
@@ -92,6 +133,7 @@ export function Catalog({ className = "", collapsible = false }: { className?: s
   const [style, setStyle] = useState<string | undefined>(undefined);
   const [price, setPrice] = useState<PriceCap>("any");
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const list = useRef<HTMLDivElement>(null);
 
   const room = scene.rooms.find((candidate) => candidate.id === scene.meta.activeRoomId) ?? scene.rooms[0];
   const shopMode = scene.meta.mode === "shop";
@@ -117,6 +159,50 @@ export function Catalog({ className = "", collapsible = false }: { className?: s
 
   // Derived, not reset in an effect: a filtered-out card simply stops being the selected one.
   const selected = selectedId && results.some((product) => product.id === selectedId) ? selectedId : undefined;
+  // The search is debounced, so for 160 ms the rows on screen answer the previous question.
+  const settling = rawQuery.trim() !== query.trim();
+  const suggestion = emptySuggestion({
+    query,
+    ...(category ? { category } : {}),
+    ...(style ? { style } : {}),
+    price,
+  });
+
+  const relax = (patch: CatalogSuggestion["patch"]): void => {
+    if (patch.query !== undefined) {
+      setRawQuery(patch.query);
+      setQuery(patch.query);
+    }
+    if ("category" in patch) setCategory(undefined);
+    if ("style" in patch) setStyle(undefined);
+    if (patch.price) setPrice(patch.price);
+  };
+
+  /**
+   * Up and down walk the cards; Enter places the focused one in the active room with whichever
+   * colourway that card is showing, by pressing its own Place button.
+   */
+  const onCardKeys = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
+    const node = list.current;
+    if (!node) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      const cards = [...node.querySelectorAll<HTMLElement>("[data-catalog-select]")];
+      const current = cards.findIndex((card) => card === document.activeElement);
+      const target = cards[nextCardIndex(cards.length, current, event.key === "ArrowDown" ? 1 : -1)];
+      if (!target) return;
+      event.preventDefault();
+      target.focus();
+      target.scrollIntoView({ block: "nearest" });
+      return;
+    }
+    if (event.key !== "Enter") return;
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement) || active.dataset.catalogSelect === undefined) return;
+    const place = active.closest("[data-catalog-card]")?.querySelector<HTMLElement>("[data-catalog-place]");
+    if (!place) return;
+    event.preventDefault();
+    place.click();
+  };
 
   if (!room) return null;
 
@@ -184,9 +270,26 @@ export function Catalog({ className = "", collapsible = false }: { className?: s
         </ScrollRow>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3 panel-scroll">
-        {results.length === 0 ? (
-          <EmptyState title="Nothing matches that yet." hint="Clear a filter, or ask your agent to search the catalog for you." />
+      <div
+        ref={list}
+        role="group"
+        aria-label="Catalog results"
+        aria-keyshortcuts="ArrowUp ArrowDown Enter"
+        onKeyDown={onCardKeys}
+        className="min-h-0 flex-1 overflow-y-auto p-3 panel-scroll"
+      >
+        {settling ? (
+          <CatalogSkeleton />
+        ) : results.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-8 text-center">
+            <p className="font-display text-[15px] leading-snug italic text-ink-muted">Nothing matches that yet.</p>
+            <p className="max-w-[28ch] text-[12px] leading-relaxed text-ink-muted">
+              Relax one filter, or ask your agent to search the catalog for you.
+            </p>
+            <Chip icon={IconSearch} data-catalog-suggestion onClick={() => relax(suggestion.patch)}>
+              {suggestion.label}
+            </Chip>
+          </div>
         ) : (
           groups.map((group) => (
             <section key={group.category} className="mb-4 last:mb-0">

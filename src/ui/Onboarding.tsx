@@ -27,12 +27,12 @@ export function Onboarding({
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <p className="font-display text-[16px] leading-tight text-ink">
-          {connected ? "Your agent can see this room" : "Your agent can’t see this room yet"}
+          {connected ? "Your agent can see this room" : "No agent can see this room yet"}
         </p>
         <p className="text-[12.5px] leading-relaxed text-ink-muted">
           {connected
-            ? `Hearth has registered ${count} tools on this page. Ask your agent to place, arrange, measure or shop — every move shows up here with a receipt.`
-            : "Hearth publishes its tools on document.modelContext. Connect through ChatGPT’s built-in browser, a Chrome flag, or the production origin trial."}
+            ? `${count} tools are registered on this page. Ask your agent to place, arrange, measure or shop — every move lands in the log with its receipt.`
+            : "Hearth publishes its tools on document.modelContext. Connect ChatGPT or Chrome — or let the built-in assistant stand in."}
         </p>
         <div className="flex items-center gap-2">
           <Button

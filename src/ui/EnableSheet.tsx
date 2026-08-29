@@ -5,7 +5,7 @@
  */
 import { hearthStore, useHearthStore } from "../state/store";
 import { useCopyFlash } from "./clipboard";
-import { IconCopy } from "./icons";
+import { IconAssistant, IconCopy } from "./icons";
 import { Button, Kbd } from "./primitives";
 import { Sheet } from "./Sheet";
 
@@ -32,8 +32,17 @@ function StepRow({ index, step }: { index: number; step: Step }) {
 
 export function EnableSheet() {
   const open = useHearthStore((state) => state.ui.enableSheetOpen ?? false);
+  const status = useHearthStore((state) => state.tools.status);
   const { copied, copy } = useCopyFlash();
   const close = (): void => hearthStore.getState().setUi({ enableSheetOpen: false });
+  const openAssistant = (): void => {
+    hearthStore.getState().setUi({
+      enableSheetOpen: false,
+      assistantOpen: true,
+      cartOpen: false,
+      inspectorCollapsed: false,
+    });
+  };
 
   const steps: Step[] = [
     {
@@ -83,10 +92,27 @@ export function EnableSheet() {
           <StepRow key={step.title} index={index + 1} step={step} />
         ))}
       </ul>
-      <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">
-        Without an agent you can still drive everything by hand — and the Tools panel shows exactly what an agent
-        would find registered here.
-      </p>
+      {status === "native" ? (
+        <p className="mt-3 text-[12px] leading-relaxed text-ink-muted">
+          This browser already has native WebMCP, so an agent can see the studio right now. The Tools panel shows
+          exactly what it would find registered here.
+        </p>
+      ) : (
+        <div className="mt-4 flex items-start gap-3 rounded-panel border border-hairline bg-plaster/60 p-3">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-pill bg-plum/12 text-plum">
+            <IconAssistant size={14} />
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+            <p className="text-[12.5px] leading-relaxed text-ink-muted">
+              <span className="text-ink">Not now?</span> The built-in Hearth Assistant loads the Apache-2.0 WebMCP
+              polyfill and drives the same tools from this page. It is the fallback — a real agent is better.
+            </p>
+            <Button variant="secondary" size="sm" icon={IconAssistant} onClick={openAssistant}>
+              Open the Hearth Assistant
+            </Button>
+          </div>
+        </div>
+      )}
     </Sheet>
   );
 }

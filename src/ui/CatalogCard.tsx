@@ -66,6 +66,7 @@ export function CatalogCard({
   return (
     <li
       draggable
+      data-catalog-card
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={`group flex flex-col gap-2 rounded-panel border p-2.5 transition-[transform,box-shadow,border-color,background-color] duration-200 ease-out-soft hover:-translate-y-px hover:shadow-chip ${
@@ -74,6 +75,7 @@ export function CatalogCard({
     >
       <button
         type="button"
+        data-catalog-select
         onClick={onSelect}
         aria-pressed={selected}
         className="flex items-start gap-3 text-left"
@@ -115,11 +117,19 @@ export function CatalogCard({
           ))}
         </div>
         <span className="flex-1" />
+        {shopMode && inCart ? <Tag tone="sage" icon={IconCheck}>In cart</Tag> : null}
         <Tag tone={fits ? "sage" : "amber"}>{fit}</Tag>
       </div>
 
       <div className={`flex items-center gap-2 ${selected ? "" : "hidden group-hover:flex group-focus-within:flex"}`}>
-        <Button variant="primary" size="sm" icon={IconPlus} onClick={() => onPlace(product, colorway)} className="flex-1">
+        <Button
+          variant="primary"
+          size="sm"
+          icon={IconPlus}
+          data-catalog-place
+          onClick={() => onPlace(product, colorway)}
+          className="flex-1"
+        >
           Place in {roomName}
         </Button>
         {shopMode ? (

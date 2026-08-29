@@ -23,6 +23,7 @@ import type { WallBuild } from "./walls";
 import { useHoveredRoomId } from "./interactionDrag";
 import { useFloorTexture } from "./textures";
 import { useFramedBox } from "./framing";
+import { useIntroView } from "./intro";
 import { useMeta, useOpenings, useRooms } from "./useSceneStore";
 
 const FLOOR_ROTATION: [number, number, number] = [-Math.PI / 2, 0, 0];
@@ -50,6 +51,9 @@ export function Rooms() {
   const azimuth = plan ? 0 : yawAzimuth(meta.yaw);
   const pitch = plan ? PLAN_PITCH : DOLLHOUSE_PITCH;
   const leafIds = useMemo(() => primaryDoorIds(rooms, openings), [rooms, openings]);
+  // The opening settle fades the walls up from the plan (src/scene/intro.ts); afterwards the same
+  // opacity is driven only by the camera-facing cut-away, on its usual 300 ms tween.
+  const intro = useIntroView();
   return (
     <group name="rooms">
       {rooms.map((room) => (
@@ -62,6 +66,7 @@ export function Rooms() {
           plan={plan}
           focusCentre={framed.centreCm}
           leafIds={leafIds}
+          introFade={intro.wallFade}
         />
       ))}
     </group>
@@ -76,9 +81,10 @@ interface RoomViewProps {
   plan: number;
   focusCentre: Vec2;
   leafIds: Set<string>;
+  introFade: number;
 }
 
-function RoomView({ room, openings, azimuth, pitch, plan, focusCentre, leafIds }: RoomViewProps) {
+function RoomView({ room, openings, azimuth, pitch, plan, focusCentre, leafIds, introFade }: RoomViewProps) {
   const builds = useMemo(() => buildRoomWalls(room, openings), [room, openings]);
   useEffect(() => () => disposeWalls(builds), [builds]);
   const wallHex = wallColorHex(room.wallColor ?? "plaster");
@@ -95,6 +101,7 @@ function RoomView({ room, openings, azimuth, pitch, plan, focusCentre, leafIds }
           plan={plan}
           focusCentre={focusCentre}
           leafIds={leafIds}
+          introFade={introFade}
         />
       ))}
       <SwingArcs room={room} openings={openings} />
@@ -129,13 +136,16 @@ interface WallViewProps {
   plan: number;
   focusCentre: Vec2;
   leafIds: Set<string>;
+  introFade: number;
 }
 
 /** One wall: solid, jamb trim, baseboard, glazing and door leaves, all fading as one body. */
-function WallView({ build, wallHex, azimuth, pitch, plan, focusCentre, leafIds }: WallViewProps) {
+function WallView({ build, wallHex, azimuth, pitch, plan, focusCentre, leafIds, introFade }: WallViewProps) {
   const fade = wallOpacity(build.outward, build.samplesCm, focusCentre, azimuth, pitch);
-  const solidTarget = fade * (1 - plan);
-  const bandTarget = 0.6 * plan;
+  const solidTarget = fade * (1 - plan) * introFade;
+  const bandTarget = 0.6 * plan * introFade;
+  // The opening fade rides the wall's own cut-away tween: one stable config, so react-spring is
+  // never restarted by a fresh object on every render.
   const { solid, band } = useSpring({ solid: solidTarget, band: bandTarget, config: FADE_TWEEN });
   const edgeRefs = useRef<(LineHandle | null)[]>([]);
   const bodyRef = useRef<Group>(null);
