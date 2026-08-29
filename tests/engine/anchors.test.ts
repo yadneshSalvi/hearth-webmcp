@@ -4,7 +4,7 @@ import {
   deltaMove, describePlacement, resolveAnchor, rotateBy,
 } from "../../src/engine/anchors";
 import { createCatalog } from "../../src/engine/catalog";
-import { footprint, itemToWallDistance, polyInside, resolveWall, rotateDims } from "../../src/engine/geometry";
+import { footprint, itemToWallDistance, polyInside, resolveWall, rotateDims, rotationForWall } from "../../src/engine/geometry";
 import { createTemplate } from "../../src/engine/templates";
 import type { CatalogItem, Furniture, Opening, Room, Rotation, Scene, Vec2 } from "../../src/engine/types";
 
@@ -77,6 +77,31 @@ describe("wall anchors", () => {
     expect(result.pos.x).toBe(150);
     expect(result.pos.y).toBe(90);
     expect(result.note).toContain("facing west");
+  });
+
+  it("keeps a same-wall window behind wall-backed furniture in empty and furnished living rooms", () => {
+    const sofa = catalog.byId("sofa-liva")!;
+    const empty = createTemplate("2br");
+    const furnished = createTemplate("2br", { furnished: true });
+    const blocked = resolveAnchor(furnished, "living", sofa, {
+      anchor: { wall: "north", along: "center", facing: "window:window-living-north" },
+    }, catalog);
+    expect(blocked).toMatchObject({
+      ok: false,
+      freeSpans: [{ side: "north", spans: [{ fits: false }, { fits: false }] }],
+      suggestion: expect.stringContaining("try a narrower item"),
+    });
+    furnished.furniture = furnished.furniture.filter((entry) => entry.id !== "sofa-1");
+    for (const current of [empty, furnished]) {
+      const result = ok(resolveAnchor(current, "living", sofa, {
+        anchor: { wall: "north", along: "center", facing: "window:window-living-north" },
+      }, catalog));
+      const north = resolveWall(current.rooms.find((entry) => entry.id === "living")!, "north")!;
+      const placed = { id: "sofa-new", catalogId: sofa.id, roomId: "living", pos: result.pos, rotation: result.rotation, colorway: "sage", status: "placed" } as const;
+      expect(result.rotation).toBe(rotationForWall(north.side));
+      expect(itemToWallDistance(placed, sofa, north)).toBeCloseTo(0, 6);
+      expect(result.note).toContain("facing the room (window is behind it)");
+    }
   });
 });
 
@@ -202,6 +227,23 @@ describe("validity, nudging and failures", () => {
     expect(result.freeSpans?.[0]).toMatchObject({ wall: "w0", side: "north" });
     expect(result.freeSpans?.[0]?.spans.length).toBeGreaterThan(0);
     expect(result.suggestion).toMatch(/north wall .* fits; try along:/);
+  });
+
+  it("only marks a span fitting when its suggested wall placement is placeable", () => {
+    const sofa = catalog.byId("sofa-liva")!;
+    const current = scene({
+      furniture: [item("sofa-blocker", sofa.id, { x: 300, y: 44 })],
+      openings: [{ id: "window-main", roomId: "room", wallId: "w0", offset: 200, width: 200, kind: "window", sillHeight: 90 }],
+    });
+    const anchor = { wall: "north", along: 300, facing: "window:window-main" } as const;
+    const blocked = resolveAnchor(current, "room", sofa, { anchor }, catalog);
+    expect(blocked).toMatchObject({ ok: false, error: "blocked" });
+    if (blocked.ok) return;
+    const along = Number(/along: ([0-9.]+)/.exec(blocked.suggestion ?? "")?.[1]);
+    expect(Number.isFinite(along)).toBe(true);
+    const retry = ok(resolveAnchor(current, "room", sofa, { anchor: { ...anchor, along } }, catalog));
+    expect(retry.rotation).toBe(rotationForWall("north"));
+    expect(retry.note).toContain("window is behind it");
   });
 
   it("avoids both door swing and opening clear zones", () => {

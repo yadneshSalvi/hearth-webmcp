@@ -8,7 +8,7 @@ import type { Conflict } from "../../engine/types";
 import type { DefinedTool, ToolResult } from "../define";
 import { defineTool } from "../define";
 import { describeParam, roomParam } from "../params";
-import { resolveRoom, syncCart } from "./resolve";
+import { resolveRoom, syncCart, trackShopifyResult } from "./resolve";
 
 function conflictRow(conflict: Conflict): {
   kind: Conflict["kind"];
@@ -250,7 +250,7 @@ export function getCartTool(): DefinedTool {
     readOnly: true,
     input: z.object({}).strict(),
     async handler(_input, context) {
-      const result = await context.shopify.cartGet();
+      const result = trackShopifyResult(context, await context.shopify.cartGet());
       if (!result.ok) return { ok: false, error: "unavailable", detail: result.detail };
       syncCart(context, result.value);
       const state = context.store.getState();

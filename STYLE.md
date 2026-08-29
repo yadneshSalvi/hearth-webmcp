@@ -10,6 +10,8 @@ Every frame should look composed, calm, and expensive. Consistency beats realism
 | `canvas.top` → `canvas.bottom` | `#F7F3EC` → `#EFE7DB` | page/canvas background gradient (never black, never pure white) |
 | `plaster` | `#F4EFE6` | walls, panel surfaces |
 | `oak` | `#D9C4A3` | floors (subtle procedural plank stripes ±3% luminance) |
+| `paleOak` | `#E6D8BF` | pale-oak floors, Nordic and sage-linen palettes |
+| `stone` | `#D8D3CA` | stone floors and the base for derived terrazzo |
 | `terracotta` | `#C46A4A` | primary accent, orb, primary buttons |
 | `sage` | `#8A9B7C` | success, plants, secondary chips |
 | `ochre` | `#C9A44C` | focus rings, highlights, lamps' warm emissive |

@@ -138,6 +138,39 @@ describe("phase-gate regressions", () => {
     expect(hearthStore.getState().activity[0]?.summary).toBe(`Accessibility mode on (${expected} conflicts)`);
   });
 
+  it("ranks product alternatives by category tokens before edit distance", async () => {
+    const result = await registry().execute("get_product", { product: "Flying carpet" }, "agent");
+    expect(result).toMatchObject({ ok: false, error: "not_found" });
+    expect(!result.ok && result.alternatives?.every((id) => id.startsWith("rug-"))).toBe(true);
+  });
+
+  it("marks tool commerce unavailable, then returns the shared status to live on success", async () => {
+    const local = createLocalShopify(hearthStore.getState().catalog);
+    let reachable = false;
+    const shopify: ShopifyClient = {
+      ...local,
+      get unavailable() { return !reachable; },
+      async search(query) {
+        return reachable ? local.search(query) : { ok: false, error: "unavailable", detail: "Shopify is offline — retry" };
+      },
+    };
+    const tools = registry(shopify);
+    expect(await tools.execute("search_catalog", { query: "sofa" }, "agent")).toMatchObject({ ok: false, error: "unavailable" });
+    expect(hearthStore.getState().cart.status).toBe("offline");
+    reachable = true;
+    expect(await tools.execute("search_catalog", { query: "sofa" }, "agent")).toMatchObject({ ok: true });
+    expect(hearthStore.getState().cart.status).toBe("idle");
+  });
+
+  it("returns arrange-room design scores before and after within the tool budget", async () => {
+    const result = await registry().execute("arrange_room", { room: "living", style: "open" }, "agent");
+    expect(result).toMatchObject({
+      ok: true,
+      report_delta: { before: expect.any(Number), after: expect.any(Number) },
+    });
+    expect(JSON.stringify(result).length).toBeLessThanOrEqual(1_500);
+  });
+
   it("surfaces failed arrangement notes as actionable blocked results", async () => {
     const impossible = furnished2br();
     const living = impossible.rooms.find((room) => room.id === "living")!;

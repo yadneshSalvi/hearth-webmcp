@@ -322,8 +322,11 @@ function projectedAlong(wall: Wall, pos: Vec2): number {
   return ((pos.x - wall.a.x) * (wall.b.x - wall.a.x) + (pos.y - wall.a.y) * (wall.b.y - wall.a.y)) / wall.length;
 }
 
-function placementNote(plan: PositionPlan, pos: Vec2, rotation: Rotation, anchor: Anchor): string {
-  if (plan.wall && plan.kind !== "raw") return wallNote(plan.wall, projectedAlong(plan.wall, pos), rotation);
+function placementNote(plan: PositionPlan, pos: Vec2, rotation: Rotation, anchor: Anchor, facingFallback?: string): string {
+  if (plan.wall && plan.kind !== "raw") {
+    if (facingFallback) return bounded(`on the ${plan.wall.side} wall at ${Math.round(projectedAlong(plan.wall, pos))} cm; ${facingFallback}`);
+    return wallNote(plan.wall, projectedAlong(plan.wall, pos), rotation);
+  }
   if (plan.kind === "next_to") return bounded(`${anchor.side ?? "right"} of ${plan.neighbour?.id}, facing ${sideName(rotation)}`);
   return bounded(`${plan.kind === "centered" ? "centred in the room" : `at ${Math.round(pos.x)}, ${Math.round(pos.y)} cm`}, facing ${sideName(rotation)}`);
 }
@@ -340,14 +343,36 @@ function failureSpans(
   catalog: CatalogSource,
   requested: Wall | undefined,
   ignored: string[],
-  rotation: Rotation,
+  canPlace: (wall: Wall, along: number, rotation: Rotation) => boolean,
 ) {
   return (requested ? [requested] : walls(room)).map((wall) => ({
     wall: wall.id,
     side: wall.side,
-    spans: freeSpans(room, wall, scene, catalog, { ignoreItemIds: ignored, minLength: 0, itemHeight: cat.dims.h })
-      .map((span) => ({ ...span, fits: span.end - span.start >= extentAlong(wall, cat, rotation) })),
+    spans: freeSpans(room, wall, scene, catalog, { ignoreItemIds: ignored, minLength: 0, itemHeight: cat.dims.h }).map((span) => {
+      const rotation = rotationForWall(wall.side);
+      const half = extentAlong(wall, cat, rotation) / 2;
+      const min = span.start + half;
+      const max = span.end - half;
+      if (max < min - 1e-7) return { ...span, fits: false };
+      const midpoint = (min + max) / 2;
+      const candidates = [midpoint, min, max];
+      for (let along = Math.ceil(min); along <= Math.floor(max); along += 1) candidates.push(along);
+      candidates.sort((a, b) => Math.abs(a - midpoint) - Math.abs(b - midpoint) || a - b);
+      const along = candidates.find((value, index) => candidates.indexOf(value) === index && canPlace(wall, value, rotation));
+      return { ...span, fits: along !== undefined, ...(along !== undefined ? { along } : {}) };
+    }),
   }));
+}
+
+function targetOnOrBehindWall(wall: Wall, target: Vec2): boolean {
+  const dx = (wall.b.x - wall.a.x) / wall.length;
+  const dy = (wall.b.y - wall.a.y) / wall.length;
+  const inwardDistance = (target.x - wall.a.x) * -dy + (target.y - wall.a.y) * dx;
+  return inwardDistance <= 1e-7;
+}
+
+function conciseCm(value: number): string {
+  return String(Math.round(value * 10) / 10);
 }
 
 /** Resolves semantic anchors into a valid, optionally nudged room-local placement. */
@@ -390,17 +415,31 @@ export function resolveAnchor(scene: Scene, roomId: string, cat: CatalogItem, re
   }
   if (req.pos) plan = { ...plan, kind: "raw" };
   let position = plan.kind === "next_to" ? nextToPosition(plan, cat, rotation, anchor, catalog) as Vec2 : positionFor(plan, room, cat, rotation, req.pos);
+  let facingFallback: string | undefined;
   if (anchor.facing && req.rotation === undefined) {
     const facing = normalize(anchor.facing);
     if (facing.startsWith("wall:")) {
       const ref = anchor.facing.slice(anchor.facing.indexOf(":") + 1);
       const targetWall = resolveWall(room, ref);
       if (!targetWall) return notFound("Wall", ref, walls(room).map((entry) => ({ id: entry.id, label: entry.side })));
-      rotation = ({ north: 180, east: 270, south: 0, west: 90 } as const)[targetWall.side];
+      const target = { x: (targetWall.a.x + targetWall.b.x) / 2, y: (targetWall.a.y + targetWall.b.y) / 2 };
+      if (plan.wall && plan.kind !== "raw" && targetOnOrBehindWall(plan.wall, target)) {
+        rotation = rotationForWall(plan.wall.side);
+        facingFallback = "facing the room (target is behind it)";
+      } else {
+        rotation = ({ north: 180, east: 270, south: 0, west: 90 } as const)[targetWall.side];
+      }
     } else {
       const target = targetPoint(scene, room, anchor.facing, catalog);
       if ("ok" in target) return target;
-      rotation = facingRotation(position, target);
+      if (plan.wall && plan.kind !== "raw" && targetOnOrBehindWall(plan.wall, target)) {
+        rotation = rotationForWall(plan.wall.side);
+        facingFallback = facing.startsWith("window:")
+          ? "facing the room (window is behind it)"
+          : "facing the room (target is behind it)";
+      } else {
+        rotation = facingRotation(position, target);
+      }
     }
   }
   if (req.rotation !== undefined) rotation = req.rotation;
@@ -414,7 +453,7 @@ export function resolveAnchor(scene: Scene, roomId: string, cat: CatalogItem, re
   };
   const initial = candidate(position);
   if (initial.check.hard.length === 0) {
-    return { ok: true, pos: position, rotation, note: placementNote(plan, position, rotation, anchor), nudgedCm: 0 };
+    return { ok: true, pos: position, rotation, note: placementNote(plan, position, rotation, anchor, facingFallback), nudgedCm: 0 };
   }
 
   const positions: { pos: Vec2; distance: number }[] = [];
@@ -436,20 +475,32 @@ export function resolveAnchor(scene: Scene, roomId: string, cat: CatalogItem, re
     seen.add(key);
     const checked = candidate(attempt.pos);
     if (checked.check.hard.length === 0) {
-      return { ok: true, pos: attempt.pos, rotation, note: placementNote(plan, attempt.pos, rotation, anchor), nudgedCm: attempt.distance };
+      return { ok: true, pos: attempt.pos, rotation, note: placementNote(plan, attempt.pos, rotation, anchor, facingFallback), nudgedCm: attempt.distance };
     }
   }
 
-  const data = failureSpans(scene, room, cat, catalog, plan.wall, [...ignored], rotation);
+  const data = failureSpans(scene, room, cat, catalog, plan.wall, [...ignored], (wall, along, wallRotation) => {
+    const item: Furniture = {
+      id: "__candidate__", catalogId: cat.id, roomId, pos: backAgainstWall(wall, along, cat, wallRotation),
+      rotation: wallRotation, colorway: cat.colorways[0]?.id ?? "oak", status: "placed",
+    };
+    return checkPlacement(room, item, cat, blockers).hard.length === 0;
+  });
   const spans = data.flatMap((entry) => entry.spans.map((span) => ({ ...entry, span })));
   const fit = spans.filter((entry) => entry.span.fits).sort((a, b) => (b.span.end - b.span.start) - (a.span.end - a.span.start))[0];
   const widest = spans.sort((a, b) => (b.span.end - b.span.start) - (a.span.end - a.span.start))[0];
-  const suggestion = fit
-    ? `${fit.side} wall ${Math.round(fit.span.start)}–${Math.round(fit.span.end)} cm fits; try along: ${Math.round((fit.span.start + fit.span.end) / 2)}`
+  const fitAlong = fit?.span.along;
+  const suggestion = fit && fitAlong !== undefined
+    ? `${fit.side} wall ${Math.round(fit.span.start)}–${Math.round(fit.span.end)} cm fits; try along: ${conciseCm(fitAlong)}`
     : widest
       ? `${widest.side} wall free span ${Math.round(widest.span.start)}–${Math.round(widest.span.end)} cm; try a narrower item or clear the wall`
       : "Try a smaller item or clear another wall";
-  return { ok: false, error: "blocked", detail: `blocked by ${formatList(initial.check.hard)}`, freeSpans: data, suggestion };
+  const publicSpans = data.map((entry) => ({
+    wall: entry.wall,
+    side: entry.side,
+    spans: entry.spans.map(({ start, end, fits }) => ({ start, end, fits })),
+  }));
+  return { ok: false, error: "blocked", detail: `blocked by ${formatList(initial.check.hard)}`, freeSpans: publicSpans, suggestion };
 }
 
 /** Describes an item's wall relationship and facing direction for receipts. */

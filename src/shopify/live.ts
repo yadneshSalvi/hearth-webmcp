@@ -132,16 +132,16 @@ export function createLiveShopify(): ShopifyClient {
     async search(q) {
       const result = await api(`/api/shop/search?q=${encodeURIComponent(q)}`);
       if (!result.ok) return result;
-      return Array.isArray(result.value.products)
-        ? { ok: true, value: result.value.products as CatalogProduct[] }
-        : { ok: false, error: "unavailable", detail: "Shopify returned invalid search results" };
+      if (Array.isArray(result.value.products)) return { ok: true, value: result.value.products as CatalogProduct[] };
+      offline = true;
+      return { ok: false, error: "unavailable", detail: "Shopify returned invalid search results" };
     },
     async product(handle) {
       const result = await api(`/api/shop/product?handle=${encodeURIComponent(handle)}`);
       if (!result.ok) return result;
-      return isRecord(result.value.product)
-        ? { ok: true, value: result.value.product as unknown as CatalogProduct }
-        : { ok: false, error: "unavailable", detail: "Shopify returned an invalid product" };
+      if (isRecord(result.value.product)) return { ok: true, value: result.value.product as unknown as CatalogProduct };
+      offline = true;
+      return { ok: false, error: "unavailable", detail: "Shopify returned an invalid product" };
     },
     cartGet: ensureCart,
     async cartAdd(lines: CartAddLine[]) {
@@ -167,9 +167,11 @@ export function createLiveShopify(): ShopifyClient {
         result = await api(`/api/checkout?cartId=${encodeURIComponent(current.value.id)}`);
       }
       if (!result.ok) return result;
-      return typeof result.value.checkoutUrl === "string" && typeof result.value.storePassword === "string"
-        ? { ok: true, value: { checkoutUrl: result.value.checkoutUrl, storePassword: result.value.storePassword } }
-        : { ok: false, error: "unavailable", detail: "Shopify returned an invalid checkout link" };
+      if (typeof result.value.checkoutUrl === "string" && typeof result.value.storePassword === "string") {
+        return { ok: true, value: { checkoutUrl: result.value.checkoutUrl, storePassword: result.value.storePassword } };
+      }
+      offline = true;
+      return { ok: false, error: "unavailable", detail: "Shopify returned an invalid checkout link" };
     },
   };
 }

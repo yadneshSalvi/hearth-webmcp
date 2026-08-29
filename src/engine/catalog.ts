@@ -16,6 +16,23 @@ function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
+const TOKEN_ALIASES: Record<string, string> = {
+  carpet: "rug",
+  carpets: "rug",
+  couch: "sofa",
+  couches: "sofa",
+};
+
+function tokens(value: string): string[] {
+  return normalize(value).split(/[^a-z0-9]+/).filter(Boolean).map((token) => TOKEN_ALIASES[token] ?? token);
+}
+
+function tokenOverlap(query: string, item: CatalogItem): number {
+  const queryTokens = new Set(tokens(query));
+  const candidateTokens = new Set(tokens(`${item.name} ${item.category}`));
+  return [...queryTokens].filter((token) => candidateTokens.has(token)).length;
+}
+
 function unique(items: CatalogItem[]): CatalogItem | undefined {
   const byId = [...new Map(items.map((item) => [item.id, item])).values()];
   return byId.length === 1 ? byId[0] : undefined;
@@ -76,8 +93,12 @@ export function createCatalog(items: CatalogItem[]): Catalog {
   const suggestProducts = (query: string, n = 3): string[] => {
     const needle = normalize(query);
     return source
-      .map((item) => ({ id: item.id, score: Math.min(editDistance(needle, normalize(item.id)), editDistance(needle, normalize(item.name))) }))
-      .sort((a, b) => a.score - b.score || a.id.localeCompare(b.id))
+      .map((item) => ({
+        id: item.id,
+        overlap: tokenOverlap(query, item),
+        distance: Math.min(editDistance(needle, normalize(item.id)), editDistance(needle, normalize(item.name))),
+      }))
+      .sort((a, b) => b.overlap - a.overlap || a.distance - b.distance || a.id.localeCompare(b.id))
       .slice(0, Math.max(0, n))
       .map(({ id }) => id);
   };

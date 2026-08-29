@@ -37,7 +37,7 @@ describe("furniture actions", () => {
     expect(hearthStore.getState().scene.meta.selection.lastMovedItemId).toBe(item.id);
     expect(hearthStore.getState().scene.meta.selection.lastMovedBy).toBe("human");
     expect(hearthStore.getState().scene.meta.selection.lastMovedAt).toBeTypeOf("number");
-    expect(hearthStore.getState().activity[0]?.summary).toBe("You moved Nook Armchair");
+    expect(hearthStore.getState().activity[0]?.summary).toBe("You moved Nook Armchair to Main Bedroom");
   });
 
   it("changes colors and locks, then removes the item and linked cart line", () => {

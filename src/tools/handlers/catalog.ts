@@ -6,7 +6,7 @@ import type { Category } from "../../engine/types";
 import type { DefinedTool } from "../define";
 import { defineTool } from "../define";
 import { colorwayParam, describeParam, productParam, roomParam } from "../params";
-import { notFound, resolveProduct, resolveRoom, resolveRoomWall } from "./resolve";
+import { notFound, resolveProduct, resolveRoom, resolveRoomWall, trackShopifyResult } from "./resolve";
 
 const categories = [
   "sofa", "armchair", "bed", "wardrobe", "table", "desk", "chair", "shelf", "tv-unit", "rug",
@@ -49,7 +49,7 @@ export function searchCatalogTool(): DefinedTool {
       if (room && "ok" in room) return room;
       const wall = room && input.fits_wall ? resolveRoomWall(room, input.fits_wall) : undefined;
       if (wall && "ok" in wall) return wall;
-      const searched = await context.shopify.search(input.query ?? "");
+      const searched = trackShopifyResult(context, await context.shopify.search(input.query ?? ""));
       if (!searched.ok) return { ok: false, error: "unavailable", detail: searched.detail };
       const remote = new Map(searched.value.map((product) => [product.id, product]));
       const catalog = state.catalog.map((product) => remote.get(product.id) ?? product);
@@ -106,7 +106,7 @@ export function getProductTool(): DefinedTool {
       if ("ok" in resolved) return resolved;
       const room = resolveRoom(state, input.room);
       if ("ok" in room) return room;
-      const remote = await context.shopify.product(resolved.id);
+      const remote = trackShopifyResult(context, await context.shopify.product(resolved.id));
       if (!remote.ok) {
         if (remote.error === "not_found") return notFound("Product", input.product, state.catalog);
         return { ok: false, error: "unavailable", detail: remote.detail };
