@@ -26,6 +26,7 @@ export const hearthStore = createStore<HearthStore>()(
       activity: [],
       tools: { available: [], status: "unknown" },
       ui: { boardOpen: false, assistantOpen: false, toolsPanelOpen: false },
+      overlays: { conflicts: [] },
 
       placeItem: (source, input) => {
         const state = get();
@@ -318,6 +319,9 @@ export const hearthStore = createStore<HearthStore>()(
       setToolsMirror: (list: ToolMirror[], status) => set((draft) => { draft.tools = { available: structuredClone(list), status }; }),
       pushActivity: (entry) => set((draft) => { prepend(draft, structuredClone(entry)); }),
       setUi: (patch) => set((draft) => { Object.assign(draft.ui, patch); }),
+      setOverlays: (patch) => set((draft) => {
+        draft.overlays = { conflicts: patch.conflicts ? structuredClone(patch.conflicts) : (draft.overlays?.conflicts ?? []) };
+      }),
       undo: (steps = 1) => {
         if (!Number.isInteger(steps) || steps < 1) throw new HearthError("invalid", "Undo steps must be a positive integer");
         const temporalState = hearthStore.temporal.getState();
