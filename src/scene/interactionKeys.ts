@@ -4,6 +4,10 @@
  * rules check a drag gets; `Alt` + arrow walks the selection to the neighbouring item, so selecting,
  * rotating, nudging and deleting are all reachable without a mouse. `⌘Z`/`⌃Z` are deliberately
  * untouched — undo belongs to the chrome, and double-binding it would undo twice.
+ *
+ * These gestures belong to the canvas, so they only fire while the canvas (or the page body) has
+ * focus: arrows must reach a `role="toolbar"`'s buttons, and Backspace on a focused control must
+ * never delete a sofa. A held arrow stays one undoable step — see `moveItem`'s `quiet`.
  */
 import { useCallback, useEffect } from "react";
 import { rotateBy } from "../engine/anchors";
@@ -25,7 +29,17 @@ const NUDGE: Record<string, Vec2> = {
 };
 
 /** Applies an exact pose, or refuses it — a rose pulse and the reason, or a note that it is locked. */
-export type CommitPose = (item: Furniture, product: CatalogItem, room: Room, pos: Vec2, rotation: Rotation) => void;
+export type CommitPose = (item: Furniture, product: CatalogItem, room: Room, pos: Vec2, rotation: Rotation, opts?: { coalesce?: boolean }) => void;
+
+/**
+ * True when a key press belongs to the canvas rather than to a focused control. Panels are full of
+ * buttons the arrows have to walk through, and a `role="toolbar"` without roving tabindex depends
+ * on the arrow keys reaching it.
+ */
+function canvasHasFocus(): boolean {
+  const active = document.activeElement;
+  return active === null || active === document.body || active instanceof HTMLCanvasElement;
+}
 
 export interface InteractionKeysOptions {
   catalog: Catalog;
@@ -47,7 +61,7 @@ export interface InteractionKeysOptions {
 /** Wires the studio's keyboard gestures and returns the shared exact-pose commit. */
 export function useInteractionKeys({ catalog, poseRequest, abandon, isDragging }: InteractionKeysOptions): CommitPose {
   const commit = useCallback<CommitPose>(
-    (item, product, room, pos, rotation) => {
+    (item, product, room, pos, rotation, opts) => {
       const state = hearthStore.getState();
       if (item.locked === true) {
         state.toast({ tone: "info", message: `${product.name} is locked. Unlock it to move it.` });
@@ -66,7 +80,7 @@ export function useInteractionKeys({ catalog, poseRequest, abandon, isDragging }
         return;
       }
       state.setDragging(undefined);
-      state.moveItem("human", item.id, { pos: pose.pos, rotation: pose.rotation });
+      state.moveItem("human", item.id, { pos: pose.pos, rotation: pose.rotation }, opts?.coalesce ? { quiet: true } : undefined);
     },
     [poseRequest],
   );
@@ -80,11 +94,14 @@ export function useInteractionKeys({ catalog, poseRequest, abandon, isDragging }
       const room = selected ? state.scene.rooms.find((entry) => entry.id === selected.roomId) : undefined;
       const ready = selected !== undefined && product !== undefined && room !== undefined;
 
+      // Escape is allowed from anywhere: a drag in flight has to be abandonable even if the last
+      // thing clicked was a panel button. Every other gesture below belongs to the canvas alone.
       if (event.key === "Escape") {
         if (isDragging()) abandon();
         else if (selected) state.setSelection("human", { itemId: undefined });
         return;
       }
+      if (!canvasHasFocus()) return;
       const direction = NUDGE[event.key];
       if (direction) {
         event.preventDefault();
@@ -95,7 +112,15 @@ export function useInteractionKeys({ catalog, poseRequest, abandon, isDragging }
           return;
         }
         const step = event.shiftKey ? 10 : 1;
-        commit(selected, product, room, { x: selected.pos.x + direction.x * step, y: selected.pos.y + direction.y * step }, selected.rotation);
+        // The first press is the undoable step; the auto-repeats that follow ride on top of it.
+        commit(
+          selected,
+          product,
+          room,
+          { x: selected.pos.x + direction.x * step, y: selected.pos.y + direction.y * step },
+          selected.rotation,
+          { coalesce: event.repeat },
+        );
         return;
       }
       if (!ready) return;

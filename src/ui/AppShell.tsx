@@ -136,7 +136,7 @@ export default function AppShell() {
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
-          <PromptBar className="min-w-0 flex-1" />
+          <PromptBar className="min-w-0 flex-1" tier={tier} />
           <StatusChip className="pointer-events-auto" />
         </div>
       </div>

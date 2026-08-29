@@ -37,6 +37,11 @@ async function toolNames(page: Page): Promise<string[]> {
   });
 }
 
+/**
+ * Native Chrome 151 rejects an object here with "Failed to parse input arguments" — `executeTool`
+ * takes the arguments as a JSON string. The polyfill accepts both, so stringifying is what lets one
+ * suite run against either runtime.
+ */
 async function runTool(page: Page, name: string, input: unknown): Promise<string> {
   return page.evaluate(async ([toolName, args]) => {
     const runtime = document.modelContext as unknown as {
@@ -48,7 +53,7 @@ async function runTool(page: Page, name: string, input: unknown): Promise<string
     if (!tool) throw new Error(`Tool ${String(toolName)} is not registered`);
     const result = await runtime.executeTool(tool, args);
     return typeof result === "string" ? result : JSON.stringify(result);
-  }, [name, input] as const);
+  }, [name, JSON.stringify(input)] as const);
 }
 
 test.describe("studio chrome", () => {
@@ -62,8 +67,9 @@ test.describe("studio chrome", () => {
     await expect(page.getByRole("heading", { name: "CART" })).toBeVisible();
     await expect(page.getByRole("radio", { name: "Design" })).toHaveAttribute("aria-checked", "true");
     await expect(page.getByRole("heading", { name: "Living Room" })).toBeVisible();
-    // The polyfill is in play, so the chip must say so rather than claiming native support.
-    await expect(page.getByRole("button", { name: /Agent tools · polyfill/ })).toBeVisible();
+    // The polyfill is in play, so the chip must say so rather than claiming native support — and it
+    // still owes the human the number of tools an agent would find.
+    await expect(page.getByRole("button", { name: /Agent tools · 26 ready · polyfill/ })).toBeVisible();
   });
 
   test("registers the 26 default tools and lists them with schemas", async ({ page }) => {
@@ -129,6 +135,9 @@ test.describe("studio chrome", () => {
 
     await page.keyboard.press("Shift+Slash");
     await expect(page.getByRole("dialog")).toContainText("Keyboard");
+    // A second ? must not stack a sheet on the one already at z-[60].
+    await page.keyboard.press("Shift+Slash");
+    await expect(page.getByRole("dialog")).toHaveCount(1);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toBeHidden();
 
@@ -150,6 +159,80 @@ test.describe("studio chrome", () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(prompt);
   });
 
+  test("a stray native drag leaves the agent's preview and its tools alone", async ({ page }) => {
+    await openStudio(page);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(26);
+
+    const preview = await runTool(page, "preview_in_room", { product: "armchair-kyst", anchor: { centered: true } });
+    expect(preview).toContain('"ok":true');
+    // The preview gate opens confirm_preview and cancel_preview (TOOLS.md §2).
+    await expect.poll(async () => (await toolNames(page)).length).toBe(28);
+
+    // Dragging a text selection, an image or a file anywhere on the page fires these on window.
+    await page.evaluate(() => {
+      window.dispatchEvent(new DragEvent("dragleave", { bubbles: true, clientX: 0, clientY: 0 }));
+      window.dispatchEvent(new DragEvent("dragend", { bubbles: true }));
+    });
+    await page.waitForTimeout(600);
+
+    expect(await toolNames(page)).toContain("cancel_preview");
+    await expect.poll(async () => (await toolNames(page)).length).toBe(28);
+    expect(await page.evaluate(() => (window as unknown as { __hearthStore?: { getState(): { scene: { furniture: { status: string }[] } } } })
+      .__hearthStore?.getState().scene.furniture.some((item) => item.status === "ghost"))).toBe(true);
+  });
+
+  test("gives the compact tier a readable prompt sheet", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openStudio(page);
+    // Four chips in ~150 px rendered as four empty outlines; one button and a sheet do not.
+    await expect(page.locator("[data-prompt-chip]")).toHaveCount(0);
+
+    const trigger = page.getByRole("button", { name: "Prompts" });
+    await trigger.click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toContainText("Ask your agent");
+
+    const second = sheet.locator("[data-prompt-chip]").nth(1);
+    const prompt = (await second.innerText()).replace(/[“”]/g, "").trim();
+    expect(prompt.length).toBeGreaterThan(10);
+    await second.click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(prompt);
+
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    // Focus goes home to whatever opened the sheet, once, on close.
+    await expect(trigger).toBeFocused();
+  });
+
+  test("keeps focus inside a sheet when something in it changes state", async ({ page }) => {
+    // No polyfill: WebMCP is genuinely unavailable, which is what opens the enable sheet — the one
+    // sheet whose own component re-renders on a state flip (its "copied" flash).
+    await page.addInitScript(() => {
+      try { window.localStorage.setItem("hearth.onboarding.v1", "dismissed"); } catch { /* noop */ }
+    });
+    await page.goto("/");
+    await expect(page.locator('[data-studio="canvas"]')).toBeVisible();
+
+    const trigger = page.getByRole("button", { name: /Agent tools/ });
+    await expect(trigger).toHaveAccessibleName(/unavailable/);
+    await trigger.click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toContainText("Let your agent see this room");
+
+    const copy = sheet.getByRole("button", { name: /Copy the Chrome flag/ });
+    await copy.click();
+    // The flash re-renders the sheet's owner, so `onClose` is a new closure. If that tears the focus
+    // trap down and rebuilds it, focus lands back on the chip and then on the sheet's first control.
+    await expect(sheet.getByRole("button", { name: /Copied the flag URL/ })).toBeVisible();
+    await page.waitForTimeout(600);
+    expect(await page.evaluate(() => document.activeElement?.textContent)).toContain("Copied the flag URL");
+    await expect(sheet).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+
   test("placing from the catalog writes a receipt and offers undo", async ({ page }) => {
     await openStudio(page);
 
@@ -163,5 +246,7 @@ test.describe("studio chrome", () => {
 
     await page.getByRole("button", { name: "Undo", exact: true }).first().click();
     await expect(page.getByRole("heading", { name: "Living Room" })).toBeVisible();
+    // A human undo is an action too, so it leaves a receipt of its own — the agent's undo tool did.
+    await expect(page.getByText("You undid: placed Endre Sofa")).toBeVisible();
   });
 });

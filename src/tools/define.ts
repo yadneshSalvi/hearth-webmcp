@@ -341,7 +341,7 @@ export async function executeDefinedTool(
       }
     }
 
-    beginToolBatch();
+    beginToolBatch(tool.name);
     try {
       try {
         result = await tool.spec.handler(parsed.data, context);

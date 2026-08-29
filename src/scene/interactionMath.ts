@@ -429,10 +429,15 @@ export function stackSurfaceFor(product: CatalogItem, foot: Vec2[], others: read
   return best;
 }
 
-/** A ≤ 44-character chip explaining why a placement is refused, from an engine conflict. */
-export function conflictReason(conflict: Conflict, itemId: string): string {
+/**
+ * A ≤ 44-character chip explaining why a placement is refused, from an engine conflict. `nameOf`
+ * turns the other party's id into its product name — the chip and the toast built from it are read
+ * by a person, and "overlaps armchair-1" is an internal id leaking into the room.
+ */
+export function conflictReason(conflict: Conflict, itemId: string, nameOf?: (id: string) => string): string {
   const others = conflict.items.filter((id) => id !== itemId);
-  const first = others[0];
+  const other = others[0];
+  const first = other === undefined ? undefined : nameOf?.(other) ?? other;
   switch (conflict.kind) {
     case "overlap":
       return first ? `overlaps ${first}` : "overlaps another item";

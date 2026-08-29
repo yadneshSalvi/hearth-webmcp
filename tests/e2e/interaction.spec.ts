@@ -24,14 +24,14 @@ declare global {
     __hearth?: {
       state: () => {
         scene: { furniture: ItemSnapshot[]; meta: { selection: { itemId?: string } } };
-        ui: { toasts: { tone: string; message: string }[]; dragging?: { valid: boolean; reason?: string } };
+        ui: { dragging?: { valid: boolean; reason?: string } };
         applyTemplate: (source: string, id: string, furnished: boolean) => void;
         placeItem: (source: string, input: Record<string, unknown>) => ItemSnapshot;
         setSelection: (source: string, selection: Record<string, unknown>) => void;
       };
       item: (id: string) => ItemSnapshot | undefined;
       selection: () => { itemId?: string };
-      toasts: () => { tone: string; message: string }[];
+      toasts: () => { tone: string; title: string }[];
       pose: () => { pos: Point; rotation: number; valid: boolean; reason?: string; dims: unknown[]; guides: unknown[] } | undefined;
       project: (roomId: string, pos: Point, heightCm?: number) => Point | undefined;
       hoveredRoom: () => string | undefined;
@@ -128,8 +128,13 @@ async function item(page: Page, id = "sofa-1"): Promise<ItemSnapshot> {
 }
 
 // Software GL (swiftshader) renders every frame on the CPU, so a real drag over the canvas costs
-// far more wall clock here than on a GPU. Correctness is the point; give each gesture room.
+// far more wall clock here than on a GPU: measured at ~630 ms per frame at 1440 × 900, where one
+// drag needs several frames to walk the pointer path and settle on its snapped pose. Correctness is
+// the point; every wait below is sized for that, not for a GPU.
 test.describe.configure({ timeout: 180_000 });
+
+/** One gesture's worth of frames on a CPU renderer. */
+const GESTURE_TIMEOUT = 45_000;
 
 test.describe("direct manipulation", () => {
   test("drags the sofa flush to the west wall and turns it to face the room", async ({ page }) => {
@@ -138,7 +143,7 @@ test.describe("direct manipulation", () => {
     const target = await at(page, { x: 10, y: 220 });
 
     await drag(page, grab, target, { release: false });
-    await page.waitForFunction(() => window.__hearth!.pose()?.rotation === 270, undefined, { timeout: 10_000 });
+    await page.waitForFunction(() => window.__hearth!.pose()?.rotation === 270, undefined, { timeout: GESTURE_TIMEOUT });
     const mid = await page.evaluate(() => window.__hearth!.pose());
     expect(mid?.valid).toBe(true);
     expect(mid?.dims.length).toBeGreaterThan(0);
@@ -160,7 +165,7 @@ test.describe("direct manipulation", () => {
     await openStudio(page);
     const before = await page.evaluate(() => window.__hearth!.state() as unknown as { activity: { title: string }[] });
     await drag(page, await grabPoint(page), await at(page, { x: 262, y: 60 }), { release: false });
-    await page.waitForFunction(() => window.__hearth!.pose()?.valid === true, undefined, { timeout: 10_000 });
+    await page.waitForFunction(() => window.__hearth!.pose()?.valid === true, undefined, { timeout: GESTURE_TIMEOUT });
     await page.mouse.up();
     await page.waitForTimeout(300);
     const after = await page.evaluate(() => window.__hearth!.state() as unknown as { activity: { title: string }[] });
@@ -180,7 +185,7 @@ test.describe("direct manipulation", () => {
     const start = await item(page);
     await drag(page, await grabPoint(page), await at(page, { x: 400, y: 80 }), { release: false });
 
-    await page.waitForFunction(() => window.__hearth!.pose()?.valid === false, undefined, { timeout: 20_000 });
+    await page.waitForFunction(() => window.__hearth!.pose()?.valid === false, undefined, { timeout: GESTURE_TIMEOUT });
     const refused = await page.evaluate(() => window.__hearth!.pose());
     expect(refused?.reason).toBeTruthy();
 
@@ -189,8 +194,28 @@ test.describe("direct manipulation", () => {
     const after = await item(page);
     expect(after.pos).toEqual(start.pos);
     expect(after.rotation).toBe(start.rotation);
-    const toasts = await page.evaluate(() => window.__hearth!.toasts());
-    expect(toasts.at(-1)?.message).toContain("Cannot go there");
+    // The reason has to reach the human, not just the queue: the studio had two toast systems and
+    // only the one nothing rendered was being asserted here.
+    const notifications = page.getByLabel("Studio notifications");
+    await expect(notifications.getByText(/Cannot go there/)).toBeVisible();
+  });
+
+  test("announces removals in the live region the screen reader is already watching", async ({ page }) => {
+    await openStudio(page);
+    // The region exists before the first toast; a region created with its content is not announced.
+    const notifications = page.getByLabel("Studio notifications");
+    await expect(notifications).toBeAttached();
+
+    await page.mouse.click((await grabPoint(page)).x, (await grabPoint(page)).y);
+    await page.waitForTimeout(200);
+    await page.keyboard.press("Delete");
+    await expect(notifications.getByText(/Removed Endre Sofa/)).toBeVisible();
+    expect(await page.evaluate(() => window.__hearth!.item("sofa-1"))).toBeFalsy();
+
+    // Escape unwinds the page a layer at a time; with no overlay open, the toasts are the layer.
+    await page.keyboard.press("Escape");
+    await expect(notifications.getByText(/Removed Endre Sofa/)).toBeHidden();
+    await expect(notifications).toBeAttached();
   });
 
   test("selects on click, rotates with R, nudges with arrows and deletes", async ({ page }) => {
@@ -227,6 +252,25 @@ test.describe("direct manipulation", () => {
     expect(await page.evaluate(() => window.__hearth!.item("sofa-1"))).toBeFalsy();
   });
 
+  test("leaves the arrows and Backspace to whatever control has focus", async ({ page }) => {
+    await openStudio(page);
+    await page.mouse.click((await grabPoint(page)).x, (await grabPoint(page)).y);
+    await page.waitForTimeout(200);
+    const before = await item(page);
+    expect(await page.evaluate(() => window.__hearth!.selection().itemId)).toBe("sofa-1");
+
+    // Focus a chrome control: the studio's single-key gestures belong to the canvas, and a focused
+    // button owes its own keys — a toolbar needs the arrows, and Backspace must never delete a sofa.
+    await page.getByRole("button", { name: "Export design board" }).focus();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Backspace");
+    await page.waitForTimeout(250);
+
+    const after = await item(page);
+    expect(after.pos).toEqual(before.pos);
+    expect(await page.evaluate(() => window.__hearth!.item("sofa-1"))).toBeTruthy();
+  });
+
   test("shows a ghost while a catalog card is dragged over the canvas, then places it", async ({ page }) => {
     await openStudio(page);
     const target = await at(page, { x: 400, y: 120 });
@@ -242,7 +286,7 @@ test.describe("direct manipulation", () => {
       (window as unknown as { __transfer: DataTransfer }).__transfer = transfer;
     }, [target.x, target.y]);
 
-    await page.waitForFunction(() => window.__hearth!.state().scene.furniture.some((entry) => entry.id === "ghost-1"), undefined, { timeout: 10_000 });
+    await page.waitForFunction(() => window.__hearth!.state().scene.furniture.some((entry) => entry.id === "ghost-1"), undefined, { timeout: GESTURE_TIMEOUT });
     const ghost = await page.evaluate(() => window.__hearth!.state().scene.furniture.find((entry) => entry.id === "ghost-1"));
     expect(ghost?.roomId).toBe("living");
     expect(await page.evaluate(() => window.__hearth!.pose()?.dims.length)).toBeGreaterThan(0);

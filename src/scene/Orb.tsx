@@ -1,8 +1,10 @@
 "use client";
 /**
  * The agent orb: a small warm emissive sphere that bobs in the active room's south-east corner and
- * flies to the site of every tool action with a glass label chip (STYLE.md §3). Hidden entirely
- * under `prefers-reduced-motion`; the chip still appears.
+ * flies to the site of every tool action with a glass label chip (STYLE.md §3). Under
+ * `prefers-reduced-motion` the orb stays — parked at its idle corner, no bob and no flight — because
+ * STYLE.md §3 asks for "orb static", not for the agent's presence to disappear. The chip still
+ * appears, so a tool action is still announced.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Html } from "@react-three/drei";
@@ -65,11 +67,12 @@ export function Orb() {
   const chip = command && expired.chip !== issued ? command.label : undefined;
   const visiting = issued !== 0 && expired.visit !== issued;
 
-  const goal = visiting && destination ? destination : home;
+  const goal = !reduced && visiting && destination ? destination : home;
   const { x, y, z } = useSpring({
     x: goal[0],
     y: goal[1],
     z: goal[2],
+    immediate: reduced,
     config: { duration: motionTokens.orbFlightMs, easing: (t: number) => 1 - (1 - t) ** 3 },
   });
 
@@ -82,18 +85,16 @@ export function Orb() {
   return (
     <animated.group name="orb" position-x={x} position-y={y} position-z={z}>
       <group ref={bobRef}>
-        {reduced ? null : (
-          <mesh castShadow={false}>
-            <sphereGeometry args={[RADIUS * M, 28, 20]} />
-            <meshStandardMaterial
-              color={palette.terracotta}
-              emissive={palette.terracotta}
-              emissiveIntensity={5.2}
-              roughness={0.35}
-              metalness={0}
-            />
-          </mesh>
-        )}
+        <mesh castShadow={false}>
+          <sphereGeometry args={[RADIUS * M, 28, 20]} />
+          <meshStandardMaterial
+            color={palette.terracotta}
+            emissive={palette.terracotta}
+            emissiveIntensity={5.2}
+            roughness={0.35}
+            metalness={0}
+          />
+        </mesh>
         {chip ? (
           <Html position={[0, RADIUS * M + 0.3, 0]} center pointerEvents="none" zIndexRange={[40, 20]}>
             <div className="glass pointer-events-none select-none px-3 py-1.5 whitespace-nowrap">

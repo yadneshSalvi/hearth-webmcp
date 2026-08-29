@@ -30,7 +30,7 @@ export function IconButton({
   const skin = active
     ? "border-terracotta/40 bg-terracotta/12 text-terracotta"
     : tone === "primary"
-      ? "border-hairline bg-terracotta text-white hover:bg-terracotta/88"
+      ? "border-hairline bg-terracotta text-plaster hover:bg-terracotta/88"
       : "border-hairline bg-plaster/60 text-ink-muted hover:bg-plaster hover:text-ink";
   const control = (
     <button

@@ -12,6 +12,7 @@ import type { Catalog } from "../engine/catalog";
 import { polyBBox } from "../engine/geometry";
 import type { CatalogItem, Furniture, Room, Vec2 } from "../engine/types";
 import { hearthStore } from "../state/store";
+import { toastSnapshot } from "../state/toasts";
 import { getDraggingItemId, getHoveredRoomId } from "./interactionDrag";
 import type { Pose } from "./interactionDrag";
 import { roomToWorldCm } from "./interactionMath";
@@ -118,7 +119,7 @@ export function DebugHandle({ camera, canvas, getPose, pick }: DebugHandleProps)
       item: (id: string) => hearthStore.getState().scene.furniture.find((entry) => entry.id === id),
       selection: () => hearthStore.getState().scene.meta.selection,
       dragging: () => hearthStore.getState().ui.dragging,
-      toasts: () => hearthStore.getState().ui.toasts,
+      toasts: () => toastSnapshot(),
       pose: () => getPoseRef.current(),
       pick: (clientX: number, clientY: number) => pickRef.current(clientX, clientY),
       hoveredRoom: () => getHoveredRoomId(),

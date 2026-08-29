@@ -134,11 +134,20 @@ headers `Content-Type: application/json`, `X-Shopify-Storefront-Access-Token: <p
 
 **What we ship (both):**
 1. **Agent path** — `get_checkout_link` returns `{ checkout_url, store_password, note }`; the agent tells the human.
-2. **Human path** — the Cart panel's **Checkout** button: a top-level `<form method="post" action="https://…/password" target="hearth-shop">`
-   with hidden `password`, submitted into a named window, then ≈1 s later `window.open(checkoutUrl, "hearth-shop")`
-   (the Lax cookie is sent on the top-level GET; the cookie lasts a year so later clicks go straight to checkout).
-   The password comes from `/api/checkout` at click time, never from the bundle. The panel also shows
-   "Store password: •••• (copy)" as a fallback.
+2. **Human path** — the Cart panel's **Checkout** button, in this order:
+   1. `window.open("", "hearth-shop")` **synchronously on the click**, so the popup rides the click's transient
+      activation (the awaited `/api/checkout` round-trip below would otherwise lose it and be blocked);
+   2. `await /api/checkout` for `{ checkoutUrl, storePassword }` — never from the bundle;
+   3. a top-level `<form method="post" action="https://…/password" target="hearth-shop">` with hidden `password`,
+      submitted into that window (the Lax cookie is sent on the top-level GET; it lasts a year, so later clicks go
+      straight to checkout);
+   4. ≈1 s later `target.location.replace(checkoutUrl)` — the same window is *navigated*, not opened a second time.
+      `window.open(url, name, "noopener")` cannot be used here: per spec a non-empty target name is treated as
+      `_blank` when `noopener` is set, which would abandon the window the password cookie was set in.
+   The panel then shows the checkout URL as an `<a target="_blank" rel="noopener noreferrer">` plus
+   "Store password: •••• (copy)", which is the whole flow when a popup blocker refuses the window.
+   The **Checkout** button is only enabled when the studio is on the live client (`src/shopify/select.ts`);
+   on the local catalog it is disabled and says why, because there is no real `checkoutUrl` to open.
 Test payment: **Bogus Gateway**, card number `1` = success (`2` decline, `3` error), any future expiry, any CVV.
 
 ## 7. Cart ↔ scene linking rules (used by tools 9, 13, 14, 25, 27, 30)

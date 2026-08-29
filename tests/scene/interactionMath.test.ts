@@ -372,6 +372,17 @@ describe("conflictReason", () => {
   it("stays readable when the conflict names no other item", () => {
     expect(conflictReason(conflict("overlap", ["sofa-1"]), "sofa-1")).toBe("overlaps another item");
   });
+
+  it("says the product name when one is known, and still fits the chip", () => {
+    const names: Record<string, string> = { "armchair-1": "Kyst Armchair", "decor-2": "Ro Sculpture Decor" };
+    const nameOf = (id: string) => names[id] ?? id;
+    expect(conflictReason(conflict("overlap", ["sofa-1", "armchair-1"]), "sofa-1", nameOf)).toBe("overlaps Kyst Armchair");
+    const longest = conflictReason(conflict("clearance", ["sofa-1", "decor-2"]), "sofa-1", nameOf);
+    expect(longest).toBe("blocks Ro Sculpture Decor's clearance");
+    expect(longest.length).toBeLessThanOrEqual(44);
+    // An opening has no product, so its id — which reads fine — comes straight through.
+    expect(conflictReason(conflict("door_swing", ["sofa-1", "door-1"]), "sofa-1", nameOf)).toBe("blocks door-1's swing");
+  });
 });
 
 describe("rotated extents", () => {
