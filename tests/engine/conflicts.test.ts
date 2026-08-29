@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catalogSource } from "../../data/catalog.source";
-import { conflictsForItem, countBySeverity, createCatalog, evaluateHome, evaluateRoom } from "../../src/engine";
+import { conflictsForItem, countBySeverity, createCatalog, createTemplate, evaluateHome, evaluateRoom } from "../../src/engine";
 import type { Furniture, Opening, Room, Scene } from "../../src/engine/types";
 import { emptyHome, furnished2br, loftScene, studioScene, worstCase2br } from "../fixtures/scenes";
 
@@ -20,6 +20,21 @@ function scene(furniture: Furniture[] = [], openings: Opening[] = [], targetRoom
 
 function northDoor(id = "door-1", offset = 0, width = 90): Opening {
   return { id, roomId: "r", wallId: "w0", offset, width, kind: "door", swing: "in", hinge: "right" };
+}
+
+function applyMove(input: Scene, fix: string): Scene {
+  const match = /^move (\S+) (\d+) cm (north|east|south|west)$/.exec(fix);
+  expect(match, `unsupported fix: ${fix}`).not.toBeNull();
+  const moved = structuredClone(input);
+  const target = moved.furniture.find((entry) => entry.id === match?.[1]);
+  expect(target, `missing fix target: ${match?.[1]}`).toBeDefined();
+  const cm = Number(match?.[2]);
+  const direction = match?.[3];
+  if (target && direction === "north") target.pos.y -= cm;
+  if (target && direction === "east") target.pos.x += cm;
+  if (target && direction === "south") target.pos.y += cm;
+  if (target && direction === "west") target.pos.x -= cm;
+  return moved;
 }
 
 describe("overlap, stacking, and room bounds", () => {
@@ -141,6 +156,21 @@ describe("aggregation, fixtures, and budgets", () => {
     expect(evaluateRoom(scene(), "missing", catalog)).toEqual([]);
   });
 
+  it("measures a bed approach outside its endpoints and gives a working pinch fix", () => {
+    const target = room(400, 360);
+    target.type = "bedroom";
+    const door: Opening = { id: "door", roomId: "r", wallId: "w1", offset: 135, width: 90, kind: "door", swing: "out", hinge: "left" };
+    const bed = item("bed", "bed-birk", 100, 180, 270);
+    const open = scene([bed], [door], target);
+    expect(evaluateRoom(open, "r", catalog, { accessibility: true }).filter((conflict) => conflict.kind === "access_path")).toEqual([]);
+
+    const pinched = scene([bed, item("wardrobe", "wardrobe-hald", 235, 100, 90)], [door], target);
+    const conflict = evaluateRoom(pinched, "r", catalog, { accessibility: true }).find((entry) => entry.kind === "access_path");
+    expect(conflict).toMatchObject({ detail: "door to bed is 70 cm wide; needs 90 cm", fix: "move wardrobe 10 cm north" });
+    const fixed = applyMove(pinched, conflict!.fix);
+    expect(evaluateRoom(fixed, "r", catalog, { accessibility: true }).some((entry) => entry.kind === "access_path")).toBe(false);
+  });
+
   it("sorts errors first and exposes severity/item selectors", () => {
     const input = scene([
       item("sofa-1", "sofa-endre", 250, 100),
@@ -174,12 +204,23 @@ describe("aggregation, fixtures, and budgets", () => {
     const accessible = evaluateHome(input, catalog, { accessibility: true });
     expect(standard.filter((conflict) => conflict.severity === "error")).toEqual([]);
     expect(standard.filter((conflict) => conflict.kind === "clearance")).toHaveLength(5);
-    expect(standard.filter((conflict) => conflict.kind === "traffic")).toHaveLength(6);
-    expect(accessible.filter((conflict) => conflict.kind === "access_path")).toHaveLength(8);
+    expect(standard.filter((conflict) => conflict.kind === "traffic")).toHaveLength(5);
+    expect(accessible.filter((conflict) => conflict.kind === "access_path")).toHaveLength(5);
     expect(accessible.filter((conflict) => conflict.kind === "turning_circle")).toHaveLength(3);
     expect(accessible.filter((conflict) => conflict.kind === "reach")).toHaveLength(3);
     expect(accessible.some((conflict) => conflict.items.includes("bed-1"))).toBe(true);
     expect(accessible.some((conflict) => conflict.items.includes("desk-1"))).toBe(true);
+  });
+
+  it("gives every canonical furnished access-path conflict a count-reducing fix", () => {
+    const input = createTemplate("2br", { furnished: true });
+    const conflicts = evaluateHome(input, catalog, { accessibility: true });
+    const paths = conflicts.filter((conflict) => conflict.kind === "access_path");
+    expect(paths).toHaveLength(1);
+    for (const conflict of paths) {
+      const fixed = applyMove(input, conflict.fix);
+      expect(evaluateHome(fixed, catalog, { accessibility: true }).length).toBeLessThan(conflicts.length);
+    }
   });
 
   it("is deterministic, input-pure, and respects every text budget", () => {

@@ -279,7 +279,8 @@ function pathFix(scene: Scene, room: Room, catalog: Catalog, from: string, to: s
   const fromPoint = endpointPoint(scene, room, catalog, from);
   const toPoint = endpointPoint(scene, room, catalog, to);
   const reference = pinch ?? (fromPoint && toPoint ? { x: (fromPoint.x + toPoint.x) / 2, y: (fromPoint.y + toPoint.y) / 2 } : fromPoint ?? toPoint);
-  const candidates = resolvedItems(scene, room.id, catalog).filter((entry) => entry.item.status === "placed" && entry.cat.category !== "rug" && !STACKABLES.has(entry.cat.category));
+  const candidates = resolvedItems(scene, room.id, catalog).filter((entry) => entry.item.status === "placed"
+    && entry.item.id !== from && entry.item.id !== to && entry.cat.category !== "rug" && !STACKABLES.has(entry.cat.category));
   if (!reference || candidates.length === 0) return bounded(`keep a ${required} cm clear route from ${from} to ${to}`);
   const blocker = [...candidates].sort((a, b) => distanceToPoly(reference, a.poly) - distanceToPoly(reference, b.poly) || a.item.id.localeCompare(b.item.id))[0] as ResolvedItem;
   const bounds = polyBBox(room.poly);
