@@ -17,6 +17,7 @@ import { swingZone } from "../engine/doors";
 import type { Opening, Room, Vec2 } from "../engine/types";
 import { mix, palette, wallColorHex } from "../tokens";
 import { DOLLHOUSE_PITCH, DOOR_H, DOOR_LEAF_T, M, PLAN_PITCH, WALL_H, easeOut, wallOpacity, yawAzimuth } from "./math";
+import { useOrbitQuantized } from "./cameraState";
 import { WALL_HEIGHT_M, WALL_THICKNESS_M, buildRoomWalls, disposeWalls, polygonShape, primaryDoorIds } from "./walls";
 import type { Group, Mesh } from "three";
 import type { WallBuild } from "./walls";
@@ -33,6 +34,13 @@ const TOP_EDGE = (length: number, z: number): [number, number, number][] => [
   [length, WALL_HEIGHT_M, z],
 ];
 const FADE_TWEEN = { duration: 300, easing: easeOut };
+const DEG = Math.PI / 180;
+/**
+ * How coarsely the free orbit is sampled for the cut-away. The angle a wall fades at is a
+ * smoothstep, so 4° is imperceptible in the result — but it turns a 2 s orbit drag from ~120
+ * re-renders of every wall in the home into a handful, and each wall's 300 ms fade hides the step.
+ */
+const WALL_FADE_STEP_DEG = 4;
 /** A cut-away wall keeps its baseboard readable so the room's outline never disappears. */
 const BASEBOARD_FLOOR = 0.32;
 
@@ -47,9 +55,12 @@ export function Rooms() {
   const openings = useOpenings();
   const meta = useMeta();
   const framed = useFramedBox();
+  // The cut-away is measured against the camera the human is actually looking through: the framed
+  // corner plus whatever they have orbited to (src/scene/cameraState.ts).
+  const orbit = useOrbitQuantized(WALL_FADE_STEP_DEG);
   const plan = meta.view === "plan" ? 1 : 0;
-  const azimuth = plan ? 0 : yawAzimuth(meta.yaw);
-  const pitch = plan ? PLAN_PITCH : DOLLHOUSE_PITCH;
+  const azimuth = plan ? 0 : yawAzimuth(meta.yaw) + orbit.azimuthDeg * DEG;
+  const pitch = plan ? PLAN_PITCH : DOLLHOUSE_PITCH + orbit.pitchDeg * DEG;
   const leafIds = useMemo(() => primaryDoorIds(rooms, openings), [rooms, openings]);
   // The opening settle fades the walls up from the plan (src/scene/intro.ts); afterwards the same
   // opacity is driven only by the camera-facing cut-away, on its usual 300 ms tween.
@@ -65,6 +76,7 @@ export function Rooms() {
           pitch={pitch}
           plan={plan}
           focusCentre={framed.centreCm}
+          cutInFront={framed.kind !== "home"}
           leafIds={leafIds}
           introFade={intro.wallFade}
         />
@@ -80,11 +92,13 @@ interface RoomViewProps {
   pitch: number;
   plan: number;
   focusCentre: Vec2;
+  /** false while the whole home is framed: no wall is cut merely for standing in front. */
+  cutInFront: boolean;
   leafIds: Set<string>;
   introFade: number;
 }
 
-function RoomView({ room, openings, azimuth, pitch, plan, focusCentre, leafIds, introFade }: RoomViewProps) {
+function RoomView({ room, openings, azimuth, pitch, plan, focusCentre, cutInFront, leafIds, introFade }: RoomViewProps) {
   const builds = useMemo(() => buildRoomWalls(room, openings), [room, openings]);
   useEffect(() => () => disposeWalls(builds), [builds]);
   const wallHex = wallColorHex(room.wallColor ?? "plaster");
@@ -100,6 +114,7 @@ function RoomView({ room, openings, azimuth, pitch, plan, focusCentre, leafIds, 
           pitch={pitch}
           plan={plan}
           focusCentre={focusCentre}
+          cutInFront={cutInFront}
           leafIds={leafIds}
           introFade={introFade}
         />
@@ -135,13 +150,14 @@ interface WallViewProps {
   pitch: number;
   plan: number;
   focusCentre: Vec2;
+  cutInFront: boolean;
   leafIds: Set<string>;
   introFade: number;
 }
 
 /** One wall: solid, jamb trim, baseboard, glazing and door leaves, all fading as one body. */
-function WallView({ build, wallHex, azimuth, pitch, plan, focusCentre, leafIds, introFade }: WallViewProps) {
-  const fade = wallOpacity(build.outward, build.samplesCm, focusCentre, azimuth, pitch);
+function WallView({ build, wallHex, azimuth, pitch, plan, focusCentre, cutInFront, leafIds, introFade }: WallViewProps) {
+  const fade = wallOpacity(build.outward, build.samplesCm, focusCentre, azimuth, pitch, { cutInFront });
   const solidTarget = fade * (1 - plan) * introFade;
   const bandTarget = 0.6 * plan * introFade;
   // The opening fade rides the wall's own cut-away tween: one stable config, so react-spring is

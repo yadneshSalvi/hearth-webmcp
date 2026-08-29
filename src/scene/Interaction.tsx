@@ -18,6 +18,7 @@ import { rotateBy } from "../engine/anchors";
 import { createCatalog } from "../engine/catalog";
 import type { CatalogItem, Room, Rotation, Vec2 } from "../engine/types";
 import { hearthStore, useHearthStore } from "../state/store";
+import { beginCameraDrag, cameraGestureActive, cameraGestureMoved, useCameraGestures } from "./cameraGestures";
 import { setPointerHover } from "./hover";
 import { useReducedMotion } from "./idle";
 import { DebugHandle, deleteItem, duplicateItem } from "./interactionCommands";
@@ -247,6 +248,10 @@ export function Interaction() {
         const centre = roomToWorldCm(room, found.pos);
         if (point) grab = { x: centre.x - point.x, y: centre.y - point.y };
       }
+      // Nothing under the pointer: this press belongs to the camera — a pan, or an orbit with
+      // Shift held (src/scene/cameraGestures.ts). The click that activates the room is still
+      // recorded below; a camera gesture only takes the press over once it actually moves.
+      if (!found && !event.altKey) beginCameraDrag(event, event.shiftKey ? "orbit" : "pan");
       pressRef.current = {
         pointerId: event.pointerId,
         itemId: found?.id,
@@ -270,6 +275,8 @@ export function Interaction() {
         if (Math.hypot(event.clientX - press.clientX, event.clientY - press.clientY) > DRAG_THRESHOLD_PX) startDrag(press);
       }
       if (pressRef.current?.dragging) return;
+      // The camera owns the pointer: highlighting items under a scene that is sliding would flicker.
+      if (cameraGestureActive()) return;
       const now = performance.now();
       if (now - hoverAtRef.current < HOVER_THROTTLE_MS) return;
       hoverAtRef.current = now;
@@ -290,6 +297,8 @@ export function Interaction() {
         release();
         return;
       }
+      // A background drag panned or orbited the camera; it must not also select or activate.
+      if (cameraGestureMoved(event.pointerId)) return;
       if (Math.hypot(event.clientX - press.clientX, event.clientY - press.clientY) > DRAG_THRESHOLD_PX * 2) return;
       const state = hearthStore.getState();
       if (press.itemId) {
@@ -313,7 +322,7 @@ export function Interaction() {
     };
 
     const onLeave = () => {
-      if (pressRef.current?.dragging) return;
+      if (pressRef.current?.dragging || cameraGestureActive()) return;
       setPointerHover(undefined);
       setHoveredRoomId(undefined);
       element.style.cursor = "";
@@ -332,6 +341,10 @@ export function Interaction() {
       element.removeEventListener("pointerleave", onLeave);
     };
   }, [abandon, catalog, floorAt, gl, itemAt, poseRequest, release]);
+
+  // Every camera gesture — the handed-over background drag plus the wheel, the right/middle drag,
+  // two-finger touch and the double-click that re-homes the shot — lives in one module.
+  useCameraGestures({ element: gl.domElement, itemAt });
 
   const commit = useInteractionKeys({
     catalog,

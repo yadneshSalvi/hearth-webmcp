@@ -60,7 +60,14 @@ export function createToolUi(studio: StudioApi, store: StoreApi<HearthStore>): H
     cancelConfirms: gate.cancelAll,
 
     focus(target: ToolFocus) {
-      studio.focus(target.kind === "room" ? { roomId: target.id } : { itemId: target.id });
+      // Compared as a string, not against the union: `set_view` gains `focus: "home"` in the tools
+      // layer right after this lands, and this branch is already waiting for it.
+      const kind: string = target.kind;
+      if (kind === "home") {
+        studio.focus({ home: true });
+        return;
+      }
+      studio.focus(kind === "room" ? { roomId: target.id } : { itemId: target.id });
     },
 
     /**

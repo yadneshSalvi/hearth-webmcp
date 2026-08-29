@@ -6,9 +6,10 @@
 import { useMemo } from "react";
 import { polyBBox } from "../engine/geometry";
 import type { Vec2 } from "../engine/types";
-import { homeBox, itemBox, roomBox } from "./math";
+import { homeCentreCm, itemBox, roomBox, wholeHomeBox } from "./math";
 import type { Box3Like } from "./math";
 import { useFocusTarget } from "./focus";
+import type { FocusKind } from "./focus";
 import { useMeta, useProductLookup, useRooms, useFurniture } from "./useSceneStore";
 
 export interface Framed {
@@ -17,6 +18,8 @@ export interface Framed {
   centreCm: Vec2;
   /** The room being framed, so its walls keep full contrast while neighbours recede. */
   roomId?: string;
+  /** What is being framed. The home shot cuts walls by facing only (see `wallOpacity`). */
+  kind: FocusKind;
 }
 
 /** The volume the camera frames and the wall fade measures against. */
@@ -27,17 +30,22 @@ export function useFramedBox(): Framed {
   const override = useFocusTarget();
   const byId = useProductLookup();
   return useMemo(() => {
+    // The whole home: every room, walls included, centred on the home's own footprint. No `roomId`,
+    // because no single room is the subject — the cut-away treats the home as one volume.
+    if (override?.home) {
+      return { box: wholeHomeBox(rooms), centreCm: homeCentreCm(rooms), kind: "home" as const };
+    }
     const activeId = override?.roomId ?? meta.activeRoomId;
     const item = override?.itemId ? furniture.find((candidate) => candidate.id === override.itemId) : undefined;
     if (item) {
       const room = rooms.find((candidate) => candidate.id === item.roomId);
       const product = byId(item.catalogId);
       if (room && product) {
-        return { box: itemBox(room, item, product), centreCm: itemCentre(room.origin, item.pos), roomId: room.id };
+        return { box: itemBox(room, item, product), centreCm: itemCentre(room.origin, item.pos), roomId: room.id, kind: "item" as const };
       }
     }
     const room = rooms.find((candidate) => candidate.id === activeId) ?? rooms[0];
-    if (!room) return { box: homeBox(rooms), centreCm: { x: 0, y: 0 } };
+    if (!room) return { box: wholeHomeBox(rooms), centreCm: homeCentreCm(rooms), kind: "home" as const };
     const bounds = polyBBox(room.poly);
     return {
       box: roomBox(room),
@@ -46,6 +54,7 @@ export function useFramedBox(): Framed {
         y: room.origin.y + (bounds.minY + bounds.maxY) / 2,
       },
       roomId: room.id,
+      kind: "room" as const,
     };
   }, [rooms, furniture, meta.activeRoomId, override, byId]);
 }

@@ -44,21 +44,32 @@ declare global {
 const SOFA = { catalogId: "sofa-endre", height: 85 };
 
 /**
- * The camera tweens for 600 ms after a view or room change, so a projection taken mid-tween points
- * somewhere else by the time the pointer arrives. Waits until two samples 250 ms apart agree.
+ * The camera tweens for 600 ms after a view, room or framing change, so a projection taken mid-tween
+ * points somewhere else by the time the pointer arrives — and a press that lands next to the sofa
+ * instead of on it pans the camera rather than grabbing it.
+ *
+ * Sampling on a timer is not enough: the canvas is `frameloop="demand"` and the three camera is only
+ * written inside `useFrame`, so a projection that does not move can simply be one nobody has
+ * redrawn. Headless Chrome makes that worse — with the page idle it produces no rendering
+ * opportunity at all, so `requestAnimationFrame`, the panel-inset measurement and the reframe they
+ * trigger all wait for the next input event. So each sample nudges the real mouse, asks the root to
+ * draw, and compares two room corners, which pins the framed scale as well as the centre.
  */
 async function settle(page: Page): Promise<void> {
-  await page.waitForFunction(
-    async () => {
-      const first = window.__hearth?.project("living", { x: 260, y: 220 });
-      if (!first) return false;
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      const second = window.__hearth?.project("living", { x: 260, y: 220 });
-      return second !== undefined && second.x === first.x && second.y === first.y;
-    },
-    undefined,
-    { timeout: 30_000 },
-  );
+  let last: string | undefined;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    await page.mouse.move(700 + (attempt % 2), 460);
+    await page.waitForTimeout(300);
+    const key = await page.evaluate(() => {
+      (window as unknown as { __hearthStudio: () => { invalidate(): void } }).__hearthStudio().invalidate();
+      const near = window.__hearth?.project("living", { x: 0, y: 0 });
+      const far = window.__hearth?.project("living", { x: 520, y: 440 });
+      return near && far ? `${near.x},${near.y},${far.x},${far.y}` : undefined;
+    });
+    if (key !== undefined && key === last) return;
+    last = key;
+  }
+  throw new Error("the camera never settled");
 }
 
 /** Loads the studio, waits for the canvas handle and leaves one sofa alone in an empty 2BR. */

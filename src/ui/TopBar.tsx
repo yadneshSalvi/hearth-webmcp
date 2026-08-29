@@ -3,15 +3,22 @@
  * The studio's top bar: wordmark, room, mode on the left; light, camera, history and export on the
  * right. Every control writes a `source: "human"` store action, so the 3D reacts exactly as it does
  * for the agent.
+ *
+ * The camera group is the discoverability surface for the free orbit: the two rotate buttons step
+ * the view 45° at a time (they are disabled in plan view, which is north-up by definition) and the
+ * re-centre button appears the moment a drag has taken the camera off the framed shot.
  */
-import type { Mode, TimeOfDay, View, Yaw } from "../engine/types";
+import { useState } from "react";
+import type { Mode, TimeOfDay, View } from "../engine/types";
+import { resetCamera, stepView, useCameraOffHome } from "../scene/cameraState";
 import { hearthStore, useHearthStore } from "../state/store";
 import { timeOfDayLabel } from "./format";
 import {
   HearthMark, IconBoard, IconDollhouse, IconEvening, IconGolden, IconMorning, IconNoon, IconPlan,
-  IconRedo, IconUndo, IconYawLeft, IconYawRight,
+  IconRecenter, IconRedo, IconRoom, IconUndo, IconYawLeft, IconYawRight,
 } from "./icons";
-import { IconButton, Segmented } from "./primitives";
+import { LayoutsSheet } from "./LayoutsSheet";
+import { Button, IconButton, Segmented } from "./primitives";
 import { RoomSwitcher } from "./RoomSwitcher";
 import { pushToast } from "./toast-bus";
 import { redoSteps, toolUi, undoSteps, useHistoryDepth } from "./useHearth";
@@ -35,11 +42,8 @@ const VIEWS = [
   { value: "dollhouse" as View, label: "Dollhouse", icon: IconDollhouse },
 ] as const;
 
-const YAWS: readonly Yaw[] = ["nw", "ne", "se", "sw"];
-
-function nextYaw(current: Yaw, delta: number): Yaw {
-  return YAWS[(YAWS.indexOf(current) + delta + YAWS.length) % YAWS.length] as Yaw;
-}
+/** Why the rotate buttons are greyed out in plan view. */
+const PLAN_REASON = "Plan view is always north-up";
 
 async function exportBoard(): Promise<void> {
   const state = hearthStore.getState();
@@ -69,13 +73,19 @@ async function exportBoard(): Promise<void> {
 export function TopBar({ tier }: { tier: ViewportTier }) {
   const meta = useHearthStore((state) => state.scene.meta);
   const history = useHistoryDepth();
+  const offHome = useCameraOffHome();
+  const [layoutsOpen, setLayoutsOpen] = useState(false);
   const compact = tier === "compact";
+  const plan = meta.view === "plan";
 
   return (
     <header data-studio-inset="" className="glass pointer-events-auto flex h-14 shrink-0 items-center gap-3 px-3">
       <div className="flex items-center gap-2 pl-1 pr-1">
         <HearthMark size={19} className="text-terracotta" />
-        <span className="font-display text-[19px] leading-none tracking-[-0.01em] text-ink">Hearth</span>
+        {/* Below 1024 px the bar is the room, the layouts and the export: the mark carries the name. */}
+        {compact ? null : (
+          <span className="font-display text-[19px] leading-none tracking-[-0.01em] text-ink">Hearth</span>
+        )}
       </div>
 
       <span className="h-6 w-px shrink-0 bg-hairline" aria-hidden="true" />
@@ -123,16 +133,34 @@ export function TopBar({ tier }: { tier: ViewportTier }) {
             />
             <IconButton
               icon={IconYawLeft}
-              label="Rotate the view counter-clockwise"
+              label="Rotate the view 45° counter-clockwise"
               size="sm"
-              onClick={() => hearthStore.getState().setView("human", { yaw: nextYaw(meta.yaw, -1) })}
+              disabled={plan}
+              title={plan ? PLAN_REASON : undefined}
+              aria-description={plan ? PLAN_REASON : undefined}
+              onClick={() => stepView(-1)}
             />
             <IconButton
               icon={IconYawRight}
-              label="Rotate the view clockwise"
+              label="Rotate the view 45° clockwise"
               size="sm"
-              onClick={() => hearthStore.getState().setView("human", { yaw: nextYaw(meta.yaw, 1) })}
+              disabled={plan}
+              title={plan ? PLAN_REASON : undefined}
+              aria-description={plan ? PLAN_REASON : undefined}
+              onClick={() => stepView(1)}
             />
+            {/* Reserved width so the bar never shifts as the control fades in and out. */}
+            <span className="flex h-7 w-7 items-center justify-center">
+              {offHome ? (
+                <IconButton
+                  icon={IconRecenter}
+                  label="Reset the view"
+                  size="sm"
+                  className="fade-in"
+                  onClick={() => resetCamera({ tween: true })}
+                />
+              ) : null}
+            </span>
           </div>
 
           <span className="h-6 w-px shrink-0 bg-hairline" aria-hidden="true" />
@@ -144,7 +172,14 @@ export function TopBar({ tier }: { tier: ViewportTier }) {
         </>
       )}
 
+      {compact ? (
+        <IconButton icon={IconRoom} label="Layouts" onClick={() => setLayoutsOpen(true)} />
+      ) : (
+        <Button icon={IconRoom} onClick={() => setLayoutsOpen(true)}>Layouts</Button>
+      )}
+
       <IconButton icon={IconBoard} label="Export design board" onClick={() => void exportBoard()} />
+      <LayoutsSheet open={layoutsOpen} onClose={() => setLayoutsOpen(false)} />
     </header>
   );
 }
