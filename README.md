@@ -6,6 +6,8 @@
 
 **Live:** https://hearth.yadneshsalvi.com (mirror: https://hearth-wheat-ten.vercel.app) · **Video:** _coming_ · **Tools contract:** [TOOLS.md](TOOLS.md) · Licence: MIT
 
+![Hearth in motion: an agent places furniture, arranges the room and compares two layouts](docs/hero.gif)
+
 ![Hearth Studio at golden hour: the living room in dollhouse view, catalog on the left, inspector and activity log on the right](docs/hero.png)
 
 ## Try it with your agent (2 minutes)
