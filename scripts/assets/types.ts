@@ -43,6 +43,7 @@ export interface AssetMapping {
   rotationY: RotationY;
   orientationConfidence: "high" | "medium";
   polyPizzaId?: string;
+  fitToCatalog?: boolean;
 }
 
 export interface AssetManifestRow {

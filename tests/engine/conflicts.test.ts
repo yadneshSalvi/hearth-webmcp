@@ -44,7 +44,7 @@ describe("overlap, stacking, and room bounds", () => {
   it("allows a lamp fully on a table and rejects one hanging off", () => {
     const table = item("table-1", "table-ake", 250, 200);
     const onTop = scene([table, item("lamp-1", "table-lamp-alva", 250, 200)]);
-    const halfOff = scene([table, item("lamp-1", "table-lamp-alva", 310, 200)]);
+    const halfOff = scene([table, item("lamp-1", "table-lamp-alva", 340, 200)]);
     expect(evaluateRoom(onTop, "r", catalog).filter((conflict) => conflict.kind === "overlap")).toEqual([]);
     const overlap = evaluateRoom(halfOff, "r", catalog).find((conflict) => conflict.kind === "overlap");
     expect(overlap).toBeDefined();
@@ -159,13 +159,13 @@ describe("aggregation, fixtures, and budgets", () => {
   it("documents the complete worst-case fixture counts", () => {
     const conflicts = evaluateHome(worstCase2br(), catalog, { accessibility: false });
     const count = (kind: string) => conflicts.filter((conflict) => conflict.kind === kind).length;
-    expect(conflicts).toHaveLength(45);
+    expect(conflicts).toHaveLength(44);
     expect(count("overlap")).toBe(6);
     expect(count("outside")).toBe(4);
-    expect(count("clearance")).toBe(16);
+    expect(count("clearance")).toBe(15);
     expect(count("door_swing")).toBe(6);
     expect(count("traffic")).toBe(13);
-    expect(countBySeverity(conflicts)).toEqual({ error: 19, warn: 26 });
+    expect(countBySeverity(conflicts)).toEqual({ error: 19, warn: 25 });
   });
 
   it("keeps the furnished home free of hard standard conflicts and documents access issues", () => {
@@ -173,7 +173,7 @@ describe("aggregation, fixtures, and budgets", () => {
     const standard = evaluateHome(input, catalog, { accessibility: false });
     const accessible = evaluateHome(input, catalog, { accessibility: true });
     expect(standard.filter((conflict) => conflict.severity === "error")).toEqual([]);
-    expect(standard.filter((conflict) => conflict.kind === "clearance")).toHaveLength(6);
+    expect(standard.filter((conflict) => conflict.kind === "clearance")).toHaveLength(5);
     expect(standard.filter((conflict) => conflict.kind === "traffic")).toHaveLength(6);
     expect(accessible.filter((conflict) => conflict.kind === "access_path")).toHaveLength(8);
     expect(accessible.filter((conflict) => conflict.kind === "turning_circle")).toHaveLength(3);

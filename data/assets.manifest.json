@@ -308,64 +308,59 @@
   },
   {
     "id": "wardrobe-nord",
-    "source": "Kenney Furniture Kit 2.0",
-    "sourceFile": "Models/GLTF format/bookcaseClosedWide.glb",
+    "source": "Quaternius Furniture Pack via poly.pizza",
+    "sourceFile": "https://static.poly.pizza/9d3b575e-1d1e-43b0-bdcc-186dfbbecfe7.glb",
     "license": "CC0",
-    "scale": 2.49999996,
-    "rotationY": 0,
+    "scale": 1.28824263,
+    "rotationY": 180,
     "bbox_cm": {
       "w": 200,
-      "d": 62.5,
-      "h": 197.5
+      "d": 60,
+      "h": 210
     },
     "materials": [
-      "wood"
+      "DarkWood",
+      "Metal",
+      "Wood"
     ],
-    "bytes": 5776
+    "bytes": 75972
   },
   {
     "id": "wardrobe-eira",
     "source": "Quaternius Furniture Pack via poly.pizza",
-    "sourceFile": "https://static.poly.pizza/7d59d0aa-6447-4bbb-afc7-0452e9a34353.glb",
+    "sourceFile": "https://static.poly.pizza/87908291-7b01-45e9-90b9-fe41d63f511b.glb",
     "license": "CC0",
-    "scale": 0.76007004,
+    "scale": 0.90176984,
     "rotationY": 180,
     "bbox_cm": {
       "w": 140,
-      "d": 50.5,
-      "h": 256.24
+      "d": 58,
+      "h": 200
     },
     "materials": [
-      "Wood1",
-      "Wood2",
       "DarkWood",
-      "Cover1",
-      "Pages",
-      "Cover6",
-      "Cover2",
-      "Cover3",
-      "Cover4",
-      "Cover5",
-      "Metal"
+      "Metal",
+      "Wood"
     ],
-    "bytes": 160616
+    "bytes": 53680
   },
   {
     "id": "wardrobe-tor",
     "source": "Kenney Furniture Kit 2.0",
-    "sourceFile": "Models/GLTF format/bookcaseClosedWide.glb",
+    "sourceFile": "Models/GLTF format/bookcaseClosedDoors.glb",
     "license": "CC0",
-    "scale": 2.24999997,
-    "rotationY": 0,
+    "scale": 4.49999993,
+    "rotationY": 180,
     "bbox_cm": {
       "w": 180,
-      "d": 56.25,
-      "h": 177.75
+      "d": 62,
+      "h": 205
     },
     "materials": [
-      "wood"
+      "wood",
+      "metal"
     ],
-    "bytes": 5844
+    "bytes": 9804
   },
   {
     "id": "table-rove",
@@ -386,20 +381,20 @@
   },
   {
     "id": "table-ake",
-    "source": "KayKit Furniture Bits 1.0",
-    "sourceFile": "KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/table_medium_long.gltf",
+    "source": "Kenney Furniture Kit 2.0",
+    "sourceFile": "Models/GLTF format/tableCross.glb",
     "license": "CC0",
-    "scale": 0.4,
+    "scale": 1.87766972,
     "rotationY": 0,
     "bbox_cm": {
-      "w": 120,
-      "d": 80,
-      "h": 40
+      "w": 160,
+      "d": 84,
+      "h": 65.23
     },
     "materials": [
-      "furniture_texture"
+      "wood"
     ],
-    "bytes": 21732
+    "bytes": 4040
   },
   {
     "id": "table-elm",
@@ -966,77 +961,74 @@
   {
     "id": "lamp-glow",
     "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
-    "sourceFile": "https://static.poly.pizza/19259c43-99cb-43c6-aaee-dcf8d1d36fdb.glb",
+    "sourceFile": "https://static.poly.pizza/88fb336e-a7b0-4c76-8ca8-34c4655d7a87.glb",
     "license": "CC0",
-    "scale": 1.06802365,
+    "scale": 0.38791366,
     "rotationY": 0,
     "bbox_cm": {
       "w": 30,
-      "d": 31.54,
-      "h": 171.23
+      "d": 30,
+      "h": 150
     },
     "materials": [
-      "Grey",
       "LightMetal",
       "Light"
     ],
-    "bytes": 8248
+    "bytes": 7604
   },
   {
     "id": "floor-lamp-arc",
     "source": "Kenney Furniture Kit 2.0",
-    "sourceFile": "Models/GLTF format/lampSquareFloor.glb",
+    "sourceFile": "Models/GLTF format/lampRoundFloor.glb",
     "license": "CC0",
-    "scale": 2.91666655,
-    "rotationY": 0,
+    "scale": 1.99362042,
+    "rotationY": 90,
     "bbox_cm": {
       "w": 35,
-      "d": 35,
-      "h": 250.83
+      "d": 30.31,
+      "h": 171.45
     },
     "materials": [
-      "lamp",
-      "metal"
+      "metal",
+      "lamp"
     ],
-    "bytes": 3780
+    "bytes": 4068
   },
   {
     "id": "floor-lamp-sol",
     "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
-    "sourceFile": "https://static.poly.pizza/19259c43-99cb-43c6-aaee-dcf8d1d36fdb.glb",
+    "sourceFile": "https://static.poly.pizza/55e231cb-c629-4038-b454-5a8c81e0fa55.glb",
     "license": "CC0",
-    "scale": 1.06802365,
+    "scale": 0.95758461,
     "rotationY": 0,
     "bbox_cm": {
       "w": 30,
-      "d": 31.54,
-      "h": 171.23
+      "d": 30,
+      "h": 155
     },
     "materials": [
-      "Grey",
-      "LightMetal",
-      "Light"
+      "Light",
+      "LightMetal"
     ],
-    "bytes": 8248
+    "bytes": 8464
   },
   {
     "id": "floor-lamp-lyst",
     "source": "Quaternius Ultimate House Interior Pack via poly.pizza",
-    "sourceFile": "https://static.poly.pizza/19259c43-99cb-43c6-aaee-dcf8d1d36fdb.glb",
+    "sourceFile": "https://static.poly.pizza/194ee2b1-b5e2-4881-9dcd-2b2650b1c765.glb",
     "license": "CC0",
-    "scale": 0.99682208,
+    "scale": 0.69956873,
     "rotationY": 0,
     "bbox_cm": {
       "w": 28,
-      "d": 29.44,
-      "h": 159.82
+      "d": 28,
+      "h": 145
     },
     "materials": [
-      "Grey",
       "LightMetal",
       "Light"
     ],
-    "bytes": 8256
+    "bytes": 7684
   },
   {
     "id": "floor-lamp-havn",
@@ -1052,7 +1044,7 @@
     },
     "materials": [
       "LightMetal",
-      "White"
+      "Light"
     ],
     "bytes": 7756
   },
@@ -1105,7 +1097,7 @@
       "h": 52.22
     },
     "materials": [
-      "White",
+      "Light",
       "LightMetal"
     ],
     "bytes": 7752

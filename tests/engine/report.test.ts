@@ -86,9 +86,9 @@ describe("designReport", () => {
   it("snapshots the furnished kitchen and dining room", () => {
     expect(designReport(furnished2br(), "kitchen", catalog, [])).toMatchInlineSnapshot(`
       {
-        "score": 97,
+        "score": 98,
         "scores": {
-          "balance": 8,
+          "balance": 9,
           "conversation": 10,
           "focal_point": 10,
           "lighting": 10,

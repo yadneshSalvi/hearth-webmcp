@@ -23,8 +23,8 @@ export function furnished2br(): Scene {
   move(scene, "table-1", 210, 240);
   move(scene, "chair-1", 210, 165);
   move(scene, "chair-2", 210, 315);
-  move(scene, "chair-3", 124, 240);
-  move(scene, "chair-4", 296, 240);
+  move(scene, "chair-3", 128, 165, 0);
+  move(scene, "chair-4", 292, 315, 180);
   move(scene, "table-lamp-1", 215, 80);
   move(scene, "table-lamp-2", 215, 280);
   move(scene, "plant-3", 270, 170);

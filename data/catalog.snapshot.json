@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-28T23:28:55.679Z",
+  "generatedAt": "2026-08-29T01:35:34.408Z",
   "storeDomain": "hearth-studio.myshopify.com",
   "apiVersion": "2026-07",
   "products": [
@@ -833,7 +833,8 @@
           "colorway": "sage",
           "price": 65
         }
-      ]
+      ],
+      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/decor-basket_800x.png?v=1787959736"
     },
     {
       "id": "decor-bowl",
@@ -949,7 +950,7 @@
       "dims": {
         "w": 36,
         "d": 22,
-        "h": 0.8
+        "h": 1
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/decor-tray.glb",
@@ -1308,7 +1309,7 @@
       "dims": {
         "w": 35,
         "d": 35,
-        "h": 251
+        "h": 170
       },
       "clearanceFront": 0,
       "glb": "/assets/glb/floor-lamp-arc.glb",
@@ -1342,7 +1343,7 @@
           "price": 260
         }
       ],
-      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/floor-lamp-arc_800x.png?v=1787959690"
+      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/floor-lamp-arc_38d30fbf-462c-4cf2-a260-82e0f944b08f_800x.png?v=1787967241"
     },
     {
       "id": "floor-lamp-havn",
@@ -1449,7 +1450,7 @@
           "price": 140
         }
       ],
-      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/floor-lamp-lyst_800x.png?v=1787959696"
+      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/floor-lamp-lyst_ef211a7b-4c97-44d7-bbed-4b2914edf2be_800x.png?v=1787967244"
     },
     {
       "id": "floor-lamp-sol",
@@ -1493,7 +1494,7 @@
           "price": 170
         }
       ],
-      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/floor-lamp-sol_800x.png?v=1787959694"
+      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/floor-lamp-sol_4d37524a-162c-46fa-a4b0-8aeb458c77e4_800x.png?v=1787967243"
     },
     {
       "id": "lamp-glow",
@@ -1547,7 +1548,7 @@
           "price": 190
         }
       ],
-      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/lamp-glow_800x.png?v=1787959688"
+      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/lamp-glow_b311072b-5d35-4acf-b3e7-4bac64c7173e_800x.png?v=1787967239"
     },
     {
       "id": "plant-fern",
@@ -2609,9 +2610,9 @@
       "name": "Ake Table",
       "category": "table",
       "dims": {
-        "w": 120,
-        "d": 80,
-        "h": 40
+        "w": 160,
+        "d": 90,
+        "h": 75
       },
       "clearanceFront": 75,
       "glb": "/assets/glb/table-ake.glb",
@@ -2630,22 +2631,22 @@
       "styleTags": [
         "japandi"
       ],
-      "price": 420,
+      "price": 590,
       "description": "A balanced dining table with durable joinery and comfortable knee room around every side.",
       "handle": "table-ake",
       "variants": [
         {
           "id": "gid://shopify/ProductVariant/54626229682451",
           "colorway": "oak",
-          "price": 420
+          "price": 590
         },
         {
           "id": "gid://shopify/ProductVariant/54626229715219",
           "colorway": "plaster",
-          "price": 420
+          "price": 590
         }
       ],
-      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/table-ake_800x.png?v=1787959614"
+      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/table-ake_88251930-d21b-483a-84fe-ecad9d23e5b0_800x.png?v=1787967250"
     },
     {
       "id": "table-bord",
@@ -3302,7 +3303,7 @@
       "category": "tv-unit",
       "dims": {
         "w": 160,
-        "d": 41.8,
+        "d": 42,
         "h": 48
       },
       "clearanceFront": 70,
@@ -3412,7 +3413,7 @@
       "dims": {
         "w": 140,
         "d": 58,
-        "h": 256
+        "h": 200
       },
       "clearanceFront": 70,
       "glb": "/assets/glb/wardrobe-eira.glb",
@@ -3458,7 +3459,7 @@
           "price": 760
         }
       ],
-      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/wardrobe-eira_800x.png?v=1787959607"
+      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/wardrobe-eira_99df2871-b0a7-4b48-b1ec-e9df3afb4c12_800x.png?v=1787967247"
     },
     {
       "id": "wardrobe-hald",
@@ -3558,7 +3559,7 @@
           "price": 1190
         }
       ],
-      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/wardrobe-nord_800x.png?v=1787959604"
+      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/wardrobe-nord_37bf128c-604f-4929-b5a9-81f1e5ee6984_800x.png?v=1787967246"
     },
     {
       "id": "wardrobe-skive",
@@ -3656,7 +3657,7 @@
           "price": 990
         }
       ],
-      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/wardrobe-tor_800x.png?v=1787959609"
+      "imageUrl": "https://cdn.shopify.com/s/files/1/1005/1144/9363/files/wardrobe-tor_9c2b61b2-5cbd-4853-8a10-642a70c1246d_800x.png?v=1787967249"
     }
   ]
 }
