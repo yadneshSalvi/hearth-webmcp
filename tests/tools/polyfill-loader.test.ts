@@ -20,6 +20,15 @@ afterEach(() => {
 });
 
 describe("polyfill loader", () => {
+  it("keeps native-only as the default and accepts the eval query flag", async () => {
+    const { webMcpPolyfillRequested } = await import("../../src/tools/polyfill-loader");
+    expect(webMcpPolyfillRequested()).toBe(false);
+    window.history.replaceState({}, "", "/?webmcp=polyfill");
+    expect(webMcpPolyfillRequested()).toBe(true);
+    window.history.replaceState({}, "", "/");
+    expect(webMcpPolyfillRequested("allow-polyfill")).toBe(true);
+  });
+
   it("detects native WebMCP and never injects the polyfill", async () => {
     Object.defineProperty(document, "modelContext", { configurable: true, value: new NativeModelContext() });
     const { detectModelContext, ensureModelContext } = await import("../../src/tools/polyfill-loader");

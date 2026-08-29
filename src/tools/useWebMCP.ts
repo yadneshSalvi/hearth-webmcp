@@ -4,7 +4,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { ShopifyClient } from "../shopify/types";
 import { hearthStore } from "../state/store";
 import type { ToolUi } from "./define";
-import { detectModelContext, ensureModelContext } from "./polyfill-loader";
+import { detectModelContext, ensureModelContext, webMcpPolyfillRequested } from "./polyfill-loader";
+import type { WebMCPPolyfillMode } from "./polyfill-loader";
 import { createRegistry } from "./registry";
 import type { Registry } from "./registry";
 
@@ -13,7 +14,7 @@ export type WebMCPStatus = "native" | "polyfill" | "loading" | "unavailable";
 interface UseWebMCPOptions {
   ui: ToolUi;
   shopify: ShopifyClient;
-  mode: "native-only" | "allow-polyfill";
+  mode?: WebMCPPolyfillMode;
 }
 
 /** Starts the client-only WebMCP registry in the pre-paint layout phase. */
@@ -41,7 +42,7 @@ export function useWebMCP(options: UseWebMCPOptions): { status: WebMCPStatus; re
     };
 
     if (detectModelContext() === "native") activate("native");
-    else if (configuration.mode === "allow-polyfill") {
+    else if (webMcpPolyfillRequested(configuration.mode)) {
       setStatus("loading");
       void ensureModelContext().then((kind) => {
         if (kind === "native" || kind === "polyfill") activate(kind);
