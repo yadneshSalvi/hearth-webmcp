@@ -45,15 +45,11 @@ describe("overlap, stacking, and room bounds", () => {
     expect(evaluateRoom(tiny, "r", catalog).filter((conflict) => conflict.kind === "overlap")).toEqual([]);
   });
 
-  it("allows a rug under furniture but reports two overlapping rugs once", () => {
+  it("allows rugs under furniture and beneath other rugs", () => {
     const allowed = scene([item("rug-1", "rug-loop", 250, 200, 90), item("sofa-1", "sofa-endre", 250, 80)]);
     expect(evaluateRoom(allowed, "r", catalog).filter((conflict) => conflict.kind === "overlap")).toEqual([]);
     const doubled = scene([item("rug-1", "rug-flette", 200, 200), item("rug-2", "rug-flette", 250, 200)]);
-    const overlaps = evaluateRoom(doubled, "r", catalog).filter((conflict) => conflict.kind === "overlap");
-    expect(overlaps).toHaveLength(1);
-    expect(overlaps[0]?.items).toEqual(["rug-1", "rug-2"]);
-    expect(overlaps[0]?.severity).toBe("error");
-    expect(overlaps[0]?.zone).toHaveLength(4);
+    expect(evaluateRoom(doubled, "r", catalog).filter((conflict) => conflict.kind === "overlap")).toEqual([]);
   });
 
   it("allows a lamp fully on a table and rejects one hanging off", () => {
@@ -146,6 +142,11 @@ describe("clearance and opening zones", () => {
     expect(doors.map((conflict) => conflict.items[1])).toEqual(["door-1", "door-2"]);
     expect(doors.every((conflict) => conflict.detail.includes("blocks"))).toBe(true);
     expect(doors.every((conflict) => conflict.fix.includes("cm"))).toBe(true);
+  });
+
+  it("does not treat a rug beneath a door as a swing conflict", () => {
+    const input = scene([item("rug-1", "rug-loop", 100, 150)], [northDoor()]);
+    expect(evaluateRoom(input, "r", catalog).filter((conflict) => conflict.kind === "door_swing")).toEqual([]);
   });
 });
 

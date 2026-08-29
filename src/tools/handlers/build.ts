@@ -1,6 +1,9 @@
 import * as z from "zod";
+import { createCatalog } from "../../engine/catalog";
+import { conflictsForItem, evaluateRoom } from "../../engine/conflicts";
 import { roomAreaM2, roomSize, walls } from "../../engine/geometry";
 import { ROOM_TYPES } from "../../engine/types";
+import type { Conflict } from "../../engine/types";
 import { floors, wallColors } from "../../tokens";
 import type { DefinedTool } from "../define";
 import { defineTool } from "../define";
@@ -8,6 +11,16 @@ import { describeParam, openingParam, roomParam } from "../params";
 import {
   compactOpening, fromCaught, openingOffset, resolveOpening, resolveRoom, resolveRoomWall, sourceForStore,
 } from "./resolve";
+
+function conflictRow(conflict: Conflict) {
+  return {
+    kind: conflict.kind,
+    severity: conflict.severity,
+    items: conflict.items.slice(0, 4),
+    detail: conflict.detail.slice(0, 80),
+    fix: conflict.fix.slice(0, 80),
+  };
+}
 
 export function applyTemplateTool(): DefinedTool {
   return defineTool({
@@ -148,12 +161,15 @@ export function updateRoomTool(): DefinedTool {
         });
         const updated = context.store.getState().scene.rooms.find((candidate) => candidate.id === room.id);
         if (!updated) return { ok: false, error: "unavailable", detail: "The updated room could not be read." };
+        const next = context.store.getState();
+        const conflicts = evaluateRoom(next.scene, room.id, createCatalog(next.catalog));
         return {
           ok: true,
           room: { id: updated.id, name: updated.name, size_cm: roomSize(updated), area_m2: roomAreaM2(updated) },
           items_outside: outside,
           item_ids: outside,
-          conflicts: [],
+          conflicts: conflicts.slice(0, 6).map(conflictRow),
+          conflicts_count: conflicts.length,
           hint: outside.length ? "Move the listed items back inside the resized room." : "The room and its furniture still fit.",
         };
       } catch (error) {
@@ -204,13 +220,18 @@ export function addOpeningTool(): DefinedTool {
           ...(input.kind === "door" ? { swing: input.swing ?? "in", hinge: input.hinge ?? "left" } : {}),
           ...(input.kind === "window" ? { sillHeight: input.sill_height_cm ?? 90 } : {}),
         });
+        const next = context.store.getState();
+        const conflicts = conflictsForItem(
+          evaluateRoom(next.scene, room.id, createCatalog(next.catalog)),
+          opening.id,
+        ).slice(0, 6).map(conflictRow);
         return {
           ok: true,
           room: room.id,
           room_name: room.name,
           opening: compactOpening(opening),
           opening_ids: [opening.id],
-          conflicts: [],
+          conflicts,
           hint: "Use move_opening to adjust its position or width.",
         };
       } catch (error) {
@@ -258,13 +279,18 @@ export function moveOpeningTool(): DefinedTool {
         });
         const moved = context.store.getState().scene.openings.find((candidate) => candidate.id === opening.id);
         if (!moved) return { ok: false, error: "unavailable", detail: "The moved opening could not be read." };
+        const next = context.store.getState();
+        const conflicts = conflictsForItem(
+          evaluateRoom(next.scene, room.id, createCatalog(next.catalog)),
+          moved.id,
+        ).slice(0, 6).map(conflictRow);
         return {
           ok: true,
           room: room.id,
           opening: compactOpening(moved),
           wall_side: wall.side,
           opening_ids: [moved.id],
-          conflicts: [],
+          conflicts,
           hint: "Review the room for furniture near the opening.",
         };
       } catch (error) {

@@ -127,6 +127,65 @@ describe("phase-gate regressions", () => {
     expect(hearthStore.getState().scene.rooms.find((room) => room.id === "living")?.poly[1]?.x).toBe(520);
   });
 
+  it("returns computed conflicts from opening and room build tools", async () => {
+    const tools = registry();
+    const added = await tools.execute("add_opening", {
+      room: "living", wall: "north", kind: "door", offset_cm: 215, width_cm: 90,
+    }, "test");
+    expect(added).toMatchObject({ ok: true, opening: { id: "door-1" } });
+    expect(added.ok && added.conflicts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "door_swing", items: expect.arrayContaining(["door-1", "sofa-1"]) }),
+    ]));
+
+    const moved = await tools.execute("move_opening", {
+      opening: "door-living-hall", wall: "north", offset_cm: 215,
+    }, "test");
+    expect(moved).toMatchObject({ ok: true });
+    expect(moved.ok && moved.conflicts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "door_swing", items: expect.arrayContaining(["door-living-hall", "sofa-1"]) }),
+    ]));
+
+    resetStore(worstCase2br());
+    const resized = await registry().execute("update_room", { room: "living", width_cm: 500, depth_cm: 300 }, "test");
+    const state = hearthStore.getState();
+    const expected = evaluateRoom(state.scene, "living", createCatalog(state.catalog));
+    expect(resized).toMatchObject({ ok: true, conflicts_count: expected.length });
+    expect(resized.ok && resized.conflicts).toEqual(expected.slice(0, 6).map((conflict) => ({
+      kind: conflict.kind,
+      severity: conflict.severity,
+      items: conflict.items.slice(0, 4),
+      detail: conflict.detail.slice(0, 80),
+      fix: conflict.fix.slice(0, 80),
+    })));
+  });
+
+  it("reports ids reassigned while loading a variant", async () => {
+    hearthStore.getState().saveVariant("human", "living", "Cosy");
+    hearthStore.getState().clearRoom("human", "living");
+    const elsewhere = hearthStore.getState().placeItem("human", {
+      catalogId: "sofa-liva", roomId: "bed-1", pos: { x: 200, y: 100 }, rotation: 0,
+    });
+    expect(elsewhere.id).toBe("sofa-1");
+    const result = await registry().execute("load_variant", { room: "living", variant: "Cosy" }, "test");
+    expect(result).toMatchObject({
+      ok: true,
+      reassigned: [{ from: "sofa-1", to: "sofa-2" }],
+      item_ids: expect.arrayContaining(["sofa-2"]),
+    });
+    expect(new Set(hearthStore.getState().scene.furniture.map((item) => item.id)).size).toBe(hearthStore.getState().scene.furniture.length);
+  });
+
+  it("keeps cart lines unlinked after applying a new home template", async () => {
+    const tools = registry();
+    expect(await tools.execute("update_cart", { action: "add", item: "sofa-1" }, "test")).toMatchObject({ ok: true });
+    expect(await tools.execute("apply_template", { template: "studio", furnished: true }, "test")).toMatchObject({ ok: true });
+    expect(await tools.execute("get_scene_summary", {}, "test")).toMatchObject({ ok: true, budget_usd: 3000 });
+    const result = await tools.execute("get_cart", {}, "test");
+    expect(result).toMatchObject({ ok: true, count: 1, budget_usd: 3000, remaining_usd: 2210 });
+    expect(result.ok && result.lines).toEqual([expect.not.objectContaining({ item: expect.anything() })]);
+    expect(hearthStore.getState().cart.lines[0]?.itemId).toBeUndefined();
+  });
+
   it("returns the real active-room conflict count from accessibility mode", async () => {
     resetStore(worstCase2br());
     const tools = registry();

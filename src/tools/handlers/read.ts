@@ -256,7 +256,7 @@ export function getCartTool(): DefinedTool {
       const state = context.store.getState();
       return {
         ok: true,
-        ...cartPayload(result.value, state.scene.meta.budgetUsd),
+        ...cartPayload(state.cart, state.scene.meta.budgetUsd),
         hint: result.value.lines.length > 0
           ? "Use get_checkout_link when the human is ready to purchase."
           : "Use update_cart with a product or placed item to add the first line.",

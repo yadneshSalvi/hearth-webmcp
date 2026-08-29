@@ -132,6 +132,32 @@ describe("scene and presentation actions", () => {
     expect(hearthStore.getState().scene.variants.map((variant) => variant.name)).toEqual(["Cosy"]);
   });
 
+  it("reassigns restored variant ids that are already used in another room", () => {
+    const saved = hearthStore.getState().placeItem("human", { catalogId: "sofa-endre", roomId: "living", pos: { x: 200, y: 100 }, rotation: 0 });
+    hearthStore.getState().setCart({
+      lines: [{ id: "line-1", variantId: "variant-1", handle: saved.catalogId, title: "Endre Sofa", colorway: "oak", quantity: 1, unitUsd: 790, lineUsd: 790, itemId: saved.id }],
+      subtotalUsd: 790,
+      status: "idle",
+    });
+    hearthStore.getState().linkCartLine("human", saved.id, "variant-1", "line-1");
+    hearthStore.getState().saveVariant("human", "living", "Cosy");
+    hearthStore.getState().removeItem("human", saved.id);
+    const elsewhere = hearthStore.getState().placeItem("human", { catalogId: "sofa-liva", roomId: "bed-1", pos: { x: 200, y: 100 }, rotation: 0 });
+    expect(elsewhere.id).toBe("sofa-1");
+    hearthStore.getState().setCart({
+      lines: [{ id: "line-1", variantId: "variant-1", handle: saved.catalogId, title: "Endre Sofa", colorway: "oak", quantity: 1, unitUsd: 790, lineUsd: 790, itemId: saved.id }],
+      subtotalUsd: 790,
+      status: "idle",
+    });
+
+    expect(hearthStore.getState().loadVariant("human", "living", "Cosy")).toEqual([{ from: "sofa-1", to: "sofa-2" }]);
+    const state = hearthStore.getState();
+    expect(state.scene.furniture.map((item) => item.id).sort()).toEqual(["sofa-1", "sofa-2"]);
+    expect(state.scene.furniture.find((item) => item.roomId === "living")).toMatchObject({ id: "sofa-2", cartLineId: "line-1" });
+    expect(state.scene.variants.find((variant) => variant.name === "Cosy")?.furniture[0]?.id).toBe("sofa-2");
+    expect(state.cart.lines[0]?.itemId).toBe("sofa-2");
+  });
+
   it("clears a room and replaces the home from a template", () => {
     hearthStore.getState().placeItem("human", { catalogId: "plant-fern", roomId: "living", pos: { x: 50, y: 50 }, rotation: 0 });
     hearthStore.getState().placeItem("human", { catalogId: "plant-palm", roomId: "bed-1", pos: { x: 250, y: 150 }, rotation: 0 });
@@ -142,6 +168,20 @@ describe("scene and presentation actions", () => {
     expect(hearthStore.getState().scene.meta.template).toBe("studio");
     expect(hearthStore.getState().scene.furniture.length).toBeGreaterThan(0);
     expect(hearthStore.getState().activity[0]?.summary).toBe("You applied the studio template furnished");
+  });
+
+  it("keeps cart lines but removes item links when applying a template", () => {
+    const item = hearthStore.getState().placeItem("human", { catalogId: "sofa-endre", roomId: "living", pos: { x: 200, y: 100 }, rotation: 0 });
+    hearthStore.getState().setCart({
+      lines: [{ id: "line-1", variantId: "variant-1", handle: item.catalogId, title: "Endre Sofa", colorway: "oak", quantity: 1, unitUsd: 790, lineUsd: 790, itemId: item.id }],
+      subtotalUsd: 790,
+      status: "idle",
+    });
+    hearthStore.getState().linkCartLine("human", item.id, "variant-1", "line-1");
+    hearthStore.getState().applyTemplate("human", "studio", true);
+    expect(hearthStore.getState().cart.lines).toHaveLength(1);
+    expect(hearthStore.getState().cart.lines[0]?.itemId).toBeUndefined();
+    expect(hearthStore.getState().scene.furniture.every((entry) => entry.cartLineId === undefined)).toBe(true);
   });
 });
 

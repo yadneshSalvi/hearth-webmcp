@@ -37,6 +37,7 @@ export function sceneMeta(template: TemplateId, activeRoomId: string): SceneMeta
     paletteId: "warm-clay",
     accessibilityMode: false,
     activeRoomId,
+    budgetUsd: 3000,
     selection: {},
     template,
   };

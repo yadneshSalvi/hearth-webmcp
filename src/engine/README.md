@@ -43,6 +43,9 @@ decor may overlap a table, desk, shelf, or TV unit only while fully contained.
 Traffic uses a 10 cm occupancy grid and deterministic octile A* between every pair
 of doors/arches and from the primary opening to sofa, armchair, bed, and desk use
 points. Conflict `zone` stores the simplified raw path polyline for dotted rendering.
+Routing first constrains A* to cells that satisfy the required half-width distance.
+Endpoint-owned use and door zones remain admissible so routes can enter and leave them.
+Only when that pass fails does weighted A* locate the narrowest available pinch to report.
 One distance field supplies its narrowest width; standard/access paths require
 60/90 cm, excluding each route endpoint's own use/door zone and item footprint.
 Accessibility also checks 150 cm turning circles and 120 cm reach zones.

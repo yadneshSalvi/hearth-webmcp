@@ -258,6 +258,19 @@ describe("validity, nudging and failures", () => {
     }
   });
 
+  it("permits a rug beneath a door swing and clear zone", () => {
+    const door: Opening = { id: "door-1", roomId: "room", wallId: "w0", offset: 250, width: 90, kind: "door", swing: "in", hinge: "left" };
+    const result = ok(resolveAnchor(
+      scene({ openings: [door] }),
+      "room",
+      catalog.byId("rug-loop")!,
+      { pos: { x: 295, y: 150 } },
+      catalog,
+    ));
+    expect(result.pos).toEqual({ x: 295, y: 150 });
+    expect(result.nudgedCm).toBe(0);
+  });
+
   it("blocks tall furniture across a window but permits a sofa below its sill", () => {
     const opening: Opening = { id: "window-main", roomId: "room", wallId: "w0", offset: 200, width: 200, kind: "window", sillHeight: 90 };
     const current = scene({ openings: [opening] });

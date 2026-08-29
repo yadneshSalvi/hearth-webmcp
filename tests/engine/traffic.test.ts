@@ -85,6 +85,23 @@ describe("traffic grid and required routes", () => {
     expect(paths[0]?.pinch).toBeDefined();
   });
 
+  it("takes a compliant detour instead of reporting a shorter narrow gap", () => {
+    const target = room([{ x: 0, y: 0 }, { x: 600, y: 0 }, { x: 600, y: 400 }, { x: 0, y: 400 }]);
+    const input = scene(
+      [opening("door-n", "w0", 5), opening("door-s", "w2", 505)],
+      [
+        item("wardrobe-1", "wardrobe-nord", 150, 200),
+        item("wardrobe-2", "wardrobe-nord", 350, 200),
+      ],
+      target,
+    );
+    const path = trafficPaths(input, "r", catalog, { clearanceCost: false })[0];
+    expect(path).toBeDefined();
+    expect(path?.ok).toBe(true);
+    expect(path?.minWidthCm).toBeGreaterThanOrEqual(60);
+    expect(path?.points.some((point) => point.x > 450)).toBe(true);
+  });
+
   it("returns an explicit missing route when furniture seals the room", () => {
     const input = scene(
       [opening("door-n", "w0", 155), opening("door-s", "w2", 155)],

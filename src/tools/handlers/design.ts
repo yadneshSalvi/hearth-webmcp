@@ -260,15 +260,19 @@ export function loadVariantTool(): DefinedTool {
       if ("ok" in variant) return variant;
       const replaced = state.scene.furniture.filter((item) => item.roomId === room.id && item.status !== "ghost").length;
       try {
-        context.store.getState().loadVariant(sourceForStore(context.source), room.id, variant.name);
-        context.ui.pulse(variant.furniture.map(({ id }) => id));
+        const reassigned = context.store.getState().loadVariant(sourceForStore(context.source), room.id, variant.name);
+        const loaded = context.store.getState().scene.variants.find((candidate) => candidate.roomId === room.id
+          && candidate.name.toLowerCase() === variant.name.toLowerCase());
+        const itemIds = loaded?.furniture.map(({ id }) => id) ?? [];
+        context.ui.pulse(itemIds);
         return {
           ok: true,
           room: room.id,
           variant: variant.name,
-          items: variant.furniture.length,
-          item_ids: variant.furniture.map(({ id }) => id),
+          items: itemIds.length,
+          item_ids: itemIds,
           replaced,
+          reassigned,
           hint: "Save another variant to compare layouts side by side.",
         };
       } catch (error) {
