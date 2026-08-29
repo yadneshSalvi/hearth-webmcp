@@ -1191,7 +1191,7 @@
     },
     {
       "name": "set_view",
-      "description": "Changes the camera: plan (top-down) or dollhouse (isometric), optionally focused on a room or an item, with the isometric yaw at nw, ne, se or sw. Use it to show the human what you are working on.",
+      "description": "Changes the camera: plan (top-down) or dollhouse (isometric), optionally focused on the whole home with focus: \"home\", a room, or an item, with the isometric yaw at nw, ne, se or sw. Use it to show the human what you are working on.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1204,7 +1204,7 @@
             ]
           },
           "focus": {
-            "description": "Room id/name or item id/name to frame. Defaults to the active room.",
+            "description": "Use home for the entire home, or give a room/item id or name. Defaults to the active room.",
             "type": "string",
             "minLength": 1
           },

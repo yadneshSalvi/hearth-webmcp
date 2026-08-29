@@ -273,11 +273,11 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 
 ### 18. `set_view` · design
 **Title:** Set view
-**Description:** Changes the camera: plan (top-down) or dollhouse (isometric), optionally focused on a room or an item, with the isometric yaw at nw, ne, se or sw. Use it to show the human what you are working on.
+**Description:** Changes the camera: plan (top-down) or dollhouse (isometric), optionally focused on the whole home with focus: "home", a room, or an item, with the isometric yaw at nw, ne, se or sw. Use it to show the human what you are working on.
 **Input:** `{ view?: "plan"|"dollhouse", focus?: string, yaw?: "nw"|"ne"|"se"|"sw" }`
-- `focus` — "Room id/name or item id/name to frame. Defaults to the active room."
-**Result:** `{"ok":true,"view":"dollhouse","focus":{"kind":"item","id":"sofa-1"},"yaw":"sw","hint":"…"}`
-**Receipt:** "View → dollhouse, focus Endre Sofa"
+- `focus` — "Use home for the entire home, or give a room/item id or name. Defaults to the active room." Aliases: `entire home`, `whole home`, `house`.
+**Result:** `{"ok":true,"room":"living","view":"dollhouse","focus":{"kind":"home","id":"home"},"focus_name":"Entire home","yaw":"sw","hint":"Framing all 10 rooms; pass a room id to zoom back in."}`
+**Receipt:** "View → dollhouse, focus Entire home"
 
 ### 19. `set_accessibility_mode` · design
 **Title:** Accessibility mode
@@ -378,7 +378,7 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 **Title:** Apply floor-plan template
 **Description:** Replaces the whole home with one of seven floor plans: studio, 1br, 2br, 3br, 4br, 5br, or loft. The 3br/4br/5br homes contain living, kitchen and dining, N bedrooms, one or two baths, and a hall. Every template has doors and windows; furnished adds a starter layout. Asks for confirmation if the current home has furniture.
 **Input:** `{ template: "studio"|"1br"|"2br"|"3br"|"4br"|"5br"|"loft", furnished?: boolean }`
-**Result:** `{"ok":true,"room":"living","template":"5br","rooms":["living","kitchen","bed-1","hall","bed-2","bed-3","bed-4","bed-5","bath","bath-2"],"openings":27,"items":40,"item_ids":["…"],"hint":"…"}`
+**Result:** `{"ok":true,"room":"living","template":"5br","rooms":["living","kitchen","bed-1","hall","bed-2","bed-3","bed-4","bed-5","bath","bath-2"],"openings":27,"items":40,"item_ids":["…"],"hint":"The studio now shows the whole home; call set_view with a room id to zoom in, or set mode to design to furnish."}`
 **Receipt:** "Applied 5BR template (furnished)"
 
 ### 32. `create_room` · build

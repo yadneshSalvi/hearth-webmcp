@@ -51,7 +51,7 @@ export function applyTemplateTool(): DefinedTool {
           openings: scene.openings.length,
           items: scene.furniture.length,
           item_ids: scene.furniture.map(({ id }) => id),
-          hint: "Set mode to design to furnish and review the new home.",
+          hint: "The studio now shows the whole home; call set_view with a room id to zoom in, or set mode to design to furnish.",
         };
       } catch (error) {
         return fromCaught(error);

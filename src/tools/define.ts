@@ -37,7 +37,7 @@ export type Err = {
 
 export type ToolResult = Ok | Err;
 
-export type ToolFocus = { kind: "room" | "item"; id: string };
+export type ToolFocus = { kind: "home" | "room" | "item"; id: string };
 
 export interface ExportBoardResult {
   items: number;
