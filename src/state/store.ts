@@ -124,7 +124,7 @@ export const hearthStore = createStore<HearthStore>()(
       moveItem: (source, id, patch, opts) => {
         const state = get();
         const found = requiredItem(state, id);
-        if (patch.roomId) requiredRoom(state, patch.roomId);
+        const targetRoom = patch.roomId ? requiredRoom(state, patch.roomId) : undefined;
         if (patch.rotation !== undefined) assertRotation(patch.rotation);
         // `quiet` is how a held arrow key stays one undoable step and one receipt: the first press
         // records the move, every auto-repeat after it lands quietly on top of that same entry.
@@ -137,7 +137,10 @@ export const hearthStore = createStore<HearthStore>()(
           draft.scene.meta.selection.lastMovedBy = source;
           draft.scene.meta.selection.lastMovedAt = Date.now();
           draft.ui.compare = undefined;
-          if (!opts?.quiet) prepend(draft, activity(source, "Move furniture", `moved ${productName(found)}`, [id]));
+          if (!opts?.quiet) {
+            const destination = targetRoom && targetRoom.id !== found.roomId ? ` to ${targetRoom.name}` : "";
+            prepend(draft, activity(source, "Move furniture", `moved ${productName(found)}${destination}`, [id]));
+          }
         }));
       },
 

@@ -4,7 +4,7 @@ import type { DefinedTool, Err } from "../define";
 import { defineTool } from "../define";
 import { colorwayParam, itemParam } from "../params";
 import {
-  fromCaught, productName, resolveColorway, resolveItem, sourceForStore, syncCart, variantId,
+  fromCaught, productName, resolveColorway, resolveItem, sourceForStore, syncCart, trackShopifyResult, variantId,
 } from "./resolve";
 
 function unavailable(detail: string): Err {
@@ -25,7 +25,7 @@ export function removeFurnitureTool(): DefinedTool {
       const name = productName(state, item);
       const lineId = item.cartLineId ?? state.cart.lines.find((line) => line.itemId === item.id)?.id;
       if (lineId) {
-        const removed = await context.shopify.cartRemove([lineId]);
+        const removed = trackShopifyResult(context, await context.shopify.cartRemove([lineId]));
         if (!removed.ok && removed.error === "unavailable") return unavailable(removed.detail);
         if (removed.ok) syncCart(context, removed.value);
       }
@@ -74,11 +74,11 @@ export function setColorwayTool(): DefinedTool {
       let targetVariant: string | undefined;
       let targetLineId: string | undefined;
       if (linkedLine) {
-        const remote = await context.shopify.product(product.id);
+        const remote = trackShopifyResult(context, await context.shopify.product(product.id));
         if (!remote.ok) return unavailable(remote.detail);
         targetVariant = variantId(remote.value, colorway.id);
         if (!targetVariant) return unavailable(`No Shopify variant exists for ${product.name} in ${colorway.id}.`);
-        const updated = await context.shopify.cartUpdateLine(linkedLine.id, targetVariant, linkedLine.quantity);
+        const updated = trackShopifyResult(context, await context.shopify.cartUpdateLine(linkedLine.id, targetVariant, linkedLine.quantity));
         if (!updated.ok) return unavailable(updated.detail);
         targetLineId = updated.value.lines.find((line) => line.itemId === item.id || line.variantId === targetVariant)?.id
           ?? linkedLine.id;

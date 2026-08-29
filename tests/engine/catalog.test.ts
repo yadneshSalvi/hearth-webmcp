@@ -119,6 +119,10 @@ describe("catalog resolution", () => {
     expect(catalog.suggestProducts("x", 0)).toEqual([]);
   });
 
+  it("ranks category-token matches ahead of edit distance", () => {
+    expect(catalog.suggestProducts("Flying carpet", 3).every((id) => id.startsWith("rug-"))).toBe(true);
+  });
+
   it("resolves available colorways without ambiguity", () => {
     const endre = catalog.byId("sofa-endre")!;
     expect(resolveColorway(endre, "sage")?.id).toBe("sage");

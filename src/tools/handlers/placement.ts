@@ -6,6 +6,7 @@ import { createCatalog } from "../../engine/catalog";
 import { conflictsForItem, evaluateRoom } from "../../engine/conflicts";
 import { clip, dimsStr, posArr, truncateList } from "../../engine/describe";
 import { walls } from "../../engine/geometry";
+import { designReport } from "../../engine/report";
 import type { CatalogItem, Conflict, Furniture, Rotation } from "../../engine/types";
 import type { DefinedTool, Err } from "../define";
 import { defineTool } from "../define";
@@ -259,7 +260,9 @@ export function arrangeRoomTool(): DefinedTool {
         }
       }
       const catalog = createCatalog(state.catalog);
-      const before = evaluateRoom(state.scene, room.id, catalog).length;
+      const beforeConflicts = evaluateRoom(state.scene, room.id, catalog);
+      const before = beforeConflicts.length;
+      const beforeScore = designReport(state.scene, room.id, catalog, beforeConflicts).score;
       const arranged = arrangeRoom(state.scene, room.id, input.style, catalog, {
         keepLocked: input.keep_locked,
         focus: input.focus,
@@ -276,7 +279,9 @@ export function arrangeRoomTool(): DefinedTool {
       }
       const nextScene = { ...state.scene, furniture: arranged.furniture.map((item) => ({ ...item, pos: { ...item.pos } })) };
       context.store.getState().applyArrangement(sourceForStore(context.source), room.id, arranged.furniture);
-      const after = evaluateRoom(nextScene, room.id, catalog).length;
+      const afterConflicts = evaluateRoom(nextScene, room.id, catalog);
+      const after = afterConflicts.length;
+      const afterScore = designReport(nextScene, room.id, catalog, afterConflicts).score;
       const listed = truncateList(arranged.moved, 10);
       const names = new Map(state.catalog.map((product) => [product.id, product.name]));
       context.ui.pulse(arranged.moved.map((item) => item.id));
@@ -298,6 +303,7 @@ export function arrangeRoomTool(): DefinedTool {
         item_ids: arranged.moved.map((move) => move.id),
         conflicts_before: before,
         conflicts_after: after,
+        report_delta: { before: beforeScore, after: afterScore },
         note: arranged.note,
         ...(listed.more > 0 ? { more: listed.more } : {}),
         hint: after > 0 ? "Call get_conflicts to inspect the remaining issues." : "Save this layout as a variant if the human likes it.",

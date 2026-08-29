@@ -57,6 +57,17 @@ describe("live Shopify browser client", () => {
     expect(client.unavailable).toBe(true);
   });
 
+  it("clears the offline flag on the next successful request", async () => {
+    vi.stubGlobal("fetch", vi.fn()
+      .mockRejectedValueOnce(new TypeError("offline"))
+      .mockResolvedValueOnce(jsonResponse({ products: [] })));
+    const client = createLiveShopify();
+    expect(await client.search("sofa")).toMatchObject({ ok: false, error: "unavailable" });
+    expect(client.unavailable).toBe(true);
+    expect(await client.search("sofa")).toEqual({ ok: true, value: [] });
+    expect(client.unavailable).toBe(false);
+  });
+
   it("sends merchandiseId when updating a cart line variant", async () => {
     window.localStorage.setItem("hearth.cartId", emptyCart.id);
     const fetchMock = vi.fn()

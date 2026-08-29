@@ -61,8 +61,8 @@ export function createCartOps(shopify: ShopifyClient, store: StoreApi<HearthStor
   };
 
   const guard = <T,>(result: Result<T>, what: string): T | undefined => {
+    store.getState().setCartStatus(!result.ok && result.error === "unavailable" ? "offline" : "idle");
     if (result.ok) return result.value;
-    store.getState().setCartStatus("offline");
     pushToast({ title: `${what} failed`, detail: result.detail, tone: "warn" });
     return undefined;
   };
@@ -108,7 +108,7 @@ export function createCartOps(shopify: ShopifyClient, store: StoreApi<HearthStor
     async refresh() {
       const result = await shopify.cartGet();
       if (!result.ok) {
-        store.getState().setCartStatus("offline");
+        store.getState().setCartStatus(result.error === "unavailable" ? "offline" : "idle");
         return;
       }
       sync(result.value);

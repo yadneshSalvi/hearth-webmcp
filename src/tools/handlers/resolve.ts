@@ -1,7 +1,7 @@
 import { createCatalog } from "../../engine/catalog";
 import { resolveWall } from "../../engine/geometry";
 import type { CatalogItem, Colorway, Furniture, Opening, Room, Scene, Variant, Wall } from "../../engine/types";
-import type { CatalogProduct, ShopifyCart } from "../../shopify/types";
+import type { CatalogProduct, Result, ShopifyCart } from "../../shopify/types";
 import type { HearthState } from "../../state/types";
 import { HearthError } from "../../state/types";
 import type { Err, ToolContext, ToolSource } from "../define";
@@ -9,10 +9,29 @@ import type { Err, ToolContext, ToolSource } from "../define";
 interface Candidate {
   id: string;
   name: string;
+  category?: string;
+  type?: string;
 }
 
 function normalize(value: string): string {
   return value.trim().toLowerCase();
+}
+
+const TOKEN_ALIASES: Record<string, string> = {
+  carpet: "rug",
+  carpets: "rug",
+  couch: "sofa",
+  couches: "sofa",
+};
+
+function tokens(value: string): string[] {
+  return normalize(value).split(/[^a-z0-9]+/).filter(Boolean).map((token) => TOKEN_ALIASES[token] ?? token);
+}
+
+function tokenOverlap(ref: string, candidate: Candidate): number {
+  const queryTokens = new Set(tokens(ref));
+  const candidateTokens = new Set(tokens(`${candidate.name} ${candidate.category ?? candidate.type ?? ""}`));
+  return [...queryTokens].filter((token) => candidateTokens.has(token)).length;
 }
 
 function editDistance(left: string, right: string): number {
@@ -36,9 +55,10 @@ export function alternatives(ref: string, candidates: Candidate[]): string[] {
   return candidates
     .map((candidate) => ({
       id: candidate.id,
-      score: Math.min(editDistance(needle, normalize(candidate.id)), editDistance(needle, normalize(candidate.name))),
+      overlap: tokenOverlap(ref, candidate),
+      distance: Math.min(editDistance(needle, normalize(candidate.id)), editDistance(needle, normalize(candidate.name))),
     }))
-    .sort((a, b) => a.score - b.score || a.id.localeCompare(b.id))
+    .sort((a, b) => b.overlap - a.overlap || a.distance - b.distance || a.id.localeCompare(b.id))
     .slice(0, 3)
     .map(({ id }) => id);
 }
@@ -78,6 +98,7 @@ export function resolveItem(state: HearthState, ref: string): Furniture | Err {
   const candidates = state.scene.furniture.map((item) => ({
     ...item,
     name: state.catalog.find((product) => product.id === item.catalogId)?.name ?? item.catalogId,
+    category: state.catalog.find((product) => product.id === item.catalogId)?.category,
   }));
   return resolveCandidate(ref, candidates) ?? notFound("Item", ref, candidates);
 }
@@ -91,6 +112,7 @@ function itemCandidates(state: HearthState): Candidate[] {
   return state.scene.furniture.map((item) => ({
     id: item.id,
     name: state.catalog.find((product) => product.id === item.catalogId)?.name ?? item.catalogId,
+    category: state.catalog.find((product) => product.id === item.catalogId)?.category,
   }));
 }
 
@@ -151,6 +173,12 @@ export function syncCart(context: ToolContext, cart: ShopifyCart): void {
     status: "idle",
     lines: cart.lines.map((line) => ({ ...line })),
   });
+}
+
+/** Mirrors Shopify reachability into the cart chrome for every human- or agent-visible call. */
+export function trackShopifyResult<T>(context: ToolContext, result: Result<T>): Result<T> {
+  context.store.getState().setCartStatus(!result.ok && result.error === "unavailable" ? "offline" : "idle");
+  return result;
 }
 
 export function openingOffset(

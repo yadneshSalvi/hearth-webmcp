@@ -13,7 +13,8 @@ import {
   anchorParam, colorwayParam, describeParam, posParam, productParam, roomParam, rotationParam,
 } from "../params";
 import {
-  alternatives, fromCaught, notFound, productName, resolveItem, resolveProduct, resolveRoom, sourceForStore, syncCart, variantId,
+  alternatives, fromCaught, notFound, productName, resolveItem, resolveProduct, resolveRoom, sourceForStore, syncCart,
+  trackShopifyResult, variantId,
 } from "./resolve";
 
 function conflictRow(conflict: Conflict) {
@@ -195,7 +196,7 @@ export function updateCartTool(): DefinedTool {
         : resolveProduct(initial, input.product ?? "");
       if (!resolved) return notFound("Product", item && !("ok" in item) ? item.catalogId : input.product ?? "", initial.catalog);
       if ("ok" in resolved) return resolved;
-      const remote = await context.shopify.product(resolved.id);
+      const remote = trackShopifyResult(context, await context.shopify.product(resolved.id));
       if (!remote.ok) return unavailable(remote.detail);
       const colorwayRef = input.colorway ?? (item && !("ok" in item) ? item.colorway : resolved.colorways[0]?.id) ?? "";
       const colorway = createCatalog(initial.catalog).resolveColorway(resolved, colorwayRef);
@@ -208,11 +209,11 @@ export function updateCartTool(): DefinedTool {
       if (input.action === "add") {
         const quantity = input.quantity ?? 1;
         if (quantity < 1) return { ok: false, error: "invalid", detail: "quantity must be at least 1 for add." };
-        const added = await context.shopify.cartAdd([{
+        const added = trackShopifyResult(context, await context.shopify.cartAdd([{
           variantId: variant,
           quantity,
           ...(item && !("ok" in item) ? { itemId: item.id } : {}),
-        }]);
+        }]));
         if (!added.ok) return unavailable(added.detail);
         cart = added.value;
         const addedLine = [...cart.lines].reverse().find((line) => line.variantId === variant);
@@ -223,7 +224,7 @@ export function updateCartTool(): DefinedTool {
         }
         beforeLine = addedLine;
       } else {
-        const current = await context.shopify.cartGet();
+        const current = trackShopifyResult(context, await context.shopify.cartGet());
         if (!current.ok) return unavailable(current.detail);
         cart = current.value;
         syncCart(context, cart);
@@ -231,11 +232,11 @@ export function updateCartTool(): DefinedTool {
           ? line.itemId === item.id || line.id === item.cartLineId
           : line.handle === resolved.id && (!input.colorway || line.colorway === colorway.id));
         if (!beforeLine) return notFound("Cart line", input.item ?? input.product ?? "", cart.lines.map((line) => ({ id: line.id, name: line.title })));
-        const changed = input.action === "remove"
+        const changed = trackShopifyResult(context, input.action === "remove"
           ? await context.shopify.cartRemove([beforeLine.id])
           : input.quantity === undefined
             ? { ok: false as const, error: "invalid" as const, detail: "quantity is required for set_quantity." }
-            : await context.shopify.cartSetQuantity(beforeLine.id, input.quantity);
+            : await context.shopify.cartSetQuantity(beforeLine.id, input.quantity));
         if (!changed.ok) return changed.error === "invalid"
           ? { ok: false, error: "invalid", detail: changed.detail }
           : unavailable(changed.detail);
@@ -294,11 +295,11 @@ export function confirmPreviewTool(): DefinedTool {
       let lineId: string | undefined;
       const predictedId = nextItemId(product.category, state.scene.furniture.map((item) => item.id));
       if (input.add_to_cart) {
-        const remote = await context.shopify.product(product.id);
+        const remote = trackShopifyResult(context, await context.shopify.product(product.id));
         if (!remote.ok) return unavailable(remote.detail);
         variant = variantId(remote.value, ghost.colorway);
         if (!variant) return unavailable(`No Shopify variant exists for ${product.name} in ${ghost.colorway}.`);
-        const added = await context.shopify.cartAdd([{ variantId: variant, quantity: 1, itemId: predictedId }]);
+        const added = trackShopifyResult(context, await context.shopify.cartAdd([{ variantId: variant, quantity: 1, itemId: predictedId }]));
         if (!added.ok) return unavailable(added.detail);
         const linked = [...added.value.lines].reverse().find((line) => line.variantId === variant);
         if (linked) linked.itemId = predictedId;
@@ -340,13 +341,13 @@ export function getCheckoutLinkTool(): DefinedTool {
     readOnly: true,
     input: z.object({}).strict(),
     async handler(_input, context) {
-      const current = await context.shopify.cartGet();
+      const current = trackShopifyResult(context, await context.shopify.cartGet());
       if (!current.ok) return unavailable(current.detail);
       syncCart(context, current.value);
       if (current.value.lines.length === 0) {
         return { ok: false, error: "blocked", detail: "The cart is empty.", suggestion: "Add a product with update_cart first." };
       }
-      const checkout = await context.shopify.checkoutLink();
+      const checkout = trackShopifyResult(context, await context.shopify.checkoutLink());
       if (!checkout.ok) return unavailable(checkout.detail);
       return {
         ok: true,
