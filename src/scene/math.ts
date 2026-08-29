@@ -43,8 +43,7 @@ export function smoothstep(a: number, b: number, x: number): number {
  * `sw` (−45°) looks from the south-west toward the north-east and the north wall runs up-right.
  */
 export function yawAzimuth(yaw: Yaw): number {
-  const degrees = { sw: -45, se: 45, ne: 135, nw: -135 }[yaw];
-  return (degrees * Math.PI) / 180;
+  return (YAW_DEGREES[yaw] * Math.PI) / 180;
 }
 
 /** Returns the target angle rewritten within ±π of `from` so tweens take the short way round. */
@@ -206,15 +205,27 @@ export const WALL_FADED = 0;
  * camera (the classic cut-away) or when it stands in front of the framed room — a neighbour's
  * 2.6 m wall must never hide the room the camera is looking at. Input is world centimetres.
  */
-export function wallOpacity(outward: Vec2, samples: Vec2[], focusCentre: Vec2, azimuth: number, pitch: number): number {
+export function wallOpacity(
+  outward: Vec2,
+  samples: Vec2[],
+  focusCentre: Vec2,
+  azimuth: number,
+  pitch: number,
+  opts: { cutInFront?: boolean } = {},
+): number {
   if (pitch > (Math.PI / 180) * 80) return 1;
   const toCamera = { x: Math.sin(azimuth), y: Math.cos(azimuth) };
   const facing = outward.x * toCamera.x + outward.y * toCamera.y;
+  // Framing the *whole* home turns the second test off: every wall in the southern half of a 12 m
+  // home stands metres in front of the home's centre, so keeping it would delete half the house
+  // instead of revealing one room. The facing test alone is the classic dollhouse cut-away.
   let frontness = -Infinity;
-  for (const sample of samples) {
-    const dx = (sample.x - focusCentre.x) * M;
-    const dy = (sample.y - focusCentre.y) * M;
-    frontness = Math.max(frontness, dx * toCamera.x + dy * toCamera.y);
+  if (opts.cutInFront ?? true) {
+    for (const sample of samples) {
+      const dx = (sample.x - focusCentre.x) * M;
+      const dy = (sample.y - focusCentre.y) * M;
+      frontness = Math.max(frontness, dx * toCamera.x + dy * toCamera.y);
+    }
   }
   const cut = Math.max(smoothstep(0.05, 0.35, facing), smoothstep(0.35, 1.3, frontness));
   return 1 - cut * (1 - WALL_FADED);
@@ -278,6 +289,26 @@ export function roomBox(room: Room): Box3Like {
   };
 }
 
+/**
+ * World-space bounding box in metres for the whole home, inflated by the wall thickness exactly as
+ * `roomBox` inflates one room: walls extrude *outward* from the room polygons, so framing the bare
+ * polygons clips the very walls that frame the shot.
+ */
+export function wholeHomeBox(rooms: Room[]): Box3Like {
+  const box = homeBox(rooms);
+  const pad = WALL_T * M;
+  return {
+    min: [box.min[0] - pad, box.min[1], box.min[2] - pad],
+    max: [box.max[0] + pad, box.max[1], box.max[2] + pad],
+  };
+}
+
+/** Centre of the home's footprint in world centimetres — what the wall cut-away measures against. */
+export function homeCentreCm(rooms: Room[]): Vec2 {
+  const box = homeBox(rooms);
+  return { x: (box.min[0] + box.max[0]) / 2 / M, y: (box.min[2] + box.max[2]) / 2 / M };
+}
+
 /** World-space bounding box in metres around a single placed item, padded by `pad` metres. */
 export function itemBox(room: Room, item: Furniture, product: CatalogItem, pad = 0.6): Box3Like {
   const box = polyBBox(footprint(item, product));
@@ -285,4 +316,100 @@ export function itemBox(room: Room, item: Furniture, product: CatalogItem, pad =
     min: [(room.origin.x + box.minX) * M - pad, 0, (room.origin.y + box.minY) * M - pad],
     max: [(room.origin.x + box.maxX) * M + pad, product.dims.h * M + pad, (room.origin.y + box.maxY) * M + pad],
   };
+}
+
+/* ─────────────────────────── free orbit (src/scene/cameraState.ts) ─────────────────────────── */
+
+/** Camera azimuth in degrees for each dollhouse yaw corner — the odd multiples of 45°. */
+export const YAW_DEGREES: Record<Yaw, number> = { sw: -45, se: 45, ne: 135, nw: -135 };
+
+/** The isometric dollhouse pitch in degrees: the base every manual pitch offset is measured from. */
+export const DOLLHOUSE_PITCH_DEG = (DOLLHOUSE_PITCH * 180) / Math.PI;
+
+/**
+ * Free-orbit pitch limits (STYLE.md §2). Below 15° the camera starts to look up at the floor from
+ * outside the house; above 75° the isometric shot flattens into a fake plan with none of plan
+ * view's clarity. The dollhouse pitch sits inside the range, so 0 is always a legal offset.
+ */
+export const PITCH_MIN_DEG = 15;
+export const PITCH_MAX_DEG = 75;
+
+/** The camera's eight stops: the four dollhouse corners and the four face-on elevations. */
+export const VIEW_STEP_DEG = 45;
+
+/** Rewrites an angle in degrees into (−180, 180], so an unbounded orbit never drifts. */
+export function normalizeDeg(deg: number): number {
+  if (!Number.isFinite(deg)) return 0;
+  const wrapped = ((((deg + 180) % 360) + 360) % 360) - 180;
+  return wrapped === -180 ? 180 : wrapped;
+}
+
+/** Clamps an absolute pitch in degrees into the free-orbit range. */
+export function clampPitchDeg(deg: number): number {
+  return clamp(deg, PITCH_MIN_DEG, PITCH_MAX_DEG);
+}
+
+/** Rounds an angle onto a grid of `step` degrees. The wall cut-away re-renders on this grid only. */
+export function quantizeDeg(deg: number, step: number): number {
+  if (!(step > 0)) return deg;
+  // −0 would be a different snapshot value from 0 for a strict-equality memo, so normalise it away.
+  return Math.round(deg / step) * step + 0;
+}
+
+/** The yaw corner whose azimuth is exactly `deg`, or undefined for a face-on elevation. */
+export function yawAtDegrees(deg: number): Yaw | undefined {
+  const wanted = normalizeDeg(deg);
+  for (const yaw of Object.keys(YAW_DEGREES) as Yaw[]) {
+    if (Math.abs(normalizeDeg(YAW_DEGREES[yaw] - wanted)) < 1e-6) return yaw;
+  }
+  return undefined;
+}
+
+/** A camera stop, split into the corner the scene stores and the offset the camera store holds. */
+export interface ViewStep {
+  yaw: Yaw;
+  offsetDeg: number;
+}
+
+/**
+ * The next 45° stop past `yaw + offsetDeg`, decomposed back into a scene yaw and a camera offset.
+ *
+ * A corner stop is stored as the corner with no offset, so `[` and `]` keep writing the undoable,
+ * agent-visible yaw they always did. A face-on elevation sits 45° from two corners: the one the
+ * camera is already on wins (no second store write, no extra undo step), otherwise the corner
+ * behind the travel, so the sweep stays continuous.
+ */
+export function stepAzimuth(yaw: Yaw, offsetDeg: number, direction: number): ViewStep {
+  const way = direction >= 0 ? 1 : -1;
+  const current = normalizeDeg(YAW_DEGREES[yaw] + offsetDeg);
+  const notch = current / VIEW_STEP_DEG;
+  // Strictly past the current angle, so a press from a stop always moves exactly one notch.
+  const index = way > 0 ? Math.floor(notch + 1e-6) + 1 : Math.ceil(notch - 1e-6) - 1;
+  const target = normalizeDeg(index * VIEW_STEP_DEG);
+  const corner = yawAtDegrees(target);
+  if (corner) return { yaw: corner, offsetDeg: 0 };
+  const held = normalizeDeg(target - YAW_DEGREES[yaw]);
+  if (Math.abs(Math.abs(held) - VIEW_STEP_DEG) < 1e-6) return { yaw, offsetDeg: held };
+  const behind = yawAtDegrees(target - VIEW_STEP_DEG * way);
+  return behind ? { yaw: behind, offsetDeg: VIEW_STEP_DEG * way } : { yaw, offsetDeg: held };
+}
+
+/** The eight 45° stops as azimuths in radians. */
+export function viewStopAzimuths(): number[] {
+  const stops: number[] = [];
+  for (let index = -3; index <= 4; index += 1) stops.push((index * VIEW_STEP_DEG * Math.PI) / 180);
+  return stops;
+}
+
+/**
+ * The largest framed half-height over every 45° stop at the orbit's pitch extremes — what a shot
+ * has to be fitted against if the free orbit must never clip the framed room.
+ */
+export function fitHalfHeightWorst(box: Box3Like, aspect: number, padding: number): number {
+  const pitches = [PITCH_MIN_DEG, DOLLHOUSE_PITCH_DEG, PITCH_MAX_DEG].map((deg) => (deg * Math.PI) / 180);
+  let worst = 0;
+  for (const azimuth of viewStopAzimuths()) {
+    for (const pitch of pitches) worst = Math.max(worst, fitHalfHeight(box, azimuth, pitch, aspect, padding));
+  }
+  return worst;
 }

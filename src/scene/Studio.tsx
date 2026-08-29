@@ -19,10 +19,12 @@ import { Overlays } from "./Overlays";
 import { Post, pinQualityTier } from "./Post";
 import { Rooms } from "./Rooms";
 import { planAssetWaves } from "./assetWaves";
+import { cameraBridgeSnapshot } from "./cameraState";
 import { devBridgesEnabled } from "./devBridge";
 import { setFocusTarget } from "./focus";
 import type { FocusTarget } from "./focus";
 import { warmGlbs, warmQueueDepth } from "./glb";
+import { watchHomeFraming } from "./homeFocus";
 import { useWakeOnActivity, wakeStudio } from "./idle";
 import { markStudioPainted, studioPaintedAt, whenStudioPainted } from "./intro";
 import { flyOrbTo } from "./orbCommand";
@@ -153,7 +155,9 @@ function DebugBridge() {
       __hearthPinQuality?: unknown;
       __hearthPaint?: unknown;
     };
-    target.__hearthStudio = store;
+    // The R3F state getter, with the camera the human is looking through hung off it: QA and the
+    // end-to-end suite drive real gestures and read the effective azimuth, pitch, zoom and pan back.
+    target.__hearthStudio = Object.assign(store, { camera: cameraBridgeSnapshot });
     target.__hearthPinQuality = pinQualityTier;
     // First paint of the studio, in ms since the page started, plus what the warm-up still owes.
     target.__hearthPaint = () => ({ firstFrameMs: Math.round(studioPaintedAt()), warm: warmQueueDepth() });
@@ -163,6 +167,15 @@ function DebugBridge() {
       delete target.__hearthPaint;
     };
   }, [store]);
+  return null;
+}
+
+/**
+ * Pulls the camera back to the whole home the moment a template is applied, whoever applied it
+ * (src/scene/homeFocus.ts). Mounted here because the studio owns the camera, not the chrome.
+ */
+function HomeFraming() {
+  useEffect(() => watchHomeFraming(), []);
   return null;
 }
 
@@ -253,6 +266,7 @@ export default function Studio() {
         <CaptureBridge />
         <DebugBridge />
         <AssetWarmup />
+        <HomeFraming />
       </Canvas>
     </div>
   );

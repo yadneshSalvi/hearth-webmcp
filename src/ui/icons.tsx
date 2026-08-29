@@ -59,6 +59,8 @@ export const IconRotateLeft = icon(<><path d="M15.6 11.6A6 6 0 1 0 4.6 8.2" /><p
 export const IconRotateRight = icon(<><path d="M4.4 11.6A6 6 0 1 1 15.4 8.2" /><path d="M15.6 4.4v3.9h-3.9" /></>);
 export const IconYawLeft = icon(<><path d="M4.8 8.4A7.6 7.6 0 0 1 15.2 8.4" /><path d="M4.6 4.6v3.9h3.9" /><path d="M6 14.4h8" /></>);
 export const IconYawRight = icon(<><path d="M4.8 8.4A7.6 7.6 0 0 1 15.2 8.4" /><path d="M15.4 4.6v3.9h-3.9" /><path d="M6 14.4h8" /></>);
+/** Frame corners closing on a centre dot: put the camera back on the framed shot. */
+export const IconRecenter = icon(<><path d="M4 7.6V5.4A1.4 1.4 0 0 1 5.4 4h2.2" /><path d="M12.4 4h2.2A1.4 1.4 0 0 1 16 5.4v2.2" /><path d="M16 12.4v2.2a1.4 1.4 0 0 1-1.4 1.4h-2.2" /><path d="M7.6 16H5.4A1.4 1.4 0 0 1 4 14.6v-2.2" /><circle cx="10" cy="10" r="1.7" /></>);
 export const IconBoard = icon(<><path d="M10 3.4v8.4" /><path d="M6.6 8.6 10 12 13.4 8.6" /><path d="M4 15.8h12" /></>);
 export const IconMorning = icon(<><path d="M6.2 12.4a3.8 3.8 0 0 1 7.6 0" /><path d="M3.2 12.4h13.6" /><path d="M10 5.2v1.6" /><path d="M15 7.4l-1.1 1.1" /><path d="M5 7.4l1.1 1.1" /></>);
 export const IconNoon = icon(<><circle cx="10" cy="10" r="3.4" /><path d="M10 3.2v1.4" /><path d="M10 15.4v1.4" /><path d="M3.2 10h1.4" /><path d="M15.4 10h1.4" /><path d="M5.4 5.4l1 1" /><path d="M13.6 13.6l1 1" /><path d="M14.6 5.4l-1 1" /><path d="M6.4 13.6l-1 1" /></>);
@@ -83,6 +85,8 @@ export const IconKeyboard = icon(<><rect x="3" y="6" width="14" height="8" rx="2
 export const IconInfo = icon(<><circle cx="10" cy="10" r="6.6" /><path d="M10 9.2v4.2" /><path d="M10 6.6h.01" /></>);
 export const IconPanelLeft = icon(<><rect x="3.4" y="3.4" width="13.2" height="13.2" rx="2" /><path d="M8.2 3.4v13.2" /></>);
 export const IconPanelRight = icon(<><rect x="3.4" y="3.4" width="13.2" height="13.2" rx="2" /><path d="M11.8 3.4v13.2" /></>);
+/** The whole home: a roofline over more than one room. `IconRoom` is the single room. */
+export const IconHome = icon(<><path d="M2.8 8.8 10 3.2l7.2 5.6v7.8H2.8z" /><path d="M10 8.9v7.5" /><path d="M2.8 12.6h7.2" /></>);
 export const IconRoom = icon(<><path d="M3.4 6.4 10 3.4l6.6 3v10.2H3.4z" /><path d="M8 16.6v-5h4v5" /></>);
 export const IconSwing = icon(<><path d="M5 15V5" /><path d="M15 5A10 10 0 0 1 5 15" strokeDasharray="2.6 2.2" /></>);
 export const IconZone = icon(<rect x="4" y="4" width="12" height="12" rx="2" strokeDasharray="2.8 2.4" />);

@@ -38,8 +38,12 @@ Numerals in receipts/measurements use Fraunces with `font-variant-numeric: tabul
 
 ## 2. The 3D look (build once in `src/scene/LightingRig.tsx`; nobody adds lights elsewhere)
 
-- **Orthographic camera**, isometric pitch ≈ 35.264°, yaw snaps to 45° increments with a
-  600 ms eased tween. Two views only: **Plan** (top-down) and **Dollhouse**. No free-fly camera.
+- **Orthographic camera.** Two views only: **Plan** — north-up, pan and zoom only — and
+  **Dollhouse** — isometric home pitch 35.264° on the 45° corners, with **free orbit by drag
+  (pitch clamped to 15–75°)**, 45° steps from `[` `]` and the rotate buttons, 600 ms eased tweens for
+  every command and immediate response while a drag is in hand. No perspective, no free-fly camera.
+  The framed volume is the active room, one focused item, or the **entire home** — which is where a
+  template apply lands, so the plan you just chose is the plan you see.
 - **Lighting rig:** (1) warm directional key with soft shadows (drei `SoftShadows`), (2) subtle
   neutral HDRI environment at low intensity, (3) **N8AO** ambient occlusion, (4) ACES filmic tone
   mapping + slight vignette + restrained bloom (emissive lamps only).

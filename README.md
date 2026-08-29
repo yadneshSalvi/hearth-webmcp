@@ -32,6 +32,23 @@ extension works too. The production origin ships a WebMCP origin-trial token, so
 guardrails as any agent: up to 60 tool calls per turn (`DEFAULT_MAX_CALLS_PER_TURN`), and destructive tools still open
 the confirmation dialog.
 
+## Controls
+
+Everything here writes the same store actions the agent's tools do, so a human drag and a `set_view`
+call land in one shared history. `?` opens the full map.
+
+| Pointer | | Keys | |
+|---|---|---|---|
+| **Drag** the floor or background | pan — the scene follows the pointer | **[** · **]** | turn 45°: four corners, four elevations |
+| **Right-drag** · **⇧ + drag** | orbit freely (pitch 15–75°) | **0** | reset to the framed shot |
+| **Middle-drag** · two fingers | pan · pinch to zoom · twist to turn | **1** · **2** | plan · dollhouse |
+| **Scroll** · trackpad pinch | zoom, 0.6× – 2.2× | **T** | morning · noon · golden · evening |
+| **Double-click** the background | reset to the framed shot | **H** | frame the entire home, and back |
+| **Click** a floor | make that room the active one | **R** · **⇧R** | turn the selected item |
+| **Drag furniture** | move it, with magnets and live dimensions | **⌘Z** · **⇧⌘Z** | undo · redo |
+
+**Layouts** in the top bar swaps the whole floor plan; **Build** mode edits rooms, doors and windows.
+
 ## What the agent can do
 
 26 tools are registered the moment the page loads; 10 more appear when they make sense (a preview exists, two layouts are

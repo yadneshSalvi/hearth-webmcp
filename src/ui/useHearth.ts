@@ -7,7 +7,9 @@ import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { useStore } from "zustand";
 import { createCatalog } from "../engine/catalog";
 import { evaluateRoom } from "../engine/conflicts";
-import type { Conflict, TimeOfDay, Yaw } from "../engine/types";
+import type { Conflict, TimeOfDay } from "../engine/types";
+import { resetCamera, stepView } from "../scene/cameraState";
+import { toggleHomeFocus } from "../scene/focus";
 import { devBridgesEnabled } from "../scene/devBridge";
 import { studioApi } from "../scene/Studio";
 import { createLocalShopify } from "../shopify/local";
@@ -26,7 +28,6 @@ import { publishStudioRegistry, useAssistantRegistry } from "./assistantTools";
 import { useFirstRun } from "./useFirstRun";
 
 const TIMES: readonly TimeOfDay[] = ["morning", "noon", "golden", "evening"];
-const YAWS: readonly Yaw[] = ["nw", "ne", "se", "sw"];
 const EMPTY_CONFLICTS: Conflict[] = [];
 
 /**
@@ -252,7 +253,7 @@ export function useHearth(): Hearth {
         return;
       }
       if (command || event.altKey) return;
-      const { view, yaw, timeOfDay } = store.scene.meta;
+      const { view, timeOfDay } = store.scene.meta;
       switch (event.key) {
         case "1":
           if (view !== "plan") store.setView("human", { view: "plan" });
@@ -260,11 +261,20 @@ export function useHearth(): Hearth {
         case "2":
           if (view !== "dollhouse") store.setView("human", { view: "dollhouse" });
           break;
+        // The 45° stops are the four dollhouse corners *and* the four face-on elevations, so a
+        // press either turns the scene's yaw or moves the camera store's offset — see `stepView`.
         case "[":
-          store.setView("human", { yaw: step(YAWS, yaw, -1) });
+          stepView(-1);
           break;
         case "]":
-          store.setView("human", { yaw: step(YAWS, yaw, 1) });
+          stepView(1);
+          break;
+        case "0":
+          resetCamera({ tween: true });
+          break;
+        case "h":
+        case "H":
+          toggleHomeFocus();
           break;
         case "t":
         case "T":
