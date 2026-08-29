@@ -1,0 +1,603 @@
+{
+  "scene_summary": {
+    "ok": true,
+    "home": {
+      "template": "2br",
+      "rooms": 6,
+      "items": 24
+    },
+    "mode": "design",
+    "view": "dollhouse",
+    "time_of_day": "golden",
+    "accessibility": false,
+    "active_room": "living",
+    "rooms": [
+      {
+        "id": "living",
+        "name": "Living Room",
+        "type": "living",
+        "area_m2": 22.9,
+        "walls": "N 520 · E 440 · S 520 · W 440",
+        "items": 7,
+        "conflicts": 0
+      },
+      {
+        "id": "kitchen",
+        "name": "Kitchen & Dining",
+        "type": "kitchen",
+        "area_m2": 15.8,
+        "walls": "N 360 · E 440 · S 360 · W 440",
+        "items": 6,
+        "conflicts": 0
+      },
+      {
+        "id": "bed-1",
+        "name": "Main Bedroom",
+        "type": "bedroom",
+        "area_m2": 14.4,
+        "walls": "N 400 · E 360 · S 400 · W 360",
+        "items": 7,
+        "conflicts": 0
+      },
+      {
+        "id": "hall",
+        "name": "Hall",
+        "type": "hall",
+        "area_m2": 4.3,
+        "walls": "N 120 · E 360 · S 120 · W 360",
+        "items": 0,
+        "conflicts": 0
+      },
+      {
+        "id": "bed-2",
+        "name": "Second Bedroom",
+        "type": "bedroom",
+        "area_m2": 10.9,
+        "walls": "N 340 · E 320 · S 340 · W 320",
+        "items": 4,
+        "conflicts": 0
+      },
+      {
+        "id": "bath",
+        "name": "Bathroom",
+        "type": "bath",
+        "area_m2": 4.4,
+        "walls": "N 220 · E 200 · S 220 · W 200",
+        "items": 0,
+        "conflicts": 0
+      }
+    ],
+    "selection": {
+      "item": null,
+      "room": "living"
+    },
+    "cart": {
+      "lines": 0,
+      "subtotal_usd": 0
+    },
+    "hint": "Use get_room_details for walls, openings and item positions of one room."
+  },
+  "room_living": {
+    "ok": true,
+    "room": {
+      "id": "living",
+      "name": "Living Room",
+      "type": "living",
+      "size_cm": "520x440",
+      "area_m2": 22.9,
+      "floor": "oak",
+      "wall_color": "plaster"
+    },
+    "walls": [
+      {
+        "id": "w0",
+        "side": "north",
+        "length_cm": 520,
+        "free_spans": "0-145,500-520"
+      },
+      {
+        "id": "w1",
+        "side": "east",
+        "length_cm": 440,
+        "free_spans": "0-75,270-440"
+      },
+      {
+        "id": "w2",
+        "side": "south",
+        "length_cm": 520,
+        "free_spans": "0-20,110-170,350-520"
+      },
+      {
+        "id": "w3",
+        "side": "west",
+        "length_cm": 440,
+        "free_spans": "0-40,234-440"
+      }
+    ],
+    "openings": [
+      {
+        "id": "door-living-hall",
+        "kind": "door",
+        "wall": "w2",
+        "offset_cm": 20,
+        "width_cm": 90,
+        "swing": "in",
+        "hinge": "right"
+      },
+      {
+        "id": "door-living-kitchen",
+        "kind": "door",
+        "wall": "w1",
+        "offset_cm": 180,
+        "width_cm": 90,
+        "swing": "in",
+        "hinge": "left"
+      },
+      {
+        "id": "window-living-north",
+        "kind": "window",
+        "wall": "w0",
+        "offset_cm": 340,
+        "width_cm": 160
+      },
+      {
+        "id": "window-living-west",
+        "kind": "window",
+        "wall": "w3",
+        "offset_cm": 40,
+        "width_cm": 140
+      }
+    ],
+    "items": [
+      "sofa-1 Endre Sofa @255,48 r0 220x95 sage",
+      "tv-unit-1 Linje TV Unit @260,420 r180 180x40 oak",
+      "rug-1 Loop Rug @260,240 r90 300x200 terracotta",
+      "armchair-1 Nook Armchair @41,245 r270 82x78 terracotta",
+      "floor-lamp-1 Glow Floor Lamp @400,195 r0 30x30 ochre",
+      "plant-1 Fern Plant @40,120 r0 50x50 sage",
+      "shelf-1 Kant Shelf @503,125 r90 35x100 oak"
+    ],
+    "more": 0,
+    "conflicts": 0,
+    "hint": "Items are 'id name @x,y rotation WxD colorway'. measure gives gaps and spans."
+  },
+  "room_bed1": {
+    "ok": true,
+    "room": {
+      "id": "bed-1",
+      "name": "Main Bedroom",
+      "type": "bedroom",
+      "size_cm": "400x360",
+      "area_m2": 14.4,
+      "floor": "pale-oak",
+      "wall_color": "plaster"
+    },
+    "walls": [
+      {
+        "id": "w0",
+        "side": "north",
+        "length_cm": 400,
+        "free_spans": "0-200"
+      },
+      {
+        "id": "w1",
+        "side": "east",
+        "length_cm": 360,
+        "free_spans": "0-250,340-360"
+      },
+      {
+        "id": "w2",
+        "side": "south",
+        "length_cm": 400,
+        "free_spans": "0-220,360-400"
+      },
+      {
+        "id": "w3",
+        "side": "west",
+        "length_cm": 360,
+        "free_spans": "0-100,260-360"
+      }
+    ],
+    "openings": [
+      {
+        "id": "door-main-hall",
+        "kind": "door",
+        "wall": "w1",
+        "offset_cm": 250,
+        "width_cm": 90,
+        "swing": "in",
+        "hinge": "right"
+      },
+      {
+        "id": "window-main-south",
+        "kind": "window",
+        "wall": "w2",
+        "offset_cm": 220,
+        "width_cm": 140
+      }
+    ],
+    "items": [
+      "bed-1 Birk Bed @100,180 r270 200x160 oak",
+      "side-table-1 Bord Side Table @45,65 r270 45x45 oak",
+      "side-table-2 Bord Side Table @45,295 r270 45x45 oak",
+      "table-lamp-1 Alva Table Lamp @45,65 r0 22x22 ochre",
+      "table-lamp-2 Alva Table Lamp @45,295 r0 22x22 ochre",
+      "wardrobe-1 Hald Wardrobe @320,30 r0 160x54 oak",
+      "plant-3 Pilea Plant @220,20 r0 40x40 sage"
+    ],
+    "more": 0,
+    "conflicts": 0,
+    "hint": "Items are 'id name @x,y rotation WxD colorway'. measure gives gaps and spans."
+  },
+  "room_bed2": {
+    "ok": true,
+    "room": {
+      "id": "bed-2",
+      "name": "Second Bedroom",
+      "type": "bedroom",
+      "size_cm": "340x320",
+      "area_m2": 10.9,
+      "floor": "pale-oak",
+      "wall_color": "plaster"
+    },
+    "walls": [
+      {
+        "id": "w0",
+        "side": "north",
+        "length_cm": 340,
+        "free_spans": "0-340"
+      },
+      {
+        "id": "w1",
+        "side": "east",
+        "length_cm": 320,
+        "free_spans": "0-180,300-320"
+      },
+      {
+        "id": "w2",
+        "side": "south",
+        "length_cm": 340,
+        "free_spans": "0-340"
+      },
+      {
+        "id": "w3",
+        "side": "west",
+        "length_cm": 320,
+        "free_spans": ""
+      }
+    ],
+    "openings": [
+      {
+        "id": "door-second-hall",
+        "kind": "door",
+        "wall": "w3",
+        "offset_cm": 0,
+        "width_cm": 90,
+        "swing": "in",
+        "hinge": "left"
+      },
+      {
+        "id": "window-second-east",
+        "kind": "window",
+        "wall": "w1",
+        "offset_cm": 180,
+        "width_cm": 120
+      }
+    ],
+    "items": [
+      "bed-2 Ask Bed @100,70 r270 200x140 dusty-blue",
+      "desk-1 Soren Desk @310,240 r90 60x120 oak",
+      "chair-5 Mysa Chair @287,155 r0 44x49 sage",
+      "shelf-2 Lund Shelf @15,185 r270 30x80 plaster"
+    ],
+    "more": 0,
+    "conflicts": 0,
+    "hint": "Items are 'id name @x,y rotation WxD colorway'. measure gives gaps and spans."
+  },
+  "room_kitchen": {
+    "ok": true,
+    "room": {
+      "id": "kitchen",
+      "name": "Kitchen & Dining",
+      "type": "kitchen",
+      "size_cm": "360x440",
+      "area_m2": 15.8,
+      "floor": "stone",
+      "wall_color": "plaster"
+    },
+    "walls": [
+      {
+        "id": "w0",
+        "side": "north",
+        "length_cm": 360,
+        "free_spans": "0-100,260-360"
+      },
+      {
+        "id": "w1",
+        "side": "east",
+        "length_cm": 440,
+        "free_spans": "0-440"
+      },
+      {
+        "id": "w2",
+        "side": "south",
+        "length_cm": 360,
+        "free_spans": "0-360"
+      },
+      {
+        "id": "w3",
+        "side": "west",
+        "length_cm": 440,
+        "free_spans": "0-170,260-440"
+      }
+    ],
+    "openings": [
+      {
+        "id": "door-kitchen-living",
+        "kind": "door",
+        "wall": "w3",
+        "offset_cm": 170,
+        "width_cm": 90,
+        "swing": "in",
+        "hinge": "right"
+      },
+      {
+        "id": "window-kitchen-north",
+        "kind": "window",
+        "wall": "w0",
+        "offset_cm": 100,
+        "width_cm": 160
+      }
+    ],
+    "items": [
+      "table-1 Ake Table @202,240 r0 160x90 oak",
+      "chair-1 Finn Chair @202,165 r0 45x50 sage",
+      "chair-2 Finn Chair @202,315 r180 45x50 sage",
+      "chair-3 Ida Chair @120,165 r0 46x52 dusty-blue",
+      "chair-4 Ida Chair @284,315 r180 46x52 dusty-blue",
+      "plant-2 Pilea Plant @50,360 r0 40x40 sage"
+    ],
+    "more": 0,
+    "conflicts": 0,
+    "hint": "Items are 'id name @x,y rotation WxD colorway'. measure gives gaps and spans."
+  },
+  "selection_none": {
+    "ok": true,
+    "selected_item": null,
+    "hovered_item": null,
+    "last_moved": null,
+    "selected_room": "living",
+    "camera": {
+      "view": "dollhouse",
+      "focus": "living"
+    },
+    "hint": "Ask the human to select an item, or use a room or item id from the scene summary."
+  },
+  "selection_sofa": {
+    "ok": true,
+    "selected_item": {
+      "id": "sofa-1",
+      "name": "Endre Sofa",
+      "room": "living",
+      "pos": [
+        255,
+        48
+      ],
+      "rotation": 0,
+      "dims": "220x95x85"
+    },
+    "hovered_item": null,
+    "last_moved": null,
+    "selected_room": "living",
+    "camera": {
+      "view": "dollhouse",
+      "focus": "living"
+    },
+    "hint": "Use sofa-1 or selected in the next tool call."
+  },
+  "conflicts_bed1": {
+    "ok": true,
+    "room": "bed-1",
+    "room_name": "Main Bedroom",
+    "accessibility_mode": false,
+    "count": 0,
+    "conflicts": [],
+    "more": 0,
+    "hint": "No layout conflicts found; get_design_report can review the design quality."
+  },
+  "conflicts_living": {
+    "ok": true,
+    "room": "living",
+    "room_name": "Living Room",
+    "accessibility_mode": false,
+    "count": 0,
+    "conflicts": [],
+    "more": 0,
+    "hint": "No layout conflicts found; get_design_report can review the design quality."
+  },
+  "measure_south": {
+    "ok": true,
+    "subject": {
+      "kind": "wall",
+      "id": "w2",
+      "side": "south"
+    },
+    "length_cm": 520,
+    "free_spans": [
+      {
+        "start": 0,
+        "end": 20
+      },
+      {
+        "start": 110,
+        "end": 170
+      },
+      {
+        "start": 350,
+        "end": 520
+      }
+    ],
+    "hint": "Add to to measure a gap or distance from this subject."
+  },
+  "search_sofa_800": {
+    "ok": true,
+    "count": 2,
+    "results": [
+      {
+        "id": "sofa-liva",
+        "name": "Liva Sofa",
+        "category": "sofa",
+        "price_usd": 690,
+        "dims": "180x88x80",
+        "colorways": "sage, plaster, ochre",
+        "style": "japandi, modern"
+      },
+      {
+        "id": "sofa-endre",
+        "name": "Endre Sofa",
+        "category": "sofa",
+        "price_usd": 790,
+        "dims": "220x95x85",
+        "colorways": "oak, sage, terracotta",
+        "style": "scandinavian"
+      }
+    ],
+    "hint": "Use get_product to inspect one result, or place_furniture to add it."
+  },
+  "search_desk": {
+    "ok": true,
+    "count": 2,
+    "results": [
+      {
+        "id": "desk-aalto",
+        "name": "Aalto Desk",
+        "category": "desk",
+        "price_usd": 490,
+        "dims": "140x70x75",
+        "colorways": "oak, sage, charcoal",
+        "style": "scandinavian, japandi"
+      },
+      {
+        "id": "desk-varde",
+        "name": "Varde Desk",
+        "category": "desk",
+        "price_usd": 590,
+        "dims": "150x75x75",
+        "colorways": "sage, oak, plum",
+        "style": "rustic, japandi"
+      }
+    ],
+    "hint": "Use get_product to inspect one result, or place_furniture to add it."
+  },
+  "search_chair": {
+    "ok": true,
+    "count": 1,
+    "results": [
+      {
+        "id": "chair-mysa",
+        "name": "Mysa Chair",
+        "category": "chair",
+        "price_usd": 110,
+        "dims": "44x49x79",
+        "colorways": "sage, plaster",
+        "style": "japandi"
+      }
+    ],
+    "hint": "Use get_product to inspect one result, or place_furniture to add it."
+  },
+  "search_nook": {
+    "ok": true,
+    "count": 1,
+    "results": [
+      {
+        "id": "armchair-nook",
+        "name": "Nook Armchair",
+        "category": "armchair",
+        "price_usd": 390,
+        "dims": "78x82x84",
+        "colorways": "sage, terracotta, plaster",
+        "style": "scandinavian, japandi"
+      }
+    ],
+    "hint": "Use get_product to inspect one result, or place_furniture to add it."
+  },
+  "product_endre": {
+    "ok": true,
+    "product": {
+      "id": "sofa-endre",
+      "name": "Endre Sofa",
+      "category": "sofa",
+      "price_usd": 790,
+      "dims": "220x95x85",
+      "clearance_front_cm": 75,
+      "seat_count": 3,
+      "colorways": [
+        "oak",
+        "sage",
+        "terracotta"
+      ],
+      "style_tags": [
+        "scandinavian"
+      ],
+      "description": "A deep, softly structured sofa with a timber base and enough firmness for everyday sitting."
+    },
+    "fits": {
+      "room": "living",
+      "walls": [
+        {
+          "wall": "w0",
+          "side": "north",
+          "fits": false,
+          "spare_cm": -65
+        },
+        {
+          "wall": "w1",
+          "side": "east",
+          "fits": false,
+          "spare_cm": -50
+        },
+        {
+          "wall": "w2",
+          "side": "south",
+          "fits": false,
+          "spare_cm": -50
+        },
+        {
+          "wall": "w3",
+          "side": "west",
+          "fits": false,
+          "spare_cm": -14
+        }
+      ]
+    },
+    "in_scene": [
+      "sofa-1"
+    ],
+    "hint": "Use place_furniture or preview_in_room with this product id."
+  },
+  "cart_empty": {
+    "ok": true,
+    "lines": [],
+    "count": 0,
+    "subtotal_usd": 0,
+    "checkout_available": false,
+    "hint": "Use update_cart with a product or placed item to add the first line."
+  },
+  "report_living": {
+    "ok": true,
+    "room": "living",
+    "room_name": "Living Room",
+    "score": 99,
+    "scores": {
+      "balance": 10,
+      "focal_point": 10,
+      "conversation": 10,
+      "lighting": 9,
+      "storage": 10,
+      "traffic": 10
+    },
+    "summary": "Living Room feels settled and practical. Balance works best; lighting needs the most care.",
+    "suggestions": [],
+    "hint": "This room is ready to present or save as a variant."
+  }
+}

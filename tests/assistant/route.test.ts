@@ -84,8 +84,8 @@ describe("assistant route", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("rejects more than eight calls in the current turn", async () => {
-    const calls = Array.from({ length: 9 }, (_, index) => ({
+  it("rejects more than sixty calls in the current turn", async () => {
+    const calls = Array.from({ length: 61 }, (_, index) => ({
       type: "function_call" as const,
       call_id: `call-${index}`,
       name: "get_scene_summary",

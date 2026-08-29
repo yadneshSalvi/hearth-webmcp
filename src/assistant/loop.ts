@@ -150,7 +150,7 @@ export function createAssistant(opts: AssistantOptions = {}): {
   reset(): void;
 } {
   const endpoint = opts.endpoint ?? "/api/assistant";
-  const configuredMax = opts.maxCallsPerTurn ?? 8;
+  const configuredMax = opts.maxCallsPerTurn ?? 60;
   const maxCalls = Math.max(1, Math.min(8, Math.floor(configuredMax)));
   let messages: AssistantMessage[] = [];
   let active: AbortController | undefined;

@@ -7,7 +7,7 @@ const OPENAI_URL = "https://api.openai.com/v1/responses";
 const MAX_BODY_CHARS = 500_000;
 const MAX_MESSAGES = 200;
 const MAX_TOOLS = 40;
-const MAX_CALLS_PER_TURN = 8;
+const MAX_CALLS_PER_TURN = 60;
 const TIMEOUT_MS = 60_000;
 
 export const ASSISTANT_INSTRUCTIONS = [

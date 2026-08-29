@@ -84,7 +84,7 @@ run_local() {
     --backend vercel \
     --model "$model" \
     --runs 2 \
-    --max-steps 8 \
+    --max-steps 500 \
     --reporter console json html \
     --output-dir "$output_dir" \
     local --tools evals/tools.json --evals evals/prompts.json
@@ -115,7 +115,7 @@ if [[ "${RUN_BROWSER_EVALS:-0}" == "1" ]]; then
     --backend vercel \
     --model "openai:${OPENAI_MODEL}" \
     --runs 1 \
-    --max-steps 8 \
+    --max-steps 500 \
     --reporter console json html \
     --output-dir "$BROWSER_DIR" \
     --chrome-channel chrome \
