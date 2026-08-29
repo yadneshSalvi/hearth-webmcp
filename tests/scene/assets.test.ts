@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { M, normalizeTransform, stackElevationCm } from "@/src/scene/math";
+import { M, SELECTION_HALO_Y, normalizeTransform, stackElevationCm } from "@/src/scene/math";
 import type { Box3Like } from "@/src/scene/math";
 import { catalogSource } from "@/data/catalog.source";
+import manifestJson from "@/data/assets.manifest.json";
 import type { CatalogItem, Furniture } from "@/src/engine/types";
 
 /** A synthetic GLB bounding box in arbitrary model units. */
@@ -89,5 +90,18 @@ describe("stacking elevation", () => {
     const ghost = item({ id: "ghost-1", catalogId: "desk-soren", pos: { x: 200, y: 200 }, status: "ghost" });
     const decorItem = item({ id: "decor-1", catalogId: "decor-vase", pos: { x: 200, y: 200 } });
     expect(stackElevationCm(decorItem, byId("decor-vase") as CatalogItem, { furniture: [other, ghost, decorItem] }, byId)).toBe(0);
+  });
+});
+
+describe("selection halo", () => {
+  it("sits above every rug the catalog ships, so a ring on a rug is not buried in it", () => {
+    const rugIds = new Set(catalogSource.filter((item) => item.category === "rug").map((item) => item.id));
+    const tallest = (manifestJson as { id: string; bbox_cm: { h: number } }[])
+      .filter((row) => rugIds.has(row.id))
+      .reduce((max, row) => Math.max(max, row.bbox_cm.h), 0);
+    expect(tallest).toBeGreaterThan(4);
+    expect(SELECTION_HALO_Y * 100).toBeGreaterThan(tallest);
+    // …and still reads as a mark on the floor rather than a plate hovering over it.
+    expect(SELECTION_HALO_Y * 100).toBeLessThan(8);
   });
 });

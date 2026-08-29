@@ -7,7 +7,7 @@ import {
 } from "../../src/tools/define";
 import { allToolDefinitions } from "../../src/tools/handlers";
 import { furnished2br } from "../fixtures/scenes";
-import { resetStore, testUi } from "./helpers";
+import { resetStore, testUi, toolContext } from "./helpers";
 
 function bind(tool: ReturnType<typeof defineTool>): void {
   bindDefinedTool(tool, {
@@ -25,6 +25,43 @@ function bind(tool: ReturnType<typeof defineTool>): void {
     now: () => 100,
   });
 }
+
+describe("parameter aliases through the real tools", () => {
+  /** The 36 real handlers, bound to the local Shopify client and the test store. */
+  function tools() {
+    return allToolDefinitions(toolContext());
+  }
+
+  function named(name: string) {
+    const tool = tools().find((candidate) => candidate.name === name);
+    if (!tool) throw new Error(`No tool named ${name}`);
+    return tool;
+  }
+
+  it("accepts room_id where the schema says room", async () => {
+    resetStore(furnished2br());
+    const details = named("get_room_details");
+    const aliased = await executeDefinedTool(details, { room_id: "bed-1" }, "test");
+    const canonical = await executeDefinedTool(details, { room: "bed-1" }, "test");
+    expect(aliased.ok).toBe(true);
+    expect(aliased).toEqual(canonical);
+  });
+
+  it("accepts product_id inside a JSON string, and item_id on a mutating tool", async () => {
+    resetStore(furnished2br());
+    const product = await executeDefinedTool(named("get_product"), JSON.stringify({ product_id: "sofa-endre" }), "test");
+    expect(product).toMatchObject({ ok: true });
+
+    const removed = await executeDefinedTool(named("remove_furniture"), { item_id: "sofa-1" }, "test");
+    expect(removed).toMatchObject({ ok: true, removed: { id: "sofa-1" } });
+  });
+
+  it("still rejects an unknown parameter, so the schema stays strict", async () => {
+    resetStore(furnished2br());
+    const result = await executeDefinedTool(named("get_room_details"), { rooom: "bed-1" }, "test");
+    expect(result).toMatchObject({ ok: false, error: "invalid" });
+  });
+});
 
 describe("defineTool", () => {
   it("emits strict draft-07-compatible input schemas", () => {

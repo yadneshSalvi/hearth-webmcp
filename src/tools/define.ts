@@ -4,6 +4,7 @@ import type { ConflictKind, Scene } from "../engine/types";
 import type { ShopifyClient } from "../shopify/types";
 import type { ActionSource, HearthStore, ToolGroup } from "../state/types";
 import { beginToolBatch, endToolBatch } from "../state/tool-batch";
+import { normalizeToolInput } from "./params";
 import type { ConfirmResult } from "./confirm";
 
 export type ToolSource = "agent" | "assistant" | "test";
@@ -296,7 +297,7 @@ export async function executeDefinedTool(
     safeRecordReceipt(tool, runtime, source, receiptInput, result);
     return result;
   }
-  const parsed = tool.spec.input.safeParse(parsedJson.value);
+  const parsed = tool.spec.input.safeParse(normalizeToolInput(parsedJson.value));
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const path = issue?.path.length ? issue.path.join(".") : "$";

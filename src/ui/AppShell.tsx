@@ -7,16 +7,19 @@
  *
  * This module is the client-only boundary: it is the first place that imports three/R3F, and
  * `app/StudioClient.tsx` loads it with `ssr: false`.
+ *
+ * Four panels are split out of the first load, because none of them is on screen when the studio
+ * opens: the assistant and the build panel are each behind a mode the human has to choose, and the
+ * compare split view and the design board are modals that only an export or a `compare_variants`
+ * call brings up. They are mounted only while they are open, so their chunk is fetched the first
+ * time it is actually needed rather than in front of the first frame.
  */
+import dynamic from "next/dynamic";
 import Studio from "../scene/Studio";
 import { useHearthStore } from "../state/store";
 import { Activity } from "./Activity";
-import { Assistant } from "./Assistant";
-import { Board } from "./Board";
-import { BuildPanel } from "./BuildPanel";
 import { Cart } from "./Cart";
 import { Catalog } from "./Catalog";
-import { Compare } from "./Compare";
 import { ConfirmModal } from "./ConfirmModal";
 import { EnableSheet } from "./EnableSheet";
 import { IconCart, IconPanelRight, IconRoom, IconTools } from "./icons";
@@ -36,6 +39,11 @@ import type { WebMCPStatus } from "../tools/useWebMCP";
 import { useOnboardingReveal } from "./useFirstRun";
 import { useViewportTier } from "./useViewportTier";
 import type { ViewportTier } from "./useViewportTier";
+
+const Assistant = dynamic(() => import("./Assistant").then((module) => ({ default: module.Assistant })), { ssr: false });
+const Board = dynamic(() => import("./Board").then((module) => ({ default: module.Board })), { ssr: false });
+const BuildPanel = dynamic(() => import("./BuildPanel").then((module) => ({ default: module.BuildPanel })), { ssr: false });
+const Compare = dynamic(() => import("./Compare").then((module) => ({ default: module.Compare })), { ssr: false });
 
 /** Keeps `overlays.conflicts` in step with the scene without re-rendering the shell. */
 function ConflictSync() {
@@ -87,6 +95,10 @@ export default function AppShell() {
   // 900 px. The assistant takes the log's slot and links back to the rows it wrote.
   const cartOpen = useHearthStore((state) => state.ui.cartOpen ?? false);
   const assistantOpen = useHearthStore((state) => state.ui.assistantOpen);
+  // Both modals already render nothing when closed, and neither animates out, so gating the mount
+  // here changes only when their chunk is fetched.
+  const compareOpen = useHearthStore((state) => state.ui.compare !== undefined);
+  const boardOpen = useHearthStore((state) => state.ui.boardOpen);
 
   const catalogVisible = panelVisible(tier, catalogCollapsed);
   const sideVisible = panelVisible(tier, inspectorCollapsed);
@@ -174,8 +186,8 @@ export default function AppShell() {
 
       {firstRun ? <FirstRunCard status={status} onDismiss={dismissFirstRun} /> : null}
 
-      <Compare />
-      <Board />
+      {compareOpen ? <Compare /> : null}
+      {boardOpen ? <Board /> : null}
       <ConfirmModal />
       <EnableSheet />
       <ShortcutsSheet />

@@ -36,10 +36,16 @@ export interface CatalogThumbProps {
   width?: number;
   /** true inside a control that already names the product, so the tile is not announced twice. */
   decorative?: boolean;
+  /**
+   * true for the handful of tiles that are above the fold on first paint. The catalog is inside a
+   * client-only shell, so its first thumbnail is the page's Largest Contentful Paint: leaving it
+   * lazy makes the browser wait for layout before it even asks for the file.
+   */
+  priority?: boolean;
 }
 
 /** A 4:3 product tile: rendered asset when present, drawn silhouette when not. */
-export function CatalogThumb({ productId, category, colorway, name, className = "", width = 88, decorative = false }: CatalogThumbProps) {
+export function CatalogThumb({ productId, category, colorway, name, className = "", width = 88, decorative = false, priority = false }: CatalogThumbProps) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const height = Math.round((width * 3) / 4);
@@ -68,11 +74,11 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
   }
 
   return (
-    // Edge to edge on plaster: the thumbnails are rendered through the studio's own materials on a
-    // plaster backdrop (scripts/assets/thumbs-retint.ts), so the tile and the card are one surface —
-    // a colourway mat under the render would only draw a ring around it.
+    // The tile is the render's own backdrop (`THUMB_BACKDROP` = canvas.bottom): the warm end of the
+    // studio gradient, a whisper darker than the plaster card, which is what stops a pale rug from
+    // vanishing. The PNG and the tile are the same colour, so there is still no ring around the art.
     <span
-      className={`relative block shrink-0 overflow-hidden rounded-chip bg-plaster ${className}`}
+      className={`relative block shrink-0 overflow-hidden rounded-chip bg-canvas-bottom ${className}`}
       style={{ width, height }}
     >
       {/* A still tint, not a shimmer: `loading="lazy"` leaves most of a 71-row list unloaded, and
@@ -86,7 +92,8 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
         alt={decorative ? "" : name}
         width={width}
         height={height}
-        loading="lazy"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
         decoding="async"
         onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}

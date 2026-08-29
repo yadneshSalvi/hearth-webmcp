@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_MAX_CALLS_PER_TURN } from "../../src/assistant/loop";
 import {
-  MAX_CALLS_PER_TURN, assistantReducer, capReached, initialAssistantState, plainText, retryableTurn,
+  MAX_CALLS_PER_TURN, assistantReducer, callCapLine, callCapSentence, callCapSpent, capReached,
+  initialAssistantState, plainText, retryableTurn,
 } from "../../src/ui/assistantStore";
 import type { AssistantAction, AssistantState } from "../../src/ui/assistantStore";
 
@@ -135,6 +136,24 @@ describe("assistantStore — the per-turn cap", () => {
     // The header counter and the composer hint both read this; if it drifts, the panel lies.
     expect(MAX_CALLS_PER_TURN).toBe(DEFAULT_MAX_CALLS_PER_TURN);
     expect(MAX_CALLS_PER_TURN).toBe(60);
+  });
+
+  it("words the cap as 'per turn' with the loop's number, never a hard-coded one", () => {
+    expect(callCapLine()).toBe("up to 60 tool calls per turn · destructive asks first");
+    expect(callCapSentence()).toBe("Up to 60 tool calls per turn. Destructive tools ask you first.");
+    expect(callCapSpent()).toBe("This turn used all 60 tool calls.");
+    for (const copy of [callCapLine(), callCapSentence(), callCapSpent()]) {
+      expect(copy).toContain(String(DEFAULT_MAX_CALLS_PER_TURN));
+      // "8 tool calls a turn" was the stale wording; neither the number nor the phrasing may return.
+      expect(copy).not.toMatch(/\b8\b/);
+      expect(copy).not.toContain("a turn");
+    }
+    for (const copy of [callCapLine(), callCapSentence()]) expect(copy).toContain("per turn");
+  });
+
+  it("reads the cap it is handed, so a configured loop and the panel agree", () => {
+    expect(callCapLine(12)).toContain("up to 12 tool calls per turn");
+    expect(callCapSpent(12)).toBe("This turn used all 12 tool calls.");
   });
 
   it("counts calls for the turn in flight and resets on the next send", () => {

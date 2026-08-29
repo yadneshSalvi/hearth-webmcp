@@ -15,13 +15,14 @@ import type { CatalogItem, Furniture as FurnitureData, Room } from "../engine/ty
 import { mix, motion as motionTokens, palette } from "../tokens";
 import { hearthStore, useHearthStore } from "../state/store";
 import { toolBatch } from "../state/tool-batch";
-import { GlbBoundary, useGlbState, useNormalizedGlb } from "./assets";
+import { useNormalizedGlb } from "./assets";
+import { GlbBoundary, useGlbState } from "./glb";
 import { CHOREOGRAPHED_TOOL, noDelays, staggerDelays } from "./choreography";
 import { useMaterialFade } from "./fade";
 import { useIsHovered } from "./hover";
 import { useReducedMotion } from "./idle";
 import { useDraggingItemId } from "./interactionDrag";
-import { M, clamp, rotationRadians, stackElevationCm } from "./math";
+import { M, SELECTION_HALO_Y, clamp, rotationRadians, stackElevationCm } from "./math";
 import type { Vec3 } from "./math";
 import { Placeholder } from "./Placeholder";
 import { useSoftRing } from "./textures";
@@ -108,6 +109,7 @@ export function Furniture() {
           selected={meta.selection.itemId === entry.item.id}
           storeHoverId={meta.selection.hoverItemId}
           recede={entry.item.roomId === focusRoomId ? 0 : RECEDE}
+          framed={entry.item.roomId === focusRoomId}
           hidden={entry.item.id === draggingId}
           invalid={dragging?.itemId === entry.item.id && dragging.valid === false}
           reduced={reduced}
@@ -154,9 +156,14 @@ interface PieceProps {
   invalid?: boolean;
   /** `prefers-reduced-motion`, measured once for the whole layer. */
   reduced: boolean;
+  /**
+   * True when this piece is in the room the camera is framing. Framed pieces load their GLB at once;
+   * the rest draw the placeholder until the warm-up wave reaches them (src/scene/assetWaves.ts).
+   */
+  framed?: boolean;
 }
 
-function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = false, recede = 0, hidden = false, invalid = false, reduced }: PieceProps) {
+function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = false, recede = 0, hidden = false, invalid = false, reduced, framed = true }: PieceProps) {
   const { item, product, position, footprintM } = entry;
   const ghost = item.status === "ghost";
   // "Calm" bodies skip the drop: a ghost, an item on its way out, and every item under reduced
@@ -217,7 +224,7 @@ function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = fa
       <animated.group position-x={ox} position-y={oy} position-z={oz}>
         <animated.group position-y={bodyY} scale={bodyScale}>
           <group ref={body} rotation-y={rotationRadians(item.rotation)}>
-            <ItemBody product={product} colorway={item.colorway} ghost={ghost} recede={recede} />
+            <ItemBody product={product} colorway={item.colorway} ghost={ghost} recede={recede} framed={framed} />
           </group>
         </animated.group>
       </animated.group>
@@ -227,9 +234,10 @@ function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = fa
   );
 }
 
-/** GLB when the asset is on disk, the procedural placeholder otherwise. */
-function ItemBody({ product, colorway, ghost, recede }: { product: CatalogItem; colorway: string; ghost: boolean; recede: number }) {
-  const state = useGlbState(product.glb);
+/** GLB once the asset is available, the procedural placeholder until then. */
+function ItemBody({ product, colorway, ghost, recede, framed }: { product: CatalogItem; colorway: string; ghost: boolean; recede: number; framed: boolean }) {
+  // A ghost is under someone's pointer, so it is as urgent as the framed room whatever room it is in.
+  const state = useGlbState(product.glb, framed || ghost);
   const hex = product.colorways.find((entry) => entry.id === colorway)?.hex ?? product.colorways[0]?.hex ?? palette.oak;
   const fallback = <Placeholder category={product.category} dims={product.dims} colorwayHex={hex} ghost={ghost} recede={recede} />;
   if (state !== "present") return fallback;
@@ -252,7 +260,7 @@ function Halo({ width, depth, invalid = false }: { width: number; depth: number;
   const map = useSoftRing();
   const size = Math.max(width, depth) + 0.36;
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.036, 0]} renderOrder={2}>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, SELECTION_HALO_Y, 0]} renderOrder={2}>
       <planeGeometry args={[size, size]} />
       <meshBasicMaterial
         map={map ?? undefined}

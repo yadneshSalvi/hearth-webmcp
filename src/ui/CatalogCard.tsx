@@ -25,6 +25,8 @@ export interface CatalogCardProps {
   onSelect(): void;
   onPlace(product: CatalogItem, colorway: string): void;
   onAddToCart(product: CatalogItem, colorway: string): void;
+  /** true for the rows that are on screen before anyone scrolls; their thumbnails load eagerly. */
+  priority?: boolean;
 }
 
 function dragImage(product: CatalogItem, colorway: string): HTMLElement {
@@ -43,7 +45,7 @@ function dragImage(product: CatalogItem, colorway: string): HTMLElement {
 }
 
 export function CatalogCard({
-  product, fit, roomName, shopMode, inCart, selected, onSelect, onPlace, onAddToCart,
+  product, fit, roomName, shopMode, inCart, selected, onSelect, onPlace, onAddToCart, priority = false,
 }: CatalogCardProps) {
   const [colorway, setColorway] = useState(product.colorways[0]?.id ?? "oak");
   const ghost = useRef<HTMLElement | undefined>(undefined);
@@ -82,7 +84,7 @@ export function CatalogCard({
       >
         {/* No colourway strip under the tile: the thumbnail is rendered in this colourway through
             the studio's own materials, and the swatch row below already names it. */}
-        <CatalogThumb productId={product.id} category={product.category} colorway={colorway} name={product.name} width={84} decorative />
+        <CatalogThumb productId={product.id} category={product.category} colorway={colorway} name={product.name} width={84} decorative priority={priority} />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="flex items-baseline gap-2">
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{product.name}</span>
@@ -96,7 +98,9 @@ export function CatalogCard({
       </button>
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <div className="flex items-center gap-1" role="group" aria-label={`Colourways for ${product.name}`}>
+        {/* The mark stays 14 px; the button around it is 24 px, the smallest target WCAG 2.2 accepts
+            (Lighthouse `target-size`). The negative margin keeps the row's rhythm unchanged. */}
+        <div className="-mx-1.5 flex items-center" role="group" aria-label={`Colourways for ${product.name}`}>
           {product.colorways.map((option) => (
             <button
               key={option.id}
@@ -104,11 +108,16 @@ export function CatalogCard({
               aria-label={colorwayLabel(option.id)}
               aria-pressed={option.id === colorway}
               onClick={() => setColorway(option.id)}
-              style={{ background: option.hex }}
-              className={`h-3.5 w-3.5 rounded-pill border transition-[box-shadow] duration-200 ease-out-soft ${
-                option.id === colorway ? "border-charcoal/35 ring-2 ring-ochre/60" : "border-charcoal/20"
-              }`}
-            />
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-pill"
+            >
+              <span
+                aria-hidden="true"
+                style={{ background: option.hex }}
+                className={`block h-3.5 w-3.5 rounded-pill border transition-[box-shadow] duration-200 ease-out-soft ${
+                  option.id === colorway ? "border-charcoal/35 ring-2 ring-ochre/60" : "border-charcoal/20"
+                }`}
+              />
+            </button>
           ))}
         </div>
         {shopMode && inCart ? <Tag tone="sage" icon={IconCheck}>In cart</Tag> : null}

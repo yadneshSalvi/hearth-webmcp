@@ -5,8 +5,9 @@
  * It is the same collaboration, not a second one: every reply is produced by calling the tools
  * registered on `document.modelContext`, so the orb flies, the item pulses and the receipt lands in
  * the activity log exactly as it would for ChatGPT or Chrome (TOOLS.md §0, §4). The panel therefore
- * says out loud that native is primary, and shows the guardrails it runs under: at most eight tool
- * calls per turn, and destructive tools still open the confirmation dialog.
+ * says out loud that native is primary, and shows the guardrails it runs under, in the loop's own
+ * numbers: up to `DEFAULT_MAX_CALLS_PER_TURN` tool calls per turn, and destructive tools still open
+ * the confirmation dialog.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createCatalog } from "../engine/catalog";
@@ -15,7 +16,8 @@ import { createAssistant } from "./assistantClient";
 import type { AssistantEvents, AssistantSession } from "./assistantClient";
 import { ensureAssistantTools, executeAssistantTool } from "./assistantTools";
 import {
-  MAX_CALLS_PER_TURN, capReached, dispatchAssistant, plainText, retryableTurn, useAssistantState,
+  MAX_CALLS_PER_TURN, callCapLine, callCapSentence, callCapSpent, capReached, dispatchAssistant,
+  plainText, retryableTurn, useAssistantState,
 } from "./assistantStore";
 import type { AssistantMessage, AssistantToolCall } from "./assistantStore";
 import { compactJson, splitNumerals } from "./format";
@@ -343,11 +345,9 @@ export function Assistant({ className = "" }: { className?: string }) {
             <IconAgent size={11} className="shrink-0" />
             <span
               className="min-w-0 flex-1 truncate"
-              title={`Up to ${state.maxCallsPerTurn} tool calls a turn. Destructive tools ask you first.`}
+              title={callCapSentence(state.maxCallsPerTurn)}
             >
-              {capReached(state)
-                ? `This turn used all ${state.maxCallsPerTurn} tool calls.`
-                : `up to ${state.maxCallsPerTurn} tool calls a turn · destructive asks first`}
+              {capReached(state) ? callCapSpent(state.maxCallsPerTurn) : callCapLine(state.maxCallsPerTurn)}
             </span>
             <Kbd>⌘↩</Kbd>
           </p>

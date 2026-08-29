@@ -76,3 +76,42 @@ export const sharedParams = {
   pos: posParam,
   anchor: anchorParam,
 } as const;
+
+/**
+ * Aliases the models actually send. TOOLS.md §0 names the parameters `room`, `item` and `product`,
+ * and every schema is strict, so a model that writes `room_id` gets `invalid` and burns a turn
+ * correcting itself — which is exactly what the live assistant run showed (`room_id` for `room`
+ * three times in one conversation). The schema stays as documented; the alias is rewritten on the
+ * way in, before zod sees it.
+ *
+ * Only the top level is rewritten. `anchor` speaks in its own words (`next_to`, `facing`, `under`)
+ * and has never been sent with an `_id` suffix, so nothing is guessed there.
+ */
+const ALIASES: Record<string, string> = {
+  room_id: "room",
+  roomId: "room",
+  item_id: "item",
+  itemId: "item",
+  product_id: "product",
+  productId: "product",
+};
+
+/**
+ * Rewrites known parameter aliases onto their contract names. The canonical key always wins, the
+ * alias is dropped either way, and anything that is not a plain object is returned untouched so the
+ * caller's own error handling still sees what it was given.
+ */
+export function normalizeToolInput(input: unknown): unknown {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) return input;
+  const source = input as Record<string, unknown>;
+  if (!Object.keys(source).some((key) => key in ALIASES)) return input;
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (!(key in ALIASES)) result[key] = value;
+  }
+  for (const [key, value] of Object.entries(source)) {
+    const canonical = ALIASES[key];
+    if (canonical !== undefined && result[canonical] === undefined) result[canonical] = value;
+  }
+  return result;
+}

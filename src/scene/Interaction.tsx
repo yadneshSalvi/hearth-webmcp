@@ -72,6 +72,7 @@ export function Interaction() {
   const camera = useThree((state) => state.camera);
   const { floorAt, itemAt } = usePicking();
   const rooms = useHearthStore((state) => state.scene.rooms);
+  const allFurniture = useHearthStore((state) => state.scene.furniture);
   const selectedId = useHearthStore((state) => state.scene.meta.selection.itemId);
   const catalogItems = useHearthStore((state) => state.catalog);
   const reduced = useReducedMotion();
@@ -348,6 +349,11 @@ export function Interaction() {
   const selectedProduct = selected ? catalog.byId(selected.catalogId) : undefined;
   const selectedRoom = selected ? rooms.find((entry) => entry.id === selected.roomId) : undefined;
   const toolbar = selected && selectedRoom ? roomToWorldCm(selectedRoom, selected.pos) : undefined;
+  // The pill sits above the item as it is actually standing: a lamp on a table is 75 cm up, so
+  // measuring from the floor would bury its toolbar inside the table (SCENE_SCHEMA.md — stacking).
+  const toolbarElevation = selected && selectedProduct
+    ? stackElevationCm(selected, selectedProduct, { furniture: allFurniture }, (id) => catalog.byId(id))
+    : 0;
 
   useEffect(() => {
     if (!selectedId) setPointerHover(undefined);
@@ -377,7 +383,7 @@ export function Interaction() {
       {drop && dropRoom && !gesture ? <DropPreviewOverlay preview={drop} room={dropRoom} /> : null}
       {selected && selectedProduct && selectedRoom && toolbar && !gesture ? (
         <MiniToolbar
-          position={[toolbar.x * M, selectedProduct.dims.h * M + 0.3, toolbar.y * M]}
+          position={[toolbar.x * M, (toolbarElevation + selectedProduct.dims.h) * M + 0.3, toolbar.y * M]}
           locked={selected.locked === true}
           onRotate={() => commit(selected, selectedProduct, selectedRoom, selected.pos, rotateBy(selected, 90))}
           onToggleLock={() => hearthStore.getState().setLocked("human", selected.id, selected.locked !== true)}

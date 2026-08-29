@@ -36,6 +36,10 @@ export function roomCentre(room: Room): Vec2 {
 /** Places a copy of an item just to its right, using the same anchor maths the agent's tools use. */
 export function duplicateItem(item: Furniture, product: CatalogItem, catalog: Catalog): void {
   const state = hearthStore.getState();
+  if (item.locked === true) {
+    state.toast({ tone: "warn", message: `${product.name} is locked. Unlock it to duplicate it.` });
+    return;
+  }
   const placement = resolveAnchor(
     state.scene,
     item.roomId,
@@ -63,9 +67,17 @@ export function duplicateItem(item: Furniture, product: CatalogItem, catalog: Ca
   }, PULSE_MS);
 }
 
-/** Removes an item, clears the selection first and says so, so the activity log carries the undo. */
+/**
+ * Removes an item, clears the selection first and says so, so the activity log carries the undo.
+ * A locked item refuses here as well as in the toolbar: the Delete key must not do what the greyed
+ * button will not.
+ */
 export function deleteItem(item: Furniture, product: CatalogItem): void {
   const state = hearthStore.getState();
+  if (item.locked === true) {
+    state.toast({ tone: "warn", message: `${product.name} is locked. Unlock it to delete it.` });
+    return;
+  }
   state.setSelection("human", { itemId: undefined });
   state.removeItem("human", item.id);
   state.toast({ tone: "info", message: `Removed ${product.name}. Undo from the activity log.` });
