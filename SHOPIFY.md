@@ -68,7 +68,7 @@ Locations (both active): `gid://shopify/Location/114892898579` (Shop location), 
 | `/api/shop/search` | `GET` | `q, category, max_price, max_w, max_d, style, colorway, limit` | `{ products: CatalogProduct[] }` from Storefront `products(query:)`; falls back to the snapshot on any error with `source:"snapshot"` |
 | `/api/shop/product` | `GET` | `handle` | `{ product: CatalogProduct }` |
 | `/api/cart` | `GET` | `id` | `{ cart: Cart }` (`cart(id)`) |
-| `/api/cart` | `POST` | `{ op:"create"|"add"|"remove"|"set", cartId?, lines:[{variantId, quantity}] \| lineIds }` | `{ cart: Cart }` (`cartCreate` / `cartLinesAdd` / `cartLinesRemove` / `cartLinesUpdate`) |
+| `/api/cart` | `POST` | `{ op:"create"|"add"|"remove"|"set", cartId?, lines:[{variantId, quantity}] \| [{id, merchandiseId?, quantity}] \| lineIds }` | `{ cart: Cart }` (`cartCreate` / `cartLinesAdd` / `cartLinesRemove` / `cartLinesUpdate`) |
 | `/api/checkout` | `GET` | `cartId` | `{ checkoutUrl, storePassword }` |
 | `/api/render` | `GET` | `catalogId, colorway` | HTML page that renders one product for headless capture (scripts only) |
 

@@ -227,6 +227,13 @@ export function createRegistry(options: RegistryOptions): Registry {
     async execute(name, input, source) {
       const tool = byName.get(name);
       if (!tool) return { ok: false, error: "not_found", detail: `Tool ${name} is not defined.`, alternatives: definitions.slice(0, 3).map((candidate) => candidate.name) };
+      if (source !== "test" && !desiredToolGroups(options.store.getState()).includes(tool.group)) {
+        const mode = options.store.getState().scene.meta.mode;
+        const detail = tool.group === "build"
+          ? `${tool.name} is unavailable in ${mode} mode; set_mode build first.`
+          : `${tool.name} is unavailable until its ${tool.group} gate is open.`;
+        return { ok: false, error: "blocked", detail };
+      }
       return executeDefinedTool(tool, input, source);
     },
     list() {

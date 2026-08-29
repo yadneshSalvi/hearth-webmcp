@@ -117,6 +117,41 @@ describe("registry lifecycle against the real polyfill", () => {
     registry.stop();
   });
 
+  it("does not abort build tools while a confirmation dialog is pending", async () => {
+    hearthStore.getState().setMode("human", "build");
+    hearthStore.setState({ activity: [] });
+    const queued: Array<() => void> = [];
+    const gate = createConfirmGate(hearthStore);
+    const modelContext = loadRealPolyfill();
+    const registry = registryWith(modelContext, testUi((message) => gate.confirm(message)), (fn) => queued.push(fn));
+    registry.start();
+    const abortSpy = vi.spyOn(AbortController.prototype, "abort");
+    const execution = registry.execute("apply_template", { template: "studio", furnished: false }, "agent");
+    const confirmId = hearthStore.getState().ui.pendingConfirm?.id;
+    expect(confirmId).toBeTruthy();
+    expect(registry.executing).toBe(1);
+    hearthStore.getState().setMode("human", "design");
+    expect(abortSpy).not.toHaveBeenCalled();
+    expect((await modelContext.getTools()).map(({ name }) => name)).toContain("apply_template");
+    if (confirmId) gate.resolve(confirmId, false);
+    expect(await execution).toMatchObject({ ok: false, error: "cancelled" });
+    queued.splice(0).forEach((fn) => fn());
+    expect(abortSpy).toHaveBeenCalled();
+    expect((await modelContext.getTools()).map(({ name }) => name)).not.toContain("apply_template");
+    registry.stop();
+  });
+
+  it("enforces dynamic gates for assistant execution", async () => {
+    const registry = registryWith(loadRealPolyfill());
+    const before = structuredClone(hearthStore.getState().scene);
+    expect(await registry.execute("apply_template", { template: "studio" }, "assistant")).toEqual({
+      ok: false,
+      error: "blocked",
+      detail: "apply_template is unavailable in design mode; set_mode build first.",
+    });
+    expect(hearthStore.getState().scene).toEqual(before);
+  });
+
   it("accepts JSON strings and objects, validates paths, and writes one receipt each", async () => {
     const registry = registryWith(loadRealPolyfill());
     registry.start();
@@ -152,7 +187,7 @@ describe("registry lifecycle against the real polyfill", () => {
   it("resolves confirmation acceptance, decline and timeout", async () => {
     const modelContext = loadRealPolyfill();
     const gate = createConfirmGate(hearthStore, { timeoutMs: 10 });
-    const ui = testUi(gate.confirm);
+    const ui = testUi((message) => gate.confirm(message));
     const registry = registryWith(modelContext, ui);
 
     const acceptedPromise = registry.execute("clear_room", { room: "living" }, "agent");

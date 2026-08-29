@@ -55,8 +55,14 @@ next-to; facing then sets rotation, and raw `pos`/`rotation` win last.
 
 Wall anchors clamp the whole footprint to the wall. Hard-invalid candidates nudge
 in alternating 5 cm wall steps or a 5 cm two-axis spiral, up to 60 cm. A blocked
-result names obstacles and returns fitting free spans with an actionable midpoint.
+result names obstacles and returns every requested-wall free span with a `fits`
+flag and an actionable midpoint or narrower-item suggestion. Windows block an
+item only when `item.dims.h > (window.sillHeight ?? 90)`; sofas, beds, desks and
+other low pieces may sit below a sill while tall storage must move off its span.
 Rugs may stack below anything; lamps/decor may stack fully inside supported surfaces.
+
+`arrangeRoom` excludes preview ghosts, reuses wall-span calculations within one
+pass, and preserves its diagnostic `note` so callers can surface an incomplete fit.
 
 `arrangeRoom` classifies anchors, media, surfaces, storage, seating, soft goods,
 lighting, greenery and decor, then rebuilds unlocked items around fixed obstacles.

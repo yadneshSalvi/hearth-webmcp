@@ -4,7 +4,7 @@ import { hearthStore } from "../../src/state/store";
 import { createRegistry } from "../../src/tools/registry";
 import type { ToolError, ToolResult } from "../../src/tools/define";
 import { allToolDefinitions, allTools } from "../../src/tools/handlers";
-import { emptyHome, furnished2br, worstCase2br } from "../fixtures/scenes";
+import { emptyHome, furnished2br, loftScene, worstCase2br } from "../fixtures/scenes";
 import { resetStore, testUi, toolContext } from "./helpers";
 
 const allowedErrors = new Set<ToolError>([
@@ -51,7 +51,7 @@ function representative(name: string): unknown {
     case "measure": return { subject: "north", room: "living" };
     case "get_conflicts": return { room: "all" };
     case "get_design_report": return { room: "living" };
-    case "search_catalog": return { category: "sofa", max_price_usd: 800, fits_wall: "north", room: "living", limit: 6 };
+    case "search_catalog": return { limit: 6, fits_wall: "west", room: "living", style: "scandinavian" };
     case "get_product": return { product: "sofa-endre", room: "living" };
     case "get_cart": return {};
     case "set_mode": return { mode: "design" };
@@ -151,6 +151,24 @@ describe("WebMCP budgets", () => {
         expect(JSON.stringify(result).length, `${fixture.name}:${definition.name}`).toBeLessThanOrEqual(1500);
         expect(hearthStore.getState().activity).toHaveLength(1);
       }
+    }
+  }, 20_000);
+
+  it("covers the loft room and product detail worst cases", async () => {
+    for (const [name, input] of [
+      ["get_room_details", { room: "loft" }],
+      ["get_product", { product: "sofa-endre", room: "loft" }],
+    ] as const) {
+      resetStore(loftScene());
+      const registry = createRegistry({
+        modelContext: new EmptyModelContext(),
+        store: hearthStore,
+        ui: testUi(),
+        shopify: createLocalShopify(hearthStore.getState().catalog),
+      });
+      const result = await registry.execute(name, input, "test");
+      assertEnvelope(result);
+      expect(JSON.stringify(result).length, `loft:${name}`).toBeLessThanOrEqual(1500);
     }
   });
 });

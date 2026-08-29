@@ -232,7 +232,7 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 **Title:** Remove furniture
 **Description:** Removes one placed item from its room. If the item is linked to a cart line, that line is removed as well and the result says so. Use clear_room to empty a whole room.
 **Input:** `{ item: string }`
-**Result:** `{"ok":true,"room":"living","removed":{"id":"armchair-1","name":"Nook Armchair"},"cart_line_removed":false,"hint":"…"}`
+**Result:** `{"ok":true,"room":"living","removed":{"id":"armchair-1","name":"Nook Armchair"},"cart_line_removed":false,"hint":"Undo restores the item, but a removed Shopify cart line must be re-added."}`
 **Receipt:** "Removed Nook Armchair"
 
 ### 14. `set_colorway` · design
@@ -247,7 +247,7 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 **Description:** Re-arranges all unlocked furniture in a room in one animated pass. Styles: conversation (seating faces each other around a focal point), media (seating faces the TV or media wall), open (maximum clear floor and walkways), work (desk by the window, storage on the walls). Keeps door swings and clearances free and reports what moved with the conflict count before and after.
 **Input:** `{ room?: string, style: "conversation"|"media"|"open"|"work", keep_locked?: boolean /* default true */, focus?: string }`
 - `focus` — "Optional focal point: an item id or name (e.g. the fireplace or TV) or window:<id>."
-**Result:** `{"ok":true,"room":"living","style":"conversation","moved":[{"id":"sofa-1","name":"Endre Sofa","to":[260,48],"rotation":0}],"kept":["rug-1"],"conflicts_before":3,"conflicts_after":0,"hint":"…"}`
+**Result:** `{"ok":true,"room":"living","style":"conversation","moved":[{"id":"sofa-1","name":"Endre Sofa","to":[260,48],"rotation":0}],"kept":["rug-1"],"conflicts_before":3,"conflicts_after":0,"note":"Arranged Living Room for conversation · 6 moved","hint":"…"}`
 **Budget:** `moved` ≤ 10 rows then `more`; names ≤ 24 chars.
 **Receipt:** "Arranged Living Room · conversation (6 moved)"
 
@@ -285,7 +285,7 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 **Title:** Undo
 **Description:** Undoes the last change(s) to the scene, whether made by the agent or the human, 1 to 10 steps at a time. Returns what was undone.
 **Input:** `{ steps?: number /* 1–10, default 1 */ }`
-**Result:** `{"ok":true,"undone":[{"action":"move_furniture","summary":"Moved Endre Sofa to the north wall","by":"agent"}],"remaining":6,"hint":"…"}`
+**Result:** `{"ok":true,"undone":[{"action":"move_furniture","summary":"Moved Endre Sofa to the north wall","by":"agent"}],"remaining":6,"hint":"Scene undo does not recreate Shopify lines removed with furniture; use update_cart."}`
 **Receipt:** "Undid 1 change"
 
 ### 21. `save_variant` · design
@@ -434,13 +434,13 @@ interface ToolSpec<I extends z.ZodObject> {
   handler: (input: z.infer<I>, ctx: ToolContext) => Promise<ToolResult> | ToolResult;
   summarize: (input: z.infer<I>, result: ToolResult) => string; // receipt line ≤ 80 chars
 }
-interface ToolContext { store: HearthStore; ui: { confirm(msg: string): Promise<boolean>; focus(target: Focus): void; pulse(ids: string[]): void }; shopify: ShopifyClient; signal?: AbortSignal; source: "agent"|"assistant"|"test" }
+interface ToolContext { store: HearthStore; ui: { confirm(msg: string): Promise<{accepted:boolean;reason:"accepted"|"declined"|"timeout"|"cancelled"}>; focus(target: Focus): void; pulse(ids: string[]): void }; shopify: ShopifyClient; signal?: AbortSignal; source: "agent"|"assistant"|"test" }
 ```
 
 - `defineTool(spec)` validates budgets at definition time (throws in dev/test) and produces the WebMCP tool
   object `{ name, title, description, inputSchema, annotations, execute }`. `execute` = parse with zod
-  (`safeParse`; failure → `{ok:false,error:"invalid",detail}`) → optional confirm → `executing++` → handler →
-  `executing--` → write receipt → return the plain object.
+  (`safeParse`; failure → `{ok:false,error:"invalid",detail}`) → `executing++` → optional confirm → handler →
+  write receipt → `executing--` → return the plain object. Confirmation returns its reason directly.
 - **Groups:** one `AbortController` per group. `sync(scene)` computes the desired set:
   `core|design|shop|present` always; `build` iff `meta.mode==="build"`; `preview` iff a `status:"ghost"` item exists;
   `variants` iff the active room has ≥ 2 variants; `checkout` iff cart lines ≥ 1. Diff → `registerTool` for new
@@ -455,9 +455,12 @@ interface ToolContext { store: HearthStore; ui: { confirm(msg: string): Promise<
   synchronously in the Studio's first client effect so DevTools/Lighthouse list the 26 default tools cold.
 - **Mirror:** a `toolchange` listener calls `getTools()` and stores `{name,title,description,inputSchema}` in the
   store for the Tools panel and the status chip ("Agent tools · 26 ready"). Registry exposes `execute(name, input)`
-  for tests and the fallback assistant (identical path → identical orb/receipt behaviour).
+  for tests and the fallback assistant (identical path → identical orb/receipt behaviour); non-test mirror calls
+  are rejected with `blocked` when the tool's group gate is closed.
 - **Receipts:** every execution appends `{ id, t, source, tool, title, summary, input, result, itemIds }` to
-  `activity[]` (cap 200). Human actions append `{ source:"human", summary:"You moved Endre Sofa" }` rows.
+  `activity[]` (cap 200). Human actions append `{ source:"human", summary:"You moved Endre Sofa" }` rows. A
+  parallel history-label stack records only undoable scene transitions, so read receipts and selection do not
+  displace the action returned by `undo`.
 
 ## 5. Eval anchors (how prompts should map; full sheet in `evals/prompts.json`)
 | Prompt | Expected call(s) |

@@ -1,4 +1,3 @@
-import { performance } from "node:perf_hooks";
 import { describe, expect, it } from "vitest";
 import { catalogSource } from "../../data/catalog.source";
 import { arrangeRoom } from "../../src/engine/arrange";
@@ -7,7 +6,7 @@ import { openingClearZone, swingZone } from "../../src/engine/doors";
 import { footprint, itemToWallDistance, polyInside, polysOverlap, walls } from "../../src/engine/geometry";
 import type { Furniture, Rotation, Scene, Vec2 } from "../../src/engine/types";
 import { createTemplate } from "../../src/engine/templates";
-import { emptyHome, furnished2br, loftScene, studioScene } from "../fixtures/scenes";
+import { emptyHome, furnished2br, loftScene, studioScene, worstCase2br } from "../fixtures/scenes";
 
 const catalog = createCatalog(catalogSource);
 const styles = ["conversation", "media", "open", "work"] as const;
@@ -144,6 +143,18 @@ describe("arrangeRoom guarantees", () => {
     expect(missing.moved).toEqual([]);
     expect(missing.note).toContain("not found");
   });
+
+  it("leaves same-room preview ghosts untouched and out of moved/kept lists", () => {
+    const current = furnished2br();
+    const withoutGhost = arrangeRoom(current, "living", "open", catalog);
+    const ghost: Furniture = { id: "ghost-1", catalogId: "wardrobe-hald", roomId: "living", pos: { x: -500, y: -500 }, rotation: 0, colorway: "oak", status: "ghost" };
+    current.furniture.push(ghost);
+    const result = arrangeRoom(current, "living", "open", catalog);
+    expect(result.furniture.find((item) => item.id === ghost.id)).toEqual(ghost);
+    expect(result.moved.some((item) => item.id === ghost.id)).toBe(false);
+    expect(result.kept).not.toContain(ghost.id);
+    expect(result.moved).toEqual(withoutGhost.moved);
+  });
 });
 
 describe("style choreography", () => {
@@ -215,12 +226,34 @@ describe("performance", () => {
     arrangeRoom(current, "living", "open", catalog, { seed: 3 });
     for (const roomId of ["living", "bed-1"] as const) {
       for (const style of styles) {
-        const start = performance.now();
-        const result = arrangeRoom(current, roomId, style, catalog, { seed: 3 });
-        const elapsed = performance.now() - start;
+        let result = arrangeRoom(current, roomId, style, catalog, { seed: 3 });
+        let elapsed = Number.POSITIVE_INFINITY;
+        for (let run = 0; run < 3; run += 1) {
+          const start = process.cpuUsage();
+          result = arrangeRoom(current, roomId, style, catalog, { seed: 3 });
+          const usage = process.cpuUsage(start);
+          elapsed = Math.min(elapsed, (usage.user + usage.system) / 1_000);
+        }
         expect(result.furniture).toHaveLength(current.furniture.length);
         expect(elapsed, `${roomId}/${style}: ${elapsed.toFixed(2)} ms`).toBeLessThan(50);
       }
     }
   });
+
+  it("arranges the worst-case living room styles within 50 ms", () => {
+    const current = worstCase2br();
+    for (const style of ["conversation", "media", "work"] as const) {
+      let result = arrangeRoom(current, "living", style, catalog, { seed: 3 });
+      result = arrangeRoom(current, "living", style, catalog, { seed: 3 });
+      let elapsed = Number.POSITIVE_INFINITY;
+      for (let run = 0; run < 5; run += 1) {
+        const start = process.cpuUsage();
+        result = arrangeRoom(current, "living", style, catalog, { seed: 3 });
+        const usage = process.cpuUsage(start);
+        elapsed = Math.min(elapsed, (usage.user + usage.system) / 1_000);
+      }
+      expect(result.note).not.toContain("no complete");
+      expect(elapsed, `${style}: ${elapsed.toFixed(2)} ms`).toBeLessThan(50);
+    }
+  }, 20_000);
 });

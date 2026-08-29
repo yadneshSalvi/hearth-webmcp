@@ -5,6 +5,7 @@ import { hearthStore } from "../../src/state/store";
 import {
   bindDefinedTool, defineTool, executeDefinedTool, HearthToolDefinitionError,
 } from "../../src/tools/define";
+import { allToolDefinitions } from "../../src/tools/handlers";
 import { furnished2br } from "../fixtures/scenes";
 import { resetStore, testUi } from "./helpers";
 
@@ -43,6 +44,52 @@ describe("defineTool", () => {
       properties: { value: { type: "string", description: "A required value." } },
     });
     expect((tool.inputSchema as Record<string, unknown>).$schema).toBeUndefined();
+  });
+
+  it("uses enums for rotations and reserves anyOf for along and opening offsets", () => {
+    const paths: string[] = [];
+    const visit = (value: unknown, path: string): void => {
+      if (Array.isArray(value)) {
+        value.forEach((entry, index) => visit(entry, `${path}.${index}`));
+        return;
+      }
+      if (typeof value !== "object" || value === null) return;
+      const record = value as Record<string, unknown>;
+      if (Array.isArray(record.anyOf)) paths.push(path);
+      Object.entries(record).forEach(([key, entry]) => visit(entry, `${path}.${key}`));
+    };
+    const definitions = allToolDefinitions({
+      store: hearthStore,
+      ui: testUi(),
+      shopify: createLocalShopify(hearthStore.getState().catalog),
+      source: "test",
+    });
+    definitions.forEach((tool) => visit(tool.inputSchema, tool.name));
+    expect(paths).toHaveLength(5);
+    expect(paths.every((path) => path.endsWith(".along") || path.endsWith(".offset_cm"))).toBe(true);
+    for (const name of ["place_furniture", "move_furniture", "preview_in_room"] as const) {
+      const tool = definitions.find((candidate) => candidate.name === name)!;
+      const rotation = ((tool.inputSchema as { properties: Record<string, unknown> }).properties.rotation as Record<string, unknown>);
+      expect(rotation).toMatchObject({ type: "number", enum: [0, 90, 180, 270] });
+      expect(rotation.anyOf).toBeUndefined();
+    }
+    const move = definitions.find((tool) => tool.name === "move_furniture")!;
+    const rotateBy = ((move.inputSchema as { properties: Record<string, unknown> }).properties.rotate_by as Record<string, unknown>);
+    expect(rotateBy).toMatchObject({ type: "number", enum: [90, -90, 180] });
+  });
+
+  it("strips JSON-safe integer maximum noise", () => {
+    const tool = defineTool({
+      name: "integer_probe",
+      title: "Integer probe",
+      description: "Checks integer schema cleanup.",
+      group: "core",
+      input: z.object({ count: z.number().int() }).strict(),
+      handler: () => ({ ok: true }),
+      summarize: () => "Integer",
+    });
+    const count = ((tool.inputSchema as { properties: Record<string, unknown> }).properties.count as Record<string, unknown>);
+    expect(count.maximum).toBeUndefined();
   });
 
   it.each([

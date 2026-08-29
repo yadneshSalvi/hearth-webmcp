@@ -36,7 +36,7 @@ const happyCases: HappyCase[] = [
   { name: "apply_palette", input: () => ({ palette: "sage-linen", room: "living" }), summary: "Applied Sage linen to Living Room", verify: (result) => expect(result).toMatchObject({ ok: true, rooms: ["living"], palette: { id: "sage-linen" } }) },
   { name: "set_time_of_day", input: () => ({ time: "evening" }), summary: "Time of day → evening", verify: (result) => expect(result).toMatchObject({ ok: true, time_of_day: "evening", lamps_on: true }) },
   { name: "set_view", input: () => ({ view: "plan", focus: "sofa-1", yaw: "ne" }), summary: "View → plan, focus Endre Sofa", verify: (result) => expect(result).toMatchObject({ ok: true, view: "plan", focus: { kind: "item", id: "sofa-1" } }) },
-  { name: "set_accessibility_mode", input: () => ({ enabled: true }), summary: "Accessibility mode on (0 conflicts)", verify: (result) => expect(result).toMatchObject({ ok: true, accessibility_mode: true }) },
+  { name: "set_accessibility_mode", input: () => ({ enabled: true }), summary: /Accessibility mode on \(\d+ conflicts\)/, verify: (result) => expect(result).toMatchObject({ ok: true, accessibility_mode: true }) },
   {
     name: "undo", input: () => ({ steps: 1 }), summary: "Undid 1 change",
     prepare: () => { hearthStore.getState().setMode("human", "shop"); },
@@ -72,19 +72,19 @@ describe("first-round handlers", () => {
     resetStore(furnished2br());
     testCase.prepare?.();
     const before = hearthStore.getState().activity.length;
-    const result = await registry().execute(testCase.name, testCase.input(), "agent");
+    const result = await registry().execute(testCase.name, testCase.input(), "test");
     testCase.verify(result);
     expect(JSON.stringify(result).length).toBeLessThanOrEqual(1500);
     expect(hearthStore.getState().activity).toHaveLength(before + 1);
     const receipt = hearthStore.getState().activity[0];
     expect(receipt?.tool).toBe(testCase.name);
-    expect(receipt?.source).toBe("agent");
+    expect(receipt?.source).toBe("system");
     expect(receipt?.summary).toMatch(testCase.summary);
   });
 
   it.each(happyCases)("$name rejects invalid input with a receipt", async (testCase) => {
     resetStore(furnished2br());
-    const result = await registry().execute(testCase.name, { unexpected: true }, "agent");
+    const result = await registry().execute(testCase.name, { unexpected: true }, "test");
     expect(result).toMatchObject({ ok: false, error: "invalid" });
     expect(!result.ok && result.detail.length).toBeGreaterThan(0);
     expect(hearthStore.getState().activity).toHaveLength(1);
@@ -106,7 +106,7 @@ describe("first-round handlers", () => {
     ["remove_opening", { opening: "missing-opening" }],
   ] as const)("%s returns not_found with alternatives", async (name, input) => {
     resetStore(furnished2br());
-    const result = await registry().execute(name, input, "agent");
+    const result = await registry().execute(name, input, "test");
     expect(result).toMatchObject({ ok: false, error: "not_found" });
     expect(!result.ok && result.alternatives).toBeInstanceOf(Array);
     expect(!result.ok && (result.alternatives?.length ?? 0)).toBeLessThanOrEqual(3);

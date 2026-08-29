@@ -27,24 +27,32 @@ describe("wall fitting", () => {
     const target = room();
     const current = scene([northWindow(232, 168)], [], target);
     const wall = resolveWall(target, "north")!;
-    const sofa = catalog.byId("sofa-endre")!;
-    const fit = fitsOnWall(current, target, wall, sofa, catalog);
+    const wardrobe = catalog.byId("wardrobe-hald")!;
+    const fit = fitsOnWall(current, target, wall, wardrobe, catalog);
     expect(fit.fits).toBe(true);
-    expect(fit.spareCm).toBe(12);
+    expect(fit.spareCm).toBe(72);
     expect(fit.span).toEqual({ start: 0, end: 232 });
-    expect(fitNote(current, target, wall, sofa, catalog)).toBe("fits north wall · 12 cm spare");
+    expect(fitNote(current, target, wall, wardrobe, catalog)).toBe("fits north wall · 72 cm spare");
   });
 
   it("distinguishes a too-short span from no free span", () => {
     const target = room();
     const wall = resolveWall(target, "north")!;
-    const sofa = catalog.byId("sofa-endre")!;
-    const tooShort = scene([northWindow(190, 210)], [], target);
+    const wardrobe = catalog.byId("wardrobe-hald")!;
+    const tooShort = scene([northWindow(130, 270)], [], target);
     const absent = scene([northWindow(0, 400)], [], target);
-    expect(fitsOnWall(tooShort, target, wall, sofa, catalog)).toMatchObject({ fits: false, spareCm: -30, span: { start: 0, end: 190 } });
-    expect(fitNote(tooShort, target, wall, sofa, catalog)).toBe("too wide for north wall by 30 cm");
-    expect(fitsOnWall(absent, target, wall, sofa, catalog)).toEqual({ fits: false, spareCm: -220 });
-    expect(fitNote(absent, target, wall, sofa, catalog)).toBe("no free span on north wall");
+    expect(fitsOnWall(tooShort, target, wall, wardrobe, catalog)).toMatchObject({ fits: false, spareCm: -30, span: { start: 0, end: 130 } });
+    expect(fitNote(tooShort, target, wall, wardrobe, catalog)).toBe("too wide for north wall by 30 cm");
+    expect(fitsOnWall(absent, target, wall, wardrobe, catalog)).toEqual({ fits: false, spareCm: -160 });
+    expect(fitNote(absent, target, wall, wardrobe, catalog)).toBe("no free span on north wall");
+  });
+
+  it("lets low furniture fit beneath windows while blocking tall furniture", () => {
+    const target = room();
+    const current = scene([northWindow(0, 400)], [], target);
+    const wall = resolveWall(target, "north")!;
+    expect(fitsOnWall(current, target, wall, catalog.byId("sofa-endre")!, catalog)).toMatchObject({ fits: true, spareCm: 180 });
+    expect(fitsOnWall(current, target, wall, catalog.byId("wardrobe-hald")!, catalog)).toEqual({ fits: false, spareCm: -160 });
   });
 
   it("accounts for wall-hugging furniture and ignore ids", () => {
@@ -115,8 +123,8 @@ describe("catalog search", () => {
   it("ranks live fits by spare cm before price and name", () => {
     const target = room();
     const current = scene([northWindow(210, 190)], [], target);
-    const result = searchCatalog(catalogSource, { category: "sofa" }, { scene: current, roomId: "room", fitsWall: "north" });
-    expect(result.map((entry) => entry.id)).toEqual(["sofa-svale", "sofa-liva"]);
+    const result = searchCatalog(catalogSource, { category: "wardrobe", limit: 2 }, { scene: current, roomId: "room", fitsWall: "north" });
+    expect(result.map((entry) => entry.id)).toEqual(["wardrobe-nord", "wardrobe-tor"]);
     expect(result[0]?.price).toBeGreaterThan(result[1]?.price ?? 0);
     expect(result.every((entry) => entry.dims.w <= 210)).toBe(true);
   });

@@ -145,12 +145,14 @@ export interface HearthActions {
   loadVariant(source: ActionSource, roomId: string, name: string): void;
   deleteVariant(source: ActionSource, roomId: string, name: string): void;
   clearRoom(source: ActionSource, roomId: string): void;
+  applyArrangement(source: ActionSource, roomId: string, furniture: Furniture[]): void;
   applyTemplate(source: ActionSource, id: TemplateId, furnished: boolean): void;
   createRoom(source: ActionSource, input: RoomInput): Room;
   updateRoom(source: ActionSource, id: string, patch: RoomPatch): string[];
   addOpening(source: ActionSource, input: OpeningInput): Opening;
   moveOpening(source: ActionSource, id: string, patch: OpeningPatch): void;
   removeOpening(source: ActionSource, id: string): void;
+  linkCartLine(source: ActionSource, itemId: string, variantId: string, lineId?: string): void;
   setCart(cart: CartState): void;
   setCartStatus(status: CartState["status"]): void;
   setToolsMirror(list: ToolMirror[], status: HearthState["tools"]["status"]): void;

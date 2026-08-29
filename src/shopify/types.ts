@@ -56,5 +56,6 @@ export interface ShopifyClient {
   cartAdd(lines: CartAddLine[]): Promise<Result<ShopifyCart>>;
   cartRemove(lineIds: string[]): Promise<Result<ShopifyCart>>;
   cartSetQuantity(lineId: string, qty: number): Promise<Result<ShopifyCart>>;
+  cartUpdateLine(lineId: string, variantId: string, quantity: number): Promise<Result<ShopifyCart>>;
   checkoutLink(): Promise<Result<{ checkoutUrl: string; storePassword: string }>>;
 }

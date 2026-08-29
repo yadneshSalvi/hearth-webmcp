@@ -2,7 +2,7 @@ import { clearanceZone } from "./clearance";
 import type { Catalog } from "./catalog";
 import { openingClearZone, openingSegment, swingZone } from "./doors";
 import {
-  backAgainstWall, footprint, freeSpans, itemToWallDistance, polyInside, polysOverlap,
+  backAgainstWall, blocksWindow, footprint, freeSpans, itemToWallDistance, polyBBox, polyInside, polysOverlap,
   resolveWall, rotateDims, rotationForWall, walls,
 } from "./geometry";
 import { ROTATIONS } from "./types";
@@ -26,6 +26,8 @@ export interface PlacementRequest {
   pos?: Vec2;
   rotation?: Rotation;
   ignoreItemIds?: string[];
+  /** Internal search bound; WebMCP placement keeps the default 60 cm. */
+  maxNudgeCm?: number;
 }
 
 /** A valid resolved placement or an actionable failure. */
@@ -35,7 +37,7 @@ export type PlacementResult =
     ok: false;
     error: "blocked" | "invalid" | "not_found";
     detail: string;
-    freeSpans?: { wall: string; side: Side; spans: Span[] }[];
+    freeSpans?: { wall: string; side: Side; spans: Array<Span & { fits: boolean }> }[];
     suggestion?: string;
   };
 
@@ -43,6 +45,17 @@ type CatalogSource = Catalog | CatalogItem[];
 type PositionKind = "wall" | "under" | "centered" | "next_to" | "raw";
 type PositionPlan = { kind: PositionKind; wall?: Wall; along?: number; neighbour?: Furniture };
 type Check = { hard: string[]; soft: string[] };
+type Poly = ReturnType<typeof footprint>;
+type Box = ReturnType<typeof polyBBox>;
+type FurnitureBlocker = { id: string; cat: CatalogItem; poly: Poly; box: Box; clearanceBox?: Box };
+type OpeningBlocker = {
+  id: string;
+  swing?: Poly;
+  swingBox?: Box;
+  clearBox?: Box;
+  window?: { wall: Wall; start: number; end: number };
+};
+type PlacementBlockers = { furniture: FurnitureBlocker[]; openings: OpeningBlocker[] };
 
 const STACKABLE = new Set(["table-lamp", "decor"]);
 const SURFACES = new Set(["table", "desk", "shelf", "tv-unit"]);
@@ -197,34 +210,84 @@ function nextToPosition(plan: PositionPlan, cat: CatalogItem, rotation: Rotation
   return { x: neighbour.pos.x + vector.x * (half + gap), y: neighbour.pos.y + vector.y * (half + gap) };
 }
 
-function overlapAllowed(a: Furniture, catA: CatalogItem, b: Furniture, catB: CatalogItem): boolean {
+function overlapAllowed(catA: CatalogItem, polyA: Poly, catB: CatalogItem, polyB: Poly): boolean {
   if (catA.category === "rug" || catB.category === "rug") return true;
-  const aPoly = footprint(a, catA); const bPoly = footprint(b, catB);
-  if (STACKABLE.has(catA.category) && SURFACES.has(catB.category) && polyInside(bPoly, aPoly)) return true;
-  return STACKABLE.has(catB.category) && SURFACES.has(catA.category) && polyInside(aPoly, bPoly);
+  if (STACKABLE.has(catA.category) && SURFACES.has(catB.category) && polyInside(polyB, polyA)) return true;
+  return STACKABLE.has(catB.category) && SURFACES.has(catA.category) && polyInside(polyA, polyB);
 }
 
-function checkPlacement(scene: Scene, room: Room, item: Furniture, cat: CatalogItem, catalog: CatalogSource, ignored: Set<string>): Check {
-  const poly = footprint(item, cat); const hard: string[] = []; const soft: string[] = [];
-  if (!polyInside(room.poly, poly)) hard.push("room boundary");
-  for (const other of scene.furniture) {
-    if (other.roomId !== room.id || other.status !== "placed" || ignored.has(other.id)) continue;
+function boxesOverlap(a: Box, b: Box): boolean {
+  return a.maxX > b.minX + 1e-7 && b.maxX > a.minX + 1e-7
+    && a.maxY > b.minY + 1e-7 && b.maxY > a.minY + 1e-7;
+}
+
+function placementBlockers(
+  scene: Scene,
+  room: Room,
+  cat: CatalogItem,
+  catalog: CatalogSource,
+  ignored: Set<string>,
+): PlacementBlockers {
+  const furniture = scene.furniture.flatMap((other): FurnitureBlocker[] => {
+    if (other.roomId !== room.id || other.status !== "placed" || ignored.has(other.id)) return [];
     const otherCat = lookup(catalog, other.catalogId);
-    if (!otherCat) continue;
-    if (polysOverlap(poly, footprint(other, otherCat)) && !overlapAllowed(item, cat, other, otherCat)) hard.push(other.id);
+    if (!otherCat) return [];
+    const poly = footprint(other, otherCat);
     const clearance = clearanceZone(other, otherCat);
-    if (clearance.length && polysOverlap(poly, clearance)) soft.push(`${other.id}'s clearance`);
+    return [{
+      id: other.id,
+      cat: otherCat,
+      poly,
+      box: polyBBox(poly),
+      ...(clearance.length ? { clearanceBox: polyBBox(clearance) } : {}),
+    }];
+  });
+  const openings = scene.openings.flatMap((opening): OpeningBlocker[] => {
+    if (opening.roomId !== room.id) return [];
+    const swing = swingZone(opening, room);
+    const clear = openingClearZone(opening, room);
+    if (!blocksWindow(cat, opening)) return [{
+      id: opening.id,
+      ...(swing ? { swing, swingBox: polyBBox(swing) } : {}),
+      ...(clear ? { clearBox: polyBBox(clear) } : {}),
+    }];
+    const { wall } = openingSegment(opening, room);
+    return [{
+      id: opening.id,
+      ...(swing ? { swing, swingBox: polyBBox(swing) } : {}),
+      ...(clear ? { clearBox: polyBBox(clear) } : {}),
+      window: { wall, start: opening.offset, end: opening.offset + opening.width },
+    }];
+  });
+  return { furniture, openings };
+}
+
+function checkPlacement(room: Room, item: Furniture, cat: CatalogItem, blockers: PlacementBlockers): Check {
+  const poly = footprint(item, cat); const hard: string[] = []; const soft: string[] = [];
+  const box = polyBBox(poly);
+  if (!polyInside(room.poly, poly)) hard.push("room boundary");
+  for (const other of blockers.furniture) {
+    if (boxesOverlap(box, other.box) && !overlapAllowed(cat, poly, other.cat, other.poly)) hard.push(other.id);
+    if (other.clearanceBox && boxesOverlap(box, other.clearanceBox)) soft.push(`${other.id}'s clearance`);
   }
-  for (const opening of scene.openings.filter((entry) => entry.roomId === room.id)) {
-    const swing = swingZone(opening, room); const clear = openingClearZone(opening, room);
-    if (swing && polysOverlap(poly, swing)) hard.push(`${opening.id}'s swing`);
-    if (clear && polysOverlap(poly, clear)) hard.push(`${opening.id}'s clear zone`);
+  for (const opening of blockers.openings) {
+    if (opening.swing && opening.swingBox && boxesOverlap(box, opening.swingBox) && polysOverlap(poly, opening.swing)) hard.push(`${opening.id}'s swing`);
+    if (opening.clearBox && boxesOverlap(box, opening.clearBox)) hard.push(`${opening.id}'s clear zone`);
+    if (opening.window) {
+      const { wall, start: windowStart, end: windowEnd } = opening.window;
+      const dx = (wall.b.x - wall.a.x) / wall.length;
+      const dy = (wall.b.y - wall.a.y) / wall.length;
+      const projections = poly.map((point) => (point.x - wall.a.x) * dx + (point.y - wall.a.y) * dy);
+      const start = Math.min(...projections);
+      const end = Math.max(...projections);
+      if (itemToWallDistance(item, cat, wall) <= 5 && start < windowEnd && end > windowStart) hard.push(opening.id);
+    }
   }
   return { hard: [...new Set(hard)], soft: [...new Set(soft)] };
 }
 
-function wallOffsets(): number[] {
-  return Array.from({ length: 12 }, (_, index) => (index + 1) * 5).flatMap((distance) => [-distance, distance]);
+function wallOffsets(maxNudgeCm: number): number[] {
+  return Array.from({ length: Math.floor(maxNudgeCm / 5) }, (_, index) => (index + 1) * 5).flatMap((distance) => [-distance, distance]);
 }
 
 function spiralOffsets(): Vec2[] {
@@ -270,12 +333,20 @@ function formatList(values: string[]): string {
   return `${values.slice(0, -1).join(", ")} and ${values.at(-1)}`;
 }
 
-function failureSpans(scene: Scene, room: Room, cat: CatalogItem, catalog: CatalogSource, requested: Wall | undefined, ignored: string[]) {
+function failureSpans(
+  scene: Scene,
+  room: Room,
+  cat: CatalogItem,
+  catalog: CatalogSource,
+  requested: Wall | undefined,
+  ignored: string[],
+  rotation: Rotation,
+) {
   return (requested ? [requested] : walls(room)).map((wall) => ({
     wall: wall.id,
     side: wall.side,
-    spans: freeSpans(room, wall, scene, catalog, { ignoreItemIds: ignored, minLength: 0 })
-      .filter((span) => span.end - span.start >= cat.dims.w),
+    spans: freeSpans(room, wall, scene, catalog, { ignoreItemIds: ignored, minLength: 0, itemHeight: cat.dims.h })
+      .map((span) => ({ ...span, fits: span.end - span.start >= extentAlong(wall, cat, rotation) })),
   }));
 }
 
@@ -336,9 +407,10 @@ export function resolveAnchor(scene: Scene, roomId: string, cat: CatalogItem, re
   if (plan.kind === "next_to") position = nextToPosition(plan, cat, rotation, anchor, catalog) as Vec2;
   else position = positionFor(plan, room, cat, rotation, req.pos);
 
+  const blockers = placementBlockers(scene, room, cat, catalog, ignored);
   const candidate = (pos: Vec2): { item: Furniture; check: Check } => {
     const item: Furniture = { id: "__candidate__", catalogId: cat.id, roomId, pos, rotation, colorway: cat.colorways[0]?.id ?? "oak", status: "placed" };
-    return { item, check: checkPlacement(scene, room, item, cat, catalog, ignored) };
+    return { item, check: checkPlacement(room, item, cat, blockers) };
   };
   const initial = candidate(position);
   if (initial.check.hard.length === 0) {
@@ -346,14 +418,16 @@ export function resolveAnchor(scene: Scene, roomId: string, cat: CatalogItem, re
   }
 
   const positions: { pos: Vec2; distance: number }[] = [];
+  const maxNudgeCm = req.maxNudgeCm ?? 60;
   if (plan.wall && plan.kind !== "raw") {
     const base = clampAlong(plan.wall, plan.along ?? plan.wall.length / 2, cat, rotation);
-    for (const offset of wallOffsets()) {
+    for (const offset of wallOffsets(maxNudgeCm)) {
       const along = clampAlong(plan.wall, base + offset, cat, rotation);
       positions.push({ pos: backAgainstWall(plan.wall, along, cat, rotation), distance: Math.abs(along - base) });
     }
   } else {
-    positions.push(...SPIRAL.map((offset) => ({ pos: { x: position.x + offset.x, y: position.y + offset.y }, distance: Math.round(Math.hypot(offset.x, offset.y)) })));
+    positions.push(...SPIRAL.filter((offset) => Math.hypot(offset.x, offset.y) <= maxNudgeCm)
+      .map((offset) => ({ pos: { x: position.x + offset.x, y: position.y + offset.y }, distance: Math.round(Math.hypot(offset.x, offset.y)) })));
   }
   const seen = new Set<string>();
   for (const attempt of positions) {
@@ -366,9 +440,15 @@ export function resolveAnchor(scene: Scene, roomId: string, cat: CatalogItem, re
     }
   }
 
-  const data = failureSpans(scene, room, cat, catalog, plan.wall, [...ignored]);
-  const fit = data.flatMap((entry) => entry.spans.map((span) => ({ ...entry, span }))).sort((a, b) => (b.span.end - b.span.start) - (a.span.end - a.span.start))[0];
-  const suggestion = fit ? `${fit.side} wall ${Math.round(fit.span.start)}–${Math.round(fit.span.end)} cm fits; try along: ${Math.round((fit.span.start + fit.span.end) / 2)}` : "Try a smaller item or clear another wall";
+  const data = failureSpans(scene, room, cat, catalog, plan.wall, [...ignored], rotation);
+  const spans = data.flatMap((entry) => entry.spans.map((span) => ({ ...entry, span })));
+  const fit = spans.filter((entry) => entry.span.fits).sort((a, b) => (b.span.end - b.span.start) - (a.span.end - a.span.start))[0];
+  const widest = spans.sort((a, b) => (b.span.end - b.span.start) - (a.span.end - a.span.start))[0];
+  const suggestion = fit
+    ? `${fit.side} wall ${Math.round(fit.span.start)}–${Math.round(fit.span.end)} cm fits; try along: ${Math.round((fit.span.start + fit.span.end) / 2)}`
+    : widest
+      ? `${widest.side} wall free span ${Math.round(widest.span.start)}–${Math.round(widest.span.end)} cm; try a narrower item or clear the wall`
+      : "Try a smaller item or clear another wall";
   return { ok: false, error: "blocked", detail: `blocked by ${formatList(initial.check.hard)}`, freeSpans: data, suggestion };
 }
 

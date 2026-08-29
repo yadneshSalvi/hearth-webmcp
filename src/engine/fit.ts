@@ -52,7 +52,7 @@ export function fitsOnWall(
   catalog: CatalogSource,
   opts: { ignoreItemIds?: string[] } = {},
 ): WallFit {
-  const spans = freeSpans(room, wall, scene, catalog, { ignoreItemIds: opts.ignoreItemIds, minLength: 0 });
+  const spans = freeSpans(room, wall, scene, catalog, { ignoreItemIds: opts.ignoreItemIds, minLength: 0, itemHeight: cat.dims.h });
   const fitting = spans
     .filter((span) => spanLength(span) >= cat.dims.w)
     .sort((a, b) => spanLength(a) - spanLength(b) || a.start - b.start)[0];

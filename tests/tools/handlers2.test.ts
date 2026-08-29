@@ -55,7 +55,7 @@ const happyCases: HappyCase[] = [
   },
   { name: "place_furniture", input: { product: "sofa-endre", room: "living", anchor: { wall: "north" } }, empty: true, expected: { ok: true, room: "living", item: { id: "sofa-1", rotation: 0 }, nudged_cm: 0 }, summary: "Placed Endre Sofa on the north wall" },
   { name: "move_furniture", input: { item: "sofa-1", anchor: { wall: "north" } }, expected: { ok: true, room: "living", item: { id: "sofa-1", rotation: 0 } }, summary: "Moved Endre Sofa to the north wall" },
-  { name: "arrange_room", input: { room: "living", style: "media" }, expected: { ok: true, room: "living", style: "media", moved: expect.any(Array) }, summary: /^Arranged Living Room · media \(\d+ moved\)$/ },
+  { name: "arrange_room", input: { room: "living", style: "media" }, expected: { ok: true, room: "living", style: "media", moved: expect.any(Array), note: expect.stringContaining("media") }, summary: /^Arranged Living Room · media \(\d+ moved\)$/ },
   { name: "preview_in_room", input: { product: "sofa-liva", room: "living", anchor: { wall: "north" } }, empty: true, expected: { ok: true, room: "living", preview: { id: "ghost-1", product: "sofa-liva", rotation: 0 }, fit: expect.stringContaining("fits north wall") }, summary: "Previewing Liva Sofa on the north wall" },
   { name: "update_cart", input: { action: "add", product: "sofa-liva", colorway: "sage" }, expected: { ok: true, action: "add", line: { product: "sofa-liva", colorway: "sage" }, subtotal_usd: 690 }, summary: "Added Liva Sofa (sage) to cart · $690" },
   { name: "export_design_board", input: { room: "living" }, expected: { ok: true, room: "living", board: { title: "Living Room", items: 7, total_usd: 2140, size_px: "1600x1000" }, download: "started" }, summary: "Exported design board · Living Room" },
@@ -101,7 +101,7 @@ describe("second-round handlers", () => {
   });
 
   it.each(happyCases)("$name rejects malformed input", async (testCase) => {
-    const result = await harness().registry.execute(testCase.name, { unexpected: true }, "agent");
+    const result = await harness().registry.execute(testCase.name, { unexpected: true }, "test");
     expect(result).toMatchObject({ ok: false, error: "invalid" });
     expect(!result.ok && result.detail.length).toBeGreaterThan(0);
     expect(hearthStore.getState().activity).toHaveLength(1);
@@ -124,7 +124,7 @@ describe("second-round handlers", () => {
     ["confirm_preview", {}],
     ["compare_variants", { left: "missing-a", right: "missing-b", room: "living" }],
   ] as const)("%s returns not_found with at most three alternatives", async (name, input) => {
-    const result = await harness().registry.execute(name, input, "agent");
+    const result = await harness().registry.execute(name, input, "test");
     expect(result).toMatchObject({ ok: false, error: "not_found" });
     expect(!result.ok && result.alternatives).toBeInstanceOf(Array);
     expect(!result.ok && (result.alternatives?.length ?? 0)).toBeLessThanOrEqual(3);
@@ -207,13 +207,13 @@ describe("second-round handlers", () => {
   });
 
   it("returns unavailable when board export is not wired", async () => {
-    const ui: ToolUi = { confirm: async () => true, focus: vi.fn(), pulse: vi.fn() };
+    const ui: ToolUi = { confirm: async () => ({ accepted: true, reason: "accepted" }), focus: vi.fn(), pulse: vi.fn() };
     const result = await harness(ui).registry.execute("export_design_board", { room: "living" }, "agent");
     expect(result).toEqual({ ok: false, error: "unavailable", detail: "Design-board export is not wired into this page yet." });
   });
 
   it("blocks checkout while the local cart is empty", async () => {
-    const result = await harness().registry.execute("get_checkout_link", {}, "agent");
+    const result = await harness().registry.execute("get_checkout_link", {}, "test");
     expect(result).toMatchObject({ ok: false, error: "blocked", suggestion: expect.any(String) });
   });
 });

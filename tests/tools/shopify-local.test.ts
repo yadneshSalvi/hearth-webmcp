@@ -32,6 +32,10 @@ describe("local Shopify client", () => {
     if (!lineId) throw new Error("Cart line is missing");
     const updated = await client.cartSetQuantity(lineId, 3);
     expect(updated).toMatchObject({ ok: true, value: { count: 3 } });
+    const nextVariant = product.value.variants[1];
+    if (!nextVariant) throw new Error("Product has no second variant");
+    const recolored = await client.cartUpdateLine(lineId, nextVariant.id, 2);
+    expect(recolored).toMatchObject({ ok: true, value: { count: 2, lines: [{ variantId: nextVariant.id, colorway: nextVariant.colorway, itemId: "sofa-1" }] } });
     const removed = await client.cartRemove([lineId]);
     expect(removed).toMatchObject({ ok: true, value: { count: 0, subtotalUsd: 0, lines: [] } });
   });

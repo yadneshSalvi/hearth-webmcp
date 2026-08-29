@@ -1,7 +1,12 @@
 import type { Catalog } from "./catalog";
-import type { CatalogItem, Furniture, Room, Rotation, Scene, Side, Span, Vec2, Wall } from "./types";
+import type { CatalogItem, Furniture, Opening, Room, Rotation, Scene, Side, Span, Vec2, Wall } from "./types";
 
 const EPSILON = 1e-7;
+
+/** A window blocks furniture only when the product rises above its sill. */
+export function blocksWindow(cat: Pick<CatalogItem, "dims">, opening: Opening): boolean {
+  return opening.kind === "window" && cat.dims.h > (opening.sillHeight ?? 90);
+}
 
 /** Returns the room walls in polygon order; lengths are centimetres. */
 export function walls(room: Room): Wall[] {
@@ -67,12 +72,16 @@ export function footprint(item: Furniture, cat: CatalogItem): Vec2[] {
 /** Returns the axis-aligned bounds of a non-empty polygon. */
 export function polyBBox(poly: Vec2[]): { minX: number; minY: number; maxX: number; maxY: number; w: number; d: number } {
   if (poly.length === 0) return { minX: 0, minY: 0, maxX: 0, maxY: 0, w: 0, d: 0 };
-  const xs = poly.map((point) => point.x);
-  const ys = poly.map((point) => point.y);
-  const minX = Math.min(...xs);
-  const minY = Math.min(...ys);
-  const maxX = Math.max(...xs);
-  const maxY = Math.max(...ys);
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  for (const point of poly) {
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  }
   return { minX, minY, maxX, maxY, w: maxX - minX, d: maxY - minY };
 }
 
@@ -192,6 +201,10 @@ function satOverlap(a: Vec2[], b: Vec2[]): boolean {
 /** Tests positive-area polygon overlap; boundary touching is not overlap. */
 export function polysOverlap(a: Vec2[], b: Vec2[]): boolean {
   if (a.length < 3 || b.length < 3 || polyArea(a) <= EPSILON || polyArea(b) <= EPSILON) return false;
+  const aBox = polyBBox(a);
+  const bBox = polyBBox(b);
+  if (aBox.maxX <= bBox.minX + EPSILON || bBox.maxX <= aBox.minX + EPSILON
+    || aBox.maxY <= bBox.minY + EPSILON || bBox.maxY <= aBox.minY + EPSILON) return false;
   return decomposeOrthogonal(a).some((partA) => decomposeOrthogonal(b).some((partB) => satOverlap(partA, partB)));
 }
 
@@ -246,14 +259,15 @@ export function freeSpans(
   wall: Wall,
   scene: Scene,
   catalog: Catalog | CatalogItem[],
-  opts: { ignoreItemIds?: string[]; minLength?: number } = {},
+  opts: { ignoreItemIds?: string[]; minLength?: number; itemHeight?: number } = {},
 ): Span[] {
   const blocked: Span[] = scene.openings
     .filter((opening) => opening.roomId === room.id && opening.wallId.toLowerCase() === wall.id.toLowerCase())
+    .filter((opening) => opening.kind !== "window" || opts.itemHeight === undefined || opts.itemHeight > (opening.sillHeight ?? 90))
     .map((opening) => ({ start: opening.offset, end: opening.offset + opening.width }));
   const ignored = new Set(opts.ignoreItemIds ?? []);
   for (const item of scene.furniture) {
-    if (item.roomId !== room.id || ignored.has(item.id)) continue;
+    if (item.roomId !== room.id || item.status !== "placed" || ignored.has(item.id)) continue;
     const cat = catalogLookup(catalog, item.catalogId);
     if (!cat) continue;
     const [a, b] = backEdge(item, cat);

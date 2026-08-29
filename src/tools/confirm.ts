@@ -1,17 +1,9 @@
 import type { StoreApi } from "zustand";
 import type { HearthStore } from "../state/types";
 
-type ConfirmReason = "declined" | "timeout" | "cancelled";
-type ConfirmFunction = (message: string) => Promise<boolean>;
-
-const reasons = new WeakMap<ConfirmFunction, ConfirmReason>();
-
-/** Returns and clears the most recent failure reason for a confirmation function. */
-export function takeConfirmReason(confirm: ConfirmFunction): ConfirmReason | undefined {
-  const reason = reasons.get(confirm);
-  reasons.delete(confirm);
-  return reason;
-}
+export type ConfirmReason = "accepted" | "declined" | "timeout" | "cancelled";
+export interface ConfirmResult { accepted: boolean; reason: ConfirmReason }
+export type ConfirmFunction = (message: string) => Promise<ConfirmResult>;
 
 /** Bridges tool confirmation promises to the future in-page confirmation modal. */
 export function createConfirmGate(
@@ -21,7 +13,7 @@ export function createConfirmGate(
   const timeoutMs = opts.timeoutMs ?? 45_000;
   let sequence = 0;
   const pending = new Map<string, {
-    finish(answer: boolean, reason: ConfirmReason): void;
+    finish(accepted: boolean, reason: ConfirmReason): void;
     timer: ReturnType<typeof setTimeout>;
   }>();
 
@@ -29,17 +21,16 @@ export function createConfirmGate(
     if (store.getState().ui.pendingConfirm?.id === id) store.getState().setUi({ pendingConfirm: undefined });
   };
 
-  const confirm: ConfirmFunction = (message) => new Promise<boolean>((resolve) => {
+  const confirm: ConfirmFunction = (message) => new Promise<ConfirmResult>((resolve) => {
     sequence += 1;
     const id = `confirm-${sequence}`;
-    const finish = (answer: boolean, reason: ConfirmReason): void => {
+    const finish = (accepted: boolean, reason: ConfirmReason): void => {
       const entry = pending.get(id);
       if (!entry) return;
       clearTimeout(entry.timer);
       pending.delete(id);
       clearUi(id);
-      if (!answer) reasons.set(confirm, reason);
-      resolve(answer);
+      resolve({ accepted, reason });
     };
     const timer = setTimeout(() => finish(false, "timeout"), timeoutMs);
     pending.set(id, { finish, timer });
@@ -49,7 +40,7 @@ export function createConfirmGate(
   return {
     confirm,
     resolve(id, answer) {
-      pending.get(id)?.finish(answer, answer ? "cancelled" : "declined");
+      pending.get(id)?.finish(answer, answer ? "accepted" : "declined");
     },
     cancelAll() {
       for (const entry of [...pending.values()]) entry.finish(false, "cancelled");

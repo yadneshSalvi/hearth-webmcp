@@ -36,15 +36,15 @@ describe("built furniture assets", () => {
     for (let index = 0; index < sizes.length; index += 1) expect(manifest[index].bytes).toBe(sizes[index].size);
   });
 
-  it("keeps baked bounds within 15 percent of catalog dimensions", () => {
+  it("keeps baked bounds within 15 percent of catalog dimensions, allowing half-centimetre integer rounding", () => {
     const byId = new Map(manifest.map((row) => [row.id, row]));
     for (const item of catalogSource) {
       const row = byId.get(item.id);
       expect(row, item.id).toBeDefined();
       if (!row) continue;
       for (const axis of ["w", "d", "h"] as const) {
-        const error = Math.abs(row.bbox_cm[axis] - item.dims[axis]) / item.dims[axis];
-        expect(error, `${item.id} ${axis}`).toBeLessThanOrEqual(0.1501);
+        const difference = Math.abs(row.bbox_cm[axis] - item.dims[axis]);
+        expect(difference, `${item.id} ${axis}`).toBeLessThanOrEqual(Math.max(item.dims[axis] * 0.1501, 0.5));
       }
     }
   });
