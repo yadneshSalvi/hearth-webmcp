@@ -5,9 +5,14 @@ import type { Page } from "@playwright/test";
  * Studio chrome end-to-end. The WebMCP polyfill is injected before app code so the registry starts
  * in exactly the path a flagless browser takes, and the assertions read what an agent would find on
  * `document.modelContext` — not an internal mirror.
+ *
+ * Every page load carries `?e2e=1`, which is what installs the `window.__hearth*` handles on a
+ * production build (src/scene/devBridge.ts); `next dev` has them either way.
  */
 
 const POLYFILL = "public/webmcp-polyfill.js";
+/** The one page this suite opens. Always with the e2e switch, so `pnpm start` is drivable too. */
+const STUDIO = "/?e2e=1";
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"] });
 
@@ -20,9 +25,9 @@ async function openStudio(page: Page): Promise<void> {
       // A blocked localStorage only means the welcome card shows; the tests do not depend on it.
     }
   });
-  await page.goto("/");
+  await page.goto(STUDIO);
   await expect(page.locator('[data-studio="canvas"]')).toBeVisible();
-  await expect(page.getByRole("button", { name: /Agent tools/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /WebMCP polyfill/ })).toBeVisible();
 }
 
 // `executeTool` ships in Chrome and in the polyfill but is not in `webmcp-types` yet, so each
@@ -69,7 +74,7 @@ test.describe("studio chrome", () => {
     await expect(page.getByRole("heading", { name: "Living Room" })).toBeVisible();
     // The polyfill is in play, so the chip must say so rather than claiming native support — and it
     // still owes the human the number of tools an agent would find.
-    await expect(page.getByRole("button", { name: /Agent tools · 26 ready · polyfill/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /WebMCP polyfill · 26 ready/ })).toBeVisible();
   });
 
   test("registers the 26 default tools and lists them with schemas", async ({ page }) => {
@@ -82,7 +87,7 @@ test.describe("studio chrome", () => {
     expect(names).toContain("export_design_board");
     expect(names).not.toContain("create_room");
 
-    await page.getByRole("button", { name: /Agent tools/ }).click();
+    await page.getByRole("button", { name: /WebMCP polyfill/ }).click();
     const panel = page.getByRole("complementary", { name: "Agent tools registered on this page" });
     await expect(panel).toBeVisible();
     await expect(panel.getByRole("button", { name: /^Copy the tool name/ })).toHaveCount(26);
@@ -210,10 +215,11 @@ test.describe("studio chrome", () => {
     await page.addInitScript(() => {
       try { window.localStorage.setItem("hearth.onboarding.v1", "dismissed"); } catch { /* noop */ }
     });
-    await page.goto("/");
+    await page.goto(STUDIO);
     await expect(page.locator('[data-studio="canvas"]')).toBeVisible();
 
-    const trigger = page.getByRole("button", { name: /Agent tools/ });
+    // Nothing is registered, so the chip drops the runtime name and says what to do instead.
+    const trigger = page.getByRole("button", { name: /Agent tools unavailable — enable/ });
     await expect(trigger).toHaveAccessibleName(/unavailable/);
     await trigger.click();
     const sheet = page.getByRole("dialog");

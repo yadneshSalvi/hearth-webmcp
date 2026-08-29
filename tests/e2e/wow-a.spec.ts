@@ -8,6 +8,8 @@ import type { Page } from "@playwright/test";
  */
 
 const POLYFILL = "public/webmcp-polyfill.js";
+/** `?e2e=1` installs the `window.__hearth*` handles on a production build (src/scene/devBridge.ts). */
+const STUDIO = "/?e2e=1";
 
 async function openStudio(page: Page): Promise<void> {
   await page.addInitScript({ path: POLYFILL });
@@ -18,9 +20,9 @@ async function openStudio(page: Page): Promise<void> {
       // A blocked localStorage only means the welcome card shows; these tests do not depend on it.
     }
   });
-  await page.goto("/");
+  await page.goto(STUDIO);
   await expect(page.locator('[data-studio="canvas"]')).toBeVisible();
-  await expect(page.getByRole("button", { name: /Agent tools/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /WebMCP polyfill/ })).toBeVisible();
 }
 
 // `executeTool` ships in Chrome and in the polyfill but is not in `webmcp-types` yet, so each
@@ -131,6 +133,20 @@ test.describe("wow pass", () => {
 
     await page.keyboard.press("Escape");
     await expect(modal).toBeHidden();
+
+    // A board is a photograph of a moment, so the studio moving on dismisses it. Reopened from the
+    // same composed PNG (no second capture), then handed one more tool call: the preview used to sit
+    // over everything the agent did next, including this one.
+    await page.evaluate(() => {
+      const store = (window as unknown as {
+        __hearthStore: { getState(): { setUi(patch: { boardOpen: boolean }): void } };
+      }).__hearthStore;
+      store.getState().setUi({ boardOpen: true });
+    });
+    await expect(modal).toBeVisible();
+    expect(await runTool(page, "set_time_of_day", { time: "evening" })).toContain('"ok":true');
+    await expect(modal).toBeHidden();
+    await expect(page.getByText("Time of day → evening")).toBeVisible();
   });
 
   test("the build panel adds a window on the north wall, with 32 tools registered", async ({ page }) => {
@@ -139,7 +155,7 @@ test.describe("wow pass", () => {
 
     // Build mode registers the six build tools on top of the 26 defaults.
     await expect.poll(async () => (await toolNames(page)).length).toBe(32);
-    await page.getByRole("button", { name: /Agent tools/ }).click();
+    await page.getByRole("button", { name: /WebMCP polyfill/ }).click();
     const tools = page.getByRole("complementary", { name: "Agent tools registered on this page" });
     await expect(tools.getByRole("button", { name: /^Copy the tool name/ })).toHaveCount(32);
     await expect(tools.getByRole("heading", { name: "Build" })).toBeVisible();

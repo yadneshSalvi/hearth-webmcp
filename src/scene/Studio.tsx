@@ -19,13 +19,19 @@ import { Overlays } from "./Overlays";
 import { Post, pinQualityTier } from "./Post";
 import { Rooms } from "./Rooms";
 import { planAssetWaves } from "./assetWaves";
+import { devBridgesEnabled } from "./devBridge";
 import { setFocusTarget } from "./focus";
 import type { FocusTarget } from "./focus";
 import { warmGlbs, warmQueueDepth } from "./glb";
 import { useWakeOnActivity, wakeStudio } from "./idle";
 import { markStudioPainted, studioPaintedAt, whenStudioPainted } from "./intro";
 import { flyOrbTo } from "./orbCommand";
+import { silenceClockDeprecation } from "./threeConsole";
 import { useMeta } from "./useSceneStore";
+
+// R3F 9.7 builds its loop on the deprecated `THREE.Clock`, so the warning fires the moment a canvas
+// mounts. Filtered here, in the module that owns the canvas, before anything constructs one.
+silenceClockDeprecation();
 
 export interface StudioApi {
   /** Frames a room or item; pass undefined to return to the active room. */
@@ -137,11 +143,11 @@ function CaptureBridge() {
   return null;
 }
 
-/** Dev-only handle so the screenshot harness can read renderer state and sample frame rate. */
+/** Test-only handle so the screenshot harness can read renderer state and sample frame rate. */
 function DebugBridge() {
   const store = useThree((state) => state.get);
   useEffect(() => {
-    if (process.env.NODE_ENV === "production") return;
+    if (!devBridgesEnabled()) return;
     const target = window as unknown as {
       __hearthStudio?: unknown;
       __hearthPinQuality?: unknown;

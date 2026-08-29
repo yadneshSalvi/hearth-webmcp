@@ -29,7 +29,8 @@ async function openStudio(page: Page, opts: { dismissed?: boolean; query?: strin
       }
     }, ONBOARDING_KEY);
   }
-  await page.goto(`/${opts.query ?? ""}`);
+  // `?e2e=1` installs the `window.__hearth*` handles on a production build (src/scene/devBridge.ts).
+  await page.goto(`/?e2e=1${opts.query ? `&${opts.query.replace(/^\?/, "")}` : ""}`);
   await expect(page.locator('[data-studio="canvas"]')).toBeVisible();
 }
 
@@ -69,7 +70,7 @@ test.describe("the fallback Hearth Assistant", () => {
     await stubAssistant(page, { name: "arrange_room", input: { room: "living", style: "conversation" } });
     await openStudio(page, { query: "?webmcp=polyfill" });
     // The polyfill was asked for by the URL, so the chip must say polyfill rather than native.
-    await expect(page.getByRole("button", { name: /Agent tools · \d+ ready · polyfill/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /WebMCP polyfill · \d+ ready/ })).toBeVisible();
 
     await openAssistant(page);
     // Copy has to be honest about what this panel is, and about the guard the loop enforces.

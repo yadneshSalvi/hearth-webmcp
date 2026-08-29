@@ -10,28 +10,34 @@
 import { useMemo, useState } from "react";
 import { createCatalog } from "../engine/catalog";
 import { useHearthStore } from "../state/store";
-import { useCopyFlash } from "./clipboard";
-import { IconAgent, IconCheck, IconCopy } from "./icons";
+import { HANDOFF_FLASH_MS, useCopyFlash } from "./clipboard";
+import { IconAgent, IconCopy, IconHandoff } from "./icons";
 import { Button, Kbd } from "./primitives";
 import { promptSuggestions } from "./prompts";
 import { Sheet } from "./Sheet";
 import { useConflicts } from "./useHearth";
 import type { ViewportTier } from "./useViewportTier";
 
+/**
+ * One chip. The click is the hand-off, so the confirmation has to be unmistakable: the chip turns
+ * sage, the arrow says where the prompt is going, and it holds for 2.5 s — long enough to read
+ * "paste into ChatGPT" and switch windows, rather than flashing past mid-sentence.
+ */
 function PromptChip({ prompt }: { prompt: string }) {
-  const { copied, copy } = useCopyFlash();
+  const { copied, copy } = useCopyFlash(HANDOFF_FLASH_MS);
   return (
     <button
       type="button"
       data-prompt-chip
       onClick={() => copy(prompt)}
       title={prompt}
-      className={`flex h-9 min-w-0 flex-auto items-center justify-center rounded-pill border px-2.5 transition-colors duration-200 ease-out-soft ${
+      className={`flex h-9 min-w-0 flex-auto items-center justify-center gap-1.5 rounded-pill border px-2.5 transition-colors duration-200 ease-out-soft ${
         copied
           ? "border-sage/45 bg-sage/14 text-ink"
           : "border-hairline bg-plaster/55 text-ink-muted hover:border-charcoal/22 hover:bg-plaster hover:text-ink"
       }`}
     >
+      {copied ? <IconHandoff size={14} className="shrink-0 text-sage" /> : null}
       <span className="font-display truncate text-[12.5px] italic">
         {copied ? "Copied — paste into ChatGPT" : `“${prompt}”`}
       </span>
@@ -41,7 +47,7 @@ function PromptChip({ prompt }: { prompt: string }) {
 
 /** One full-width prompt row, wide enough to read the whole sentence on a phone. */
 function PromptRow({ prompt }: { prompt: string }) {
-  const { copied, copy } = useCopyFlash();
+  const { copied, copy } = useCopyFlash(HANDOFF_FLASH_MS);
   return (
     <li className="border-b border-hairline/70 last:border-0">
       <button
@@ -52,7 +58,10 @@ function PromptRow({ prompt }: { prompt: string }) {
       >
         <span className="font-display flex-1 text-[14px] italic leading-snug text-ink">“{prompt}”</span>
         {copied ? (
-          <IconCheck size={16} className="shrink-0 text-sage" />
+          <span className="flex shrink-0 items-center gap-1.5 text-[11.5px] whitespace-nowrap text-ink">
+            <IconHandoff size={15} className="text-sage" />
+            Copied — paste into ChatGPT
+          </span>
         ) : (
           <IconCopy size={16} className="shrink-0 text-ink-faint" />
         )}
