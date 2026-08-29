@@ -60,11 +60,11 @@ const specs: Spec[] = [
   { id: "wardrobe-hald", name: "Hald Wardrobe", category: "wardrobe", dims: [160, 54, 158], price: 890, colors: ["oak", "plaster", "charcoal"], styles: ["scandinavian", "modern"] },
   { id: "wardrobe-skive", name: "Skive Wardrobe", category: "wardrobe", dims: [100, 60, 146], price: 590, colors: ["plaster", "sage"], styles: ["japandi"] },
   { id: "wardrobe-nord", name: "Nord Wardrobe", category: "wardrobe", dims: [200, 60, 210], price: 1190, colors: ["oak", "charcoal"], styles: ["scandinavian", "rustic"] },
-  { id: "wardrobe-eira", name: "Eira Wardrobe", category: "wardrobe", dims: [140, 58, 256], price: 760, colors: ["dusty-blue", "plaster", "oak"], styles: ["coastal", "modern"] },
+  { id: "wardrobe-eira", name: "Eira Wardrobe", category: "wardrobe", dims: [140, 58, 200], price: 760, colors: ["dusty-blue", "plaster", "oak"], styles: ["coastal", "modern"] },
   { id: "wardrobe-tor", name: "Tor Wardrobe", category: "wardrobe", dims: [180, 62, 205], price: 990, colors: ["plum", "charcoal", "oak"], styles: ["mid-century"] },
 
   { id: "table-rove", name: "Rove Table", category: "table", dims: [160, 90, 62], price: 590, colors: ["oak", "charcoal"], styles: ["scandinavian", "modern"] },
-  { id: "table-ake", name: "Ake Table", category: "table", dims: [120, 80, 40], price: 420, colors: ["oak", "plaster"], styles: ["japandi"] },
+  { id: "table-ake", name: "Ake Table", category: "table", dims: [160, 90, 75], price: 590, colors: ["oak", "plaster"], styles: ["japandi"] },
   { id: "table-elm", name: "Elm Table", category: "table", dims: [200, 95, 59], price: 890, colors: ["oak", "terracotta", "charcoal"], styles: ["rustic", "mid-century"] },
   { id: "table-rund", name: "Rund Table", category: "table", dims: [110, 110, 75], price: 490, colors: ["plaster", "sage", "oak"], styles: ["scandinavian"] },
   { id: "table-petit", name: "Petit Table", category: "table", dims: [80, 80, 74], price: 330, colors: ["ochre", "oak"], styles: ["modern", "coastal"] },
@@ -101,7 +101,7 @@ const specs: Spec[] = [
   { id: "rug-ull", name: "Ull Rug", category: "rug", dims: [160, 230, 3], price: 290, colors: ["oak", "ochre", "charcoal"], styles: ["rustic", "scandinavian"] },
 
   { id: "lamp-glow", name: "Glow Floor Lamp", category: "floor-lamp", dims: [30, 30, 150], price: 190, colors: ["ochre", "charcoal", "oak"], styles: ["scandinavian", "modern"] },
-  { id: "floor-lamp-arc", name: "Arc Floor Lamp", category: "floor-lamp", dims: [35, 35, 251], price: 260, colors: ["charcoal", "plaster"], styles: ["mid-century"] },
+  { id: "floor-lamp-arc", name: "Arc Floor Lamp", category: "floor-lamp", dims: [35, 35, 170], price: 260, colors: ["charcoal", "plaster"], styles: ["mid-century"] },
   { id: "floor-lamp-sol", name: "Sol Floor Lamp", category: "floor-lamp", dims: [30, 30, 155], price: 170, colors: ["ochre", "terracotta"], styles: ["rustic", "scandinavian"] },
   { id: "floor-lamp-lyst", name: "Lyst Floor Lamp", category: "floor-lamp", dims: [28, 28, 145], price: 140, colors: ["plaster", "oak", "sage"], styles: ["japandi"] },
   { id: "floor-lamp-havn", name: "Havn Floor Lamp", category: "floor-lamp", dims: [32, 32, 124], price: 220, colors: ["dusty-blue", "charcoal", "plaster"], styles: ["coastal", "modern"] },

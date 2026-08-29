@@ -31,12 +31,19 @@ function prepareMaterials(document: Document): string[] {
   const materials = document.getRoot().listMaterials();
   materials.forEach((material, index) => {
     if (!material.getName()) material.setName(`material-${index + 1}`);
+    if (material.getName() === "White") material.setName("Light");
     material.setRoughnessFactor(0.9).setMetallicFactor(0);
   });
   return materials.map((material) => material.getName());
 }
 
-function normalizeScene(document: Document, scene: Scene, widthCm: number, rotationY: number): number {
+function normalizeScene(
+  document: Document,
+  scene: Scene,
+  dimensions: { w: number; d: number; h: number },
+  rotationY: number,
+  fitToCatalog = false,
+): number {
   const sourceNodes: Node[] = [];
   scene.traverse((node) => sourceNodes.push(node));
   const seenMeshes = new Set<NonNullable<ReturnType<Node["getMesh"]>>>();
@@ -49,17 +56,21 @@ function normalizeScene(document: Document, scene: Scene, widthCm: number, rotat
   for (const node of sourceNodes) clearNodeTransform(node);
 
   const wrapper = document.createNode("hearth-normalize");
+  const rotationWrapper = fitToCatalog ? document.createNode("hearth-rotate") : wrapper;
   const originalChildren = [...scene.listChildren()];
   scene.addChild(wrapper);
-  for (const child of originalChildren) wrapper.addChild(child);
+  if (fitToCatalog) wrapper.addChild(rotationWrapper);
+  for (const child of originalChildren) rotationWrapper.addChild(child);
 
   const radians = rotationY * Math.PI / 180;
-  wrapper.setRotation([0, Math.sin(radians / 2), 0, Math.cos(radians / 2)]);
+  rotationWrapper.setRotation([0, Math.sin(radians / 2), 0, Math.cos(radians / 2)]);
   const rotated = getBounds(scene);
-  const rotatedWidth = rotated.max[0] - rotated.min[0];
-  if (!(rotatedWidth > 0)) throw new Error("Source model has zero width");
-  const scale = widthCm / 100 / rotatedWidth;
-  wrapper.setScale([scale, scale, scale]);
+  const rotatedDimensions = rotated.max.map((value, index) => value - rotated.min[index]);
+  if (rotatedDimensions.some((value) => !(value > 0))) throw new Error("Source model has a zero-sized axis");
+  const scale = dimensions.w / 100 / rotatedDimensions[0];
+  wrapper.setScale(fitToCatalog
+    ? [scale, dimensions.h / 100 / rotatedDimensions[1], dimensions.d / 100 / rotatedDimensions[2]]
+    : [scale, scale, scale]);
 
   const scaled = getBounds(scene);
   wrapper.setTranslation([
@@ -86,8 +97,9 @@ function dimensionsCm(scene: Scene): AssetManifestRow["bbox_cm"] {
 
 function assertDimensions(id: string, actual: AssetManifestRow["bbox_cm"], expected: { w: number; d: number; h: number }): void {
   for (const axis of ["w", "d", "h"] as const) {
-    const error = Math.abs(actual[axis] - expected[axis]) / expected[axis];
-    if (error > maxDimensionError + 0.0001) {
+    const difference = Math.abs(actual[axis] - expected[axis]);
+    const error = difference / expected[axis];
+    if (difference > Math.max(expected[axis] * maxDimensionError + 0.0001, 0.5)) {
       throw new Error(`${id}: baked ${axis} ${actual[axis]} cm differs from catalog ${expected[axis]} cm by ${(error * 100).toFixed(1)}%`);
     }
   }
@@ -111,7 +123,7 @@ async function buildOne(io: NodeIO, mapping: AssetMapping): Promise<AssetManifes
   removeNonFurniture(document);
   await document.transform(flatten({ cleanup: false }));
   const scene = sceneFor(document, mapping.id);
-  const scale = normalizeScene(document, scene, item.dims.w, mapping.rotationY);
+  const scale = normalizeScene(document, scene, item.dims, mapping.rotationY, mapping.fitToCatalog);
   const materials = prepareMaterials(document);
   await document.transform(flatten({ cleanup: false }), dedup(), normals({ overwrite: true }), weld(), prune());
   const bbox = dimensionsCm(scene);

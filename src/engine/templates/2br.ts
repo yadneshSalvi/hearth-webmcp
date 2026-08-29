@@ -14,8 +14,8 @@ function goldenFurniture(): Furniture[] {
     item({ id: "table-1", catalogId: "table-ake", roomId: "kitchen", pos: { x: 202, y: 240 }, rotation: 0, colorway: "oak" }),
     item({ id: "chair-1", catalogId: "chair-finn", roomId: "kitchen", pos: { x: 202, y: 165 }, rotation: 0, colorway: "sage" }),
     item({ id: "chair-2", catalogId: "chair-finn", roomId: "kitchen", pos: { x: 202, y: 315 }, rotation: 180, colorway: "sage" }),
-    item({ id: "chair-3", catalogId: "chair-ida", roomId: "kitchen", pos: { x: 116, y: 240 }, rotation: 90, colorway: "dusty-blue" }),
-    item({ id: "chair-4", catalogId: "chair-ida", roomId: "kitchen", pos: { x: 288, y: 240 }, rotation: 270, colorway: "dusty-blue" }),
+    item({ id: "chair-3", catalogId: "chair-ida", roomId: "kitchen", pos: { x: 120, y: 165 }, rotation: 0, colorway: "dusty-blue" }),
+    item({ id: "chair-4", catalogId: "chair-ida", roomId: "kitchen", pos: { x: 284, y: 315 }, rotation: 180, colorway: "dusty-blue" }),
     item({ id: "plant-2", catalogId: "plant-pilea", roomId: "kitchen", pos: { x: 50, y: 360 }, rotation: 0, colorway: "sage" }),
 
     item({ id: "bed-1", catalogId: "bed-birk", roomId: "bed-1", pos: { x: 100, y: 180 }, rotation: 270, colorway: "oak" }),

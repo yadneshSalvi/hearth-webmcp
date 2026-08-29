@@ -14,11 +14,11 @@ const allowedDuplicateGroups = [
   ["bed-birk", "bed-viggo"],
   ["desk-aalto", "desk-linn", "desk-varde"],
   ["desk-kari", "desk-soren"],
-  ["wardrobe-hald", "wardrobe-nord", "wardrobe-tor"],
-  ["wardrobe-eira", "shelf-kant", "shelf-lund", "shelf-rune", "shelf-saga", "shelf-vik"],
+  ["wardrobe-nord", "wardrobe-skive"],
+  ["shelf-kant", "shelf-lund", "shelf-rune", "shelf-saga", "shelf-vik"],
   ["tv-unit-sund", "tv-unit-ved"],
   ["rug-mark", "rug-siv", "rug-ull"],
-  ["floor-lamp-lyst", "floor-lamp-sol", "lamp-glow"],
+  ["floor-lamp-havn", "lamp-glow"],
   ["table-lamp-alva", "table-lamp-natt"],
 ].map((ids) => [...ids].sort().join("|"));
 

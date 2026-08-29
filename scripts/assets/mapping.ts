@@ -8,20 +8,21 @@ function archive(
   sourceFile: string,
   rotationY: RotationY = 0,
   orientationConfidence: AssetMapping["orientationConfidence"] = "high",
+  fitToCatalog = false,
 ): AssetMapping {
-  return { id, sourceKey, sourceModel, sourceFile, rotationY, orientationConfidence };
+  return { id, sourceKey, sourceModel, sourceFile, rotationY, orientationConfidence, ...(fitToCatalog ? { fitToCatalog } : {}) };
 }
 
-function kenney(id: string, model: string, rotationY: RotationY = 0): AssetMapping {
-  return archive(id, "kenney-furniture", model, `Models/GLTF format/${model}.glb`, rotationY);
+function kenney(id: string, model: string, rotationY: RotationY = 0, fitToCatalog = false): AssetMapping {
+  return archive(id, "kenney-furniture", model, `Models/GLTF format/${model}.glb`, rotationY, "high", fitToCatalog);
 }
 
-function kaykit(id: string, model: string, rotationY: RotationY = 0): AssetMapping {
+function kaykit(id: string, model: string, rotationY: RotationY = 0, fitToCatalog = false): AssetMapping {
   const sourceFile = `KayKit-Furniture-Bits-1.0-main/addons/kaykit_furniture_bits/Assets/gltf/${model}.gltf`;
-  return archive(id, "kaykit-furniture", model, sourceFile, rotationY);
+  return archive(id, "kaykit-furniture", model, sourceFile, rotationY, "high", fitToCatalog);
 }
 
-function pizza(id: string, polyPizzaId: string, rotationY: RotationY = 0): AssetMapping {
+function pizza(id: string, polyPizzaId: string, rotationY: RotationY = 0, fitToCatalog = false): AssetMapping {
   const model = polyPizzaModels[polyPizzaId];
   if (!model) throw new Error(`Missing poly.pizza metadata for ${polyPizzaId}`);
   return {
@@ -32,6 +33,7 @@ function pizza(id: string, polyPizzaId: string, rotationY: RotationY = 0): Asset
     rotationY,
     orientationConfidence: "medium",
     polyPizzaId,
+    ...(fitToCatalog ? { fitToCatalog } : {}),
   };
 }
 
@@ -56,12 +58,12 @@ export const assetMappings: readonly AssetMapping[] = [
 
   kenney("wardrobe-hald", "bookcaseClosedWide"),
   pizza("wardrobe-skive", "ND4Z53Ne4C", 180),
-  kenney("wardrobe-nord", "bookcaseClosedWide"),
-  pizza("wardrobe-eira", "tACDGJ4CGW", 180),
-  kenney("wardrobe-tor", "bookcaseClosedWide"),
+  pizza("wardrobe-nord", "ND4Z53Ne4C", 180, true),
+  pizza("wardrobe-eira", "BHEVb1DIuH", 180, true),
+  kenney("wardrobe-tor", "bookcaseClosedDoors", 180, true),
 
   kenney("table-rove", "table"),
-  kaykit("table-ake", "table_medium_long"),
+  kenney("table-ake", "tableCross"),
   pizza("table-elm", "gQFkiM8PlM", 90),
   pizza("table-rund", "oEArSZykyi"),
   kaykit("table-petit", "table_small"),
@@ -97,10 +99,10 @@ export const assetMappings: readonly AssetMapping[] = [
   pizza("rug-siv", "7H5qKjuxVY"),
   pizza("rug-ull", "7H5qKjuxVY"),
 
-  pizza("lamp-glow", "eBQtooeh43"),
-  kenney("floor-lamp-arc", "lampSquareFloor"),
-  pizza("floor-lamp-sol", "eBQtooeh43"),
-  pizza("floor-lamp-lyst", "eBQtooeh43"),
+  pizza("lamp-glow", "9L6lLUl9sD", 0, true),
+  kenney("floor-lamp-arc", "lampRoundFloor", 90),
+  pizza("floor-lamp-sol", "RsWYHKkDhD", 0, true),
+  pizza("floor-lamp-lyst", "sRBBvofo58", 0, true),
   pizza("floor-lamp-havn", "9L6lLUl9sD"),
 
   kenney("table-lamp-alva", "lampSquareTable"),

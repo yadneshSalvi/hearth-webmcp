@@ -188,7 +188,7 @@
         const sheet = document.createElement("canvas");
         sheet.id = "contact-sheet";
         sheet.width = tileWidth * 5;
-        sheet.height = (imageHeight + labelHeight) * 4;
+        sheet.height = (imageHeight + labelHeight) * Math.ceil(ids.length / 5);
         document.body.append(sheet);
         const context = sheet.getContext("2d");
         context.fillStyle = "#F4EFE6";
