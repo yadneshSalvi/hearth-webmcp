@@ -18,7 +18,8 @@ Every frame should look composed, calm, and expensive. Consistency beats realism
 | `charcoal` | `#3E3A36` | text, icons, hairlines at 12–16% alpha |
 | `amber` (semantic) | `#D9973B` | conflicts/warnings — max 0.6 opacity, never alarming |
 | `rose` (semantic) | `#C25E5E` | violations — pulsing floor zones at ≤ 0.6 opacity |
-| `ink.muted` | `charcoal @ 62%` | secondary text |
+| `ink.muted` | `charcoal @ 72%` | secondary text (≥ 4.5:1 on plaster, so `label-caps` passes) |
+| `ink.faint` | `charcoal @ 52%` | tertiary text: units, counts, disabled hints |
 | `hairline` | `charcoal @ 14%` | 1 px rules and borders |
 
 These six accents + two semantics are the **only** saturated colors allowed anywhere (UI or 3D

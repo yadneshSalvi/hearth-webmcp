@@ -13,5 +13,7 @@ export { Popover } from "./Popover";
 export type { PopoverProps } from "./Popover";
 export { Segmented } from "./Segmented";
 export type { SegmentedOption, SegmentedProps } from "./Segmented";
+export { Stepper } from "./Stepper";
+export type { StepperProps } from "./Stepper";
 export { Tooltip } from "./Tooltip";
 export type { TooltipProps } from "./Tooltip";

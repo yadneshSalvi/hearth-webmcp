@@ -220,16 +220,21 @@ export const hearthStore = createStore<HearthStore>()(
         draft.scene.meta.mode = mode;
         prepend(draft, activity(source, "Switch mode", `switched to ${mode} mode`));
       }),
-      setView: (source, patch) => {
+      setView: (source, patch, opts) => {
         if (patch.focusRoomId) requiredRoom(get(), patch.focusRoomId);
         if (patch.focusItemId) requiredItem(get(), patch.focusItemId);
-        set((draft) => {
+        // `quiet` is the design board switching to plan for one frame and switching straight back:
+        // not a change the human made, so neither a receipt nor an undo step.
+        quietly(opts, () => set((draft) => {
           if (patch.view) draft.scene.meta.view = patch.view;
           if (patch.yaw) draft.scene.meta.yaw = patch.yaw;
           if (patch.focusRoomId) draft.scene.meta.selection.roomId = patch.focusRoomId;
           if (patch.focusItemId) draft.scene.meta.selection.itemId = patch.focusItemId;
-          prepend(draft, activity(source, "Set view", `changed the view to ${draft.scene.meta.view}`));
-        });
+          // A yaw-only change never changes the view name, so the receipt names the corner instead.
+          if (!opts?.quiet) prepend(draft, activity(source, "Set view", patch.yaw && !patch.view
+            ? `turned the ${draft.scene.meta.view} view to face ${draft.scene.meta.yaw.toUpperCase()}`
+            : `changed the view to ${draft.scene.meta.view}`));
+        }));
       },
       setTimeOfDay: (source, time) => set((draft) => {
         draft.scene.meta.timeOfDay = time;
@@ -449,6 +454,11 @@ export const hearthStore = createStore<HearthStore>()(
       dismissToast: (id) => set((draft) => { draft.ui.toasts = draft.ui.toasts.filter((entry) => entry.id !== id); }),
       pulse: (itemIds) => set((draft) => { draft.ui.pulseIds = [...new Set(itemIds)]; }),
       setDragging: (dragging) => set((draft) => { draft.ui.dragging = dragging ? { ...dragging } : undefined; }),
+      previewFurniture: (furniture) => {
+        withoutHistory(() => set((draft) => {
+          draft.scene.furniture = furniture.map((item) => ({ ...item, pos: { ...item.pos } }));
+        }));
+      },
       setOverlays: (patch) => set((draft) => {
         draft.overlays = { conflicts: patch.conflicts ? structuredClone(patch.conflicts) : (draft.overlays?.conflicts ?? []) };
       }),

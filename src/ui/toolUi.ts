@@ -11,6 +11,9 @@ import type { StudioApi } from "../scene/Studio";
 import type { HearthStore } from "../state/types";
 import { createConfirmGate } from "../tools/confirm";
 import type { ExportBoardResult, ToolFocus, ToolUi } from "../tools/define";
+import { publishBoard } from "./board-bus";
+import { BOARD_SIZE_PX } from "./boardCompose";
+import { composeBoard } from "./boardExport";
 
 /** How long a pulsed item stays highlighted for the renderer and the interaction layer. */
 const PULSE_MS = 1_600;
@@ -32,18 +35,6 @@ function itemLabel(store: StoreApi<HearthStore>, id: string): string | undefined
   const item = state.scene.furniture.find((candidate) => candidate.id === id);
   if (!item) return undefined;
   return createCatalog(state.catalog).byId(item.catalogId)?.name;
-}
-
-async function pixelSize(blob: Blob): Promise<string> {
-  if (typeof createImageBitmap !== "function") return "unknown";
-  try {
-    const bitmap = await createImageBitmap(blob);
-    const size = `${bitmap.width}x${bitmap.height}`;
-    bitmap.close();
-    return size;
-  } catch {
-    return "unknown";
-  }
 }
 
 /** Wires the studio handle and the store into the effects tool handlers are allowed to ask for. */
@@ -93,18 +84,16 @@ export function createToolUi(studio: StudioApi, store: StoreApi<HearthStore>): H
     download,
 
     /**
-     * Phase-3 design board: the live studio frame, downloaded as a PNG. Phase 5 replaces the body
-     * with the composed board (render + plan + swatches + itemised list).
+     * The composed design board (TOOLS.md §26): dollhouse render, plan, palette swatches and the
+     * itemised list, painted at 1600 × 1000. The download starts immediately — the tool contract
+     * promises it — and the same PNG opens in the preview modal for the human.
      */
     async exportBoard({ roomId, title }) {
-      const blob = await studio.capture();
-      const state = store.getState();
-      const catalog = createCatalog(state.catalog);
-      const items = state.scene.furniture.filter((item) => item.roomId === roomId && item.status === "placed");
-      const total = items.reduce((sum, item) => sum + (catalog.byId(item.catalogId)?.price ?? 0), 0);
-      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || roomId;
-      download(`hearth-${slug}.png`, blob);
-      return { items: items.length, total_usd: Math.round(total), size_px: await pixelSize(blob) };
+      const { blob, model, filename } = await composeBoard(studio, store, { roomId, title });
+      download(filename, blob);
+      publishBoard({ url: URL.createObjectURL(blob), filename, model });
+      store.getState().setUi({ boardOpen: true });
+      return { items: model.itemCount, total_usd: model.totalUsd, size_px: BOARD_SIZE_PX };
     },
   };
 }
