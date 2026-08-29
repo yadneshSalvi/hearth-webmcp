@@ -106,7 +106,7 @@ describe("assistant client loop", () => {
     });
   });
 
-  it("blocks the eighth tool attempt and gives the model a final answer pass", async () => {
+  it("blocks the attempt that hits the per-turn guard and gives the model a final answer pass", async () => {
     installTool();
     const fetchMock = vi.mocked(fetch);
     for (let index = 1; index <= 8; index += 1) {
@@ -115,7 +115,8 @@ describe("assistant client loop", () => {
     fetchMock.mockResolvedValueOnce(sse(["event: text\ndata: {\"delta\":\"Stopped.\"}\n\n", done()]));
     const execute = vi.fn(async () => ({ ok: true }));
     const ev = events();
-    const assistant = createAssistant({ execute });
+    // The guard is DEFAULT_MAX_CALLS_PER_TURN in production; pinned low here so the test can reach it.
+    const assistant = createAssistant({ execute, maxCallsPerTurn: 8 });
 
     await assistant.send("Keep checking", ev);
 

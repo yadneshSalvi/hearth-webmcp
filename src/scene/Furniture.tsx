@@ -26,6 +26,7 @@ import type { Vec3 } from "./math";
 import { Placeholder } from "./Placeholder";
 import { useSoftRing } from "./textures";
 import { useFramedBox } from "./framing";
+import { introRiseMetres } from "./intro";
 import { useFurniture, useMeta, useProductLookup, useRooms } from "./useSceneStore";
 
 /**
@@ -98,7 +99,7 @@ export function Furniture() {
   const dragging = useHearthStore((state) => state.ui.dragging);
 
   return (
-    <group name="furniture">
+    <IntroLift>
       {resolved.map((entry) => (
         <FurniturePiece
           key={entry.item.id}
@@ -115,6 +116,27 @@ export function Furniture() {
       {exiting.map((entry) => (
         <FurniturePiece key={`exit-${entry.item.id}`} entry={entry} moveDelay={0} selected={false} exiting reduced={reduced} />
       ))}
+    </IntroLift>
+  );
+}
+
+/**
+ * The opening settle: the furniture layer starts 6 cm off the floor and comes to rest over two
+ * seconds (STYLE.md §3, src/scene/intro.ts). One group transform read from the wall clock rather
+ * than a spring per piece, so it is exactly zero the moment the settle ends and nothing placed
+ * afterwards inherits any of it.
+ */
+function IntroLift({ children }: { children: React.ReactNode }) {
+  const ref = useRef<Group>(null);
+  useFrame(() => {
+    const group = ref.current;
+    if (!group) return;
+    const lift = introRiseMetres();
+    if (group.position.y !== lift) group.position.y = lift;
+  });
+  return (
+    <group ref={ref} name="furniture">
+      {children}
     </group>
   );
 }

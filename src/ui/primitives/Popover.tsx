@@ -8,6 +8,10 @@ export interface PopoverProps {
   /** Accessible name of the floating group. */
   label: string;
   align?: "left" | "right";
+  /** "top" opens upward, for a trigger that sits at the bottom of the viewport. */
+  side?: "bottom" | "top";
+  /** true when the menu floats over other glass panels, which need an opaque surface (STYLE.md §1). */
+  solid?: boolean;
   width?: number;
   children: ReactNode;
 }
@@ -16,7 +20,7 @@ export interface PopoverProps {
  * A floating glass card anchored under its trigger. Escape closes, a pointer press outside closes,
  * and the first focusable child receives focus on open.
  */
-export function Popover({ open, onClose, label, align = "left", width = 240, children }: PopoverProps) {
+export function Popover({ open, onClose, label, align = "left", side = "bottom", solid = false, width = 240, children }: PopoverProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,9 +52,9 @@ export function Popover({ open, onClose, label, align = "left", width = 240, chi
       role="group"
       aria-label={label}
       style={{ width }}
-      className={`glass rise-in absolute top-[calc(100%+8px)] z-50 max-h-[60vh] overflow-y-auto p-1.5 panel-scroll ${
-        align === "right" ? "right-0" : "left-0"
-      }`}
+      className={`${solid ? "glass-solid" : "glass"} rise-in absolute z-50 max-h-[60vh] overflow-y-auto p-1.5 panel-scroll ${
+        side === "top" ? "bottom-[calc(100%+8px)]" : "top-[calc(100%+8px)]"
+      } ${align === "right" ? "right-0" : "left-0"}`}
     >
       {children}
     </div>

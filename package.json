@@ -17,6 +17,7 @@
     "assets:fetch": "tsx scripts/assets/fetch.ts",
     "assets:build": "tsx scripts/assets/build.ts",
     "assets:thumbs": "tsx scripts/assets/thumbs.ts",
+    "assets:thumbs-retint": "tsx scripts/assets/thumbs-retint.ts",
     "assets": "pnpm assets:fetch && pnpm assets:build && pnpm assets:thumbs"
   },
   "dependencies": {

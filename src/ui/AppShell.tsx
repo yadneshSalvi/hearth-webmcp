@@ -11,6 +11,7 @@
 import Studio from "../scene/Studio";
 import { useHearthStore } from "../state/store";
 import { Activity } from "./Activity";
+import { Assistant } from "./Assistant";
 import { Board } from "./Board";
 import { BuildPanel } from "./BuildPanel";
 import { Cart } from "./Cart";
@@ -25,11 +26,14 @@ import { IconButton } from "./primitives";
 import { PromptBar } from "./PromptBar";
 import { ShortcutsSheet } from "./ShortcutsSheet";
 import { StatusChip } from "./StatusChip";
+import { StudioCurtain } from "./StudioCurtain";
 import { Toasts } from "./Toasts";
 import { ToolsPanel } from "./ToolsPanel";
 import { TopBar } from "./TopBar";
 import { hearthStore } from "../state/store";
 import { useConflictSync, useHearth } from "./useHearth";
+import type { WebMCPStatus } from "../tools/useWebMCP";
+import { useOnboardingReveal } from "./useFirstRun";
 import { useViewportTier } from "./useViewportTier";
 import type { ViewportTier } from "./useViewportTier";
 
@@ -37,6 +41,20 @@ import type { ViewportTier } from "./useViewportTier";
 function ConflictSync() {
   useConflictSync();
   return null;
+}
+
+/**
+ * The welcome card waits for the opening settle to finish (src/scene/intro.ts). It subscribes here,
+ * in a leaf, rather than in the shell: a shell-wide re-render also re-renders the R3F tree, and four
+ * of those while the studio is compiling its first frame is a real cost on a machine without a GPU.
+ */
+function FirstRunCard({ status, onDismiss }: { status: WebMCPStatus; onDismiss(): void }) {
+  if (!useOnboardingReveal()) return null;
+  return (
+    <div className="pointer-events-none absolute top-[88px] left-1/2 z-40 -translate-x-1/2">
+      <Onboarding status={status} onDismiss={onDismiss} />
+    </div>
+  );
 }
 
 /**
@@ -65,8 +83,10 @@ export default function AppShell() {
   const toolsOpen = useHearthStore((state) => state.ui.toolsPanelOpen);
   // Build mode edits the shell of the home, so the left panel becomes Rooms & openings.
   const buildMode = useHearthStore((state) => state.scene.meta.mode) === "build";
-  // Exactly one of the log and the cart is expanded: three full panels never fit 900 px.
+  // Exactly one of the log, the cart and the assistant is expanded: three full panels never fit
+  // 900 px. The assistant takes the log's slot and links back to the rows it wrote.
   const cartOpen = useHearthStore((state) => state.ui.cartOpen ?? false);
+  const assistantOpen = useHearthStore((state) => state.ui.assistantOpen);
 
   const catalogVisible = panelVisible(tier, catalogCollapsed);
   const sideVisible = panelVisible(tier, inspectorCollapsed);
@@ -74,6 +94,8 @@ export default function AppShell() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
+      {/* Before the canvas: the curtain is what shows *through* it until the first frame paints. */}
+      <StudioCurtain />
       <Studio />
       <ConflictSync />
 
@@ -104,13 +126,18 @@ export default function AppShell() {
             // item and its conflicts, the log keeps two rows, the cart keeps its money and checkout —
             // then their own scrollers take over, and the column itself scrolls as a last resort.
             <div className="flex min-h-0 w-[344px] shrink-0 flex-col gap-3 overflow-y-auto panel-scroll">
-              <Inspector className="min-h-[300px]" collapsible />
-              <Activity
-                className={cartOpen ? "shrink-0" : "min-h-[152px] flex-1"}
-                collapsed={cartOpen}
-                onExpand={() => hearthStore.getState().setUi({ cartOpen: false })}
-                readOnlyTools={readOnlyTools}
-              />
+              {/* The assistant needs room to hold a conversation, so the inspector yields to it. */}
+              <Inspector className={assistantOpen ? "max-h-[27%] min-h-[148px]" : "min-h-[300px]"} collapsible />
+              {assistantOpen ? (
+                <Assistant className="min-h-[320px] flex-1" />
+              ) : (
+                <Activity
+                  className={cartOpen ? "shrink-0" : "min-h-[152px] flex-1"}
+                  collapsed={cartOpen}
+                  onExpand={() => hearthStore.getState().setUi({ cartOpen: false })}
+                  readOnlyTools={readOnlyTools}
+                />
+              )}
               <Cart className={cartOpen ? "min-h-[244px] max-h-[52%]" : "shrink-0"} />
             </div>
           ) : rails ? (
@@ -145,11 +172,7 @@ export default function AppShell() {
         <ToolsPanel toolGroups={toolGroups} />
       </div>
 
-      {firstRun ? (
-        <div className="pointer-events-none absolute top-[88px] left-1/2 z-40 -translate-x-1/2">
-          <Onboarding status={status} onDismiss={dismissFirstRun} />
-        </div>
-      ) : null}
+      {firstRun ? <FirstRunCard status={status} onDismiss={dismissFirstRun} /> : null}
 
       <Compare />
       <Board />

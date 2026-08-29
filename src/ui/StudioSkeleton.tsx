@@ -18,6 +18,31 @@ function PanelGhost({ className }: { className: string }) {
   return <div className={`glass breathe ${className}`} aria-hidden="true" />;
 }
 
+/**
+ * The plan outline of the home, in plaster with hairline walls. Shared with `StudioCurtain`, which
+ * holds this same drawing over the canvas until the first frame is painted, so the loading state
+ * and the hand-off are literally the same image.
+ */
+export function PlanOutline({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="-30 -30 940 1060" className={className} aria-hidden="true">
+      {ROOMS.map((room) => (
+        <rect
+          key={`${room.x}-${room.y}`}
+          x={room.x}
+          y={room.y}
+          width={room.w}
+          height={room.d}
+          rx={10}
+          fill={palette.plaster}
+          stroke={ink.hairline}
+          strokeWidth={7}
+        />
+      ))}
+    </svg>
+  );
+}
+
 export function StudioSkeleton() {
   return (
     <div className="absolute inset-0 overflow-hidden" data-studio="skeleton">
@@ -26,25 +51,7 @@ export function StudioSkeleton() {
           <p className="font-display text-[26px] leading-none tracking-[-0.01em] text-ink">Hearth</p>
           <p className="font-display text-[13px] italic text-ink-muted">Warming the studio…</p>
         </div>
-        <svg
-          viewBox="-30 -30 940 1060"
-          className="breathe h-[46vh] max-h-[420px] w-auto"
-          aria-hidden="true"
-        >
-          {ROOMS.map((room) => (
-            <rect
-              key={`${room.x}-${room.y}`}
-              x={room.x}
-              y={room.y}
-              width={room.w}
-              height={room.d}
-              rx={10}
-              fill={palette.plaster}
-              stroke={ink.hairline}
-              strokeWidth={7}
-            />
-          ))}
-        </svg>
+        <PlanOutline className="breathe h-[46vh] max-h-[420px] w-auto" />
       </div>
 
       {/* Ghosts sit exactly where the real chrome lands, so nothing shifts when it arrives. */}

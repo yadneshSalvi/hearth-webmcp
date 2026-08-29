@@ -66,6 +66,7 @@ export function CatalogCard({
   return (
     <li
       draggable
+      data-catalog-card
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={`group flex flex-col gap-2 rounded-panel border p-2.5 transition-[transform,box-shadow,border-color,background-color] duration-200 ease-out-soft hover:-translate-y-px hover:shadow-chip ${
@@ -74,18 +75,14 @@ export function CatalogCard({
     >
       <button
         type="button"
+        data-catalog-select
         onClick={onSelect}
         aria-pressed={selected}
         className="flex items-start gap-3 text-left"
       >
-        <span className="relative block shrink-0 overflow-hidden rounded-chip">
-          <CatalogThumb productId={product.id} category={product.category} colorway={colorway} name={product.name} width={84} decorative />
-          <span
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 h-[3px]"
-            style={{ background: colorwayHex(colorway) }}
-          />
-        </span>
+        {/* No colourway strip under the tile: the thumbnail is rendered in this colourway through
+            the studio's own materials, and the swatch row below already names it. */}
+        <CatalogThumb productId={product.id} category={product.category} colorway={colorway} name={product.name} width={84} decorative />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="flex items-baseline gap-2">
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{product.name}</span>
@@ -98,7 +95,7 @@ export function CatalogCard({
         </span>
       </button>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <div className="flex items-center gap-1" role="group" aria-label={`Colourways for ${product.name}`}>
           {product.colorways.map((option) => (
             <button
@@ -114,12 +111,20 @@ export function CatalogCard({
             />
           ))}
         </div>
-        <span className="flex-1" />
-        <Tag tone={fits ? "sage" : "amber"}>{fit}</Tag>
+        {shopMode && inCart ? <Tag tone="sage" icon={IconCheck}>In cart</Tag> : null}
+        {/* The row wraps rather than truncates: a fit note is a measurement, and "by 14 c" is a lie. */}
+        <Tag tone={fits ? "sage" : "amber"} className="ml-auto">{fit}</Tag>
       </div>
 
       <div className={`flex items-center gap-2 ${selected ? "" : "hidden group-hover:flex group-focus-within:flex"}`}>
-        <Button variant="primary" size="sm" icon={IconPlus} onClick={() => onPlace(product, colorway)} className="flex-1">
+        <Button
+          variant="primary"
+          size="sm"
+          icon={IconPlus}
+          data-catalog-place
+          onClick={() => onPlace(product, colorway)}
+          className="flex-1"
+        >
           Place in {roomName}
         </Button>
         {shopMode ? (
@@ -129,7 +134,8 @@ export function CatalogCard({
             icon={inCart ? IconCheck : IconCart}
             onClick={() => onAddToCart(product, colorway)}
           >
-            {inCart ? "In cart" : "Add"}
+            {/* The badge above already says it is in the cart; the button offers the next quantity. */}
+            {inCart ? "Add again" : "Add"}
           </Button>
         ) : null}
       </div>

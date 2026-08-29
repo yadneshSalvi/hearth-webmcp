@@ -41,9 +41,10 @@ export interface CatalogThumbProps {
 /** A 4:3 product tile: rendered asset when present, drawn silhouette when not. */
 export function CatalogThumb({ productId, category, colorway, name, className = "", width = 88, decorative = false }: CatalogThumbProps) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const height = Math.round((width * 3) / 4);
-  // A 12 % wash of the item's own colourway under the render: the tile reads as a designed swatch
-  // while the PNG decodes (and if it never arrives), never as a dark hole where an image failed.
+  // A 12 % wash of the item's own colourway, for the *drawn* fallback only: with no render to sit
+  // on, the silhouette reads as a designed swatch rather than a blank square.
   const tile = mix(palette.plaster, colorwayHex(colorway), 0.12);
 
   if (failed) {
@@ -67,12 +68,16 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
   }
 
   return (
-    // The render sits on a mat of its own colourway rather than edge to edge, so a dark product
-    // (a charcoal sofa) reads as a photograph on a swatch instead of a hole in the card.
+    // Edge to edge on plaster: the thumbnails are rendered through the studio's own materials on a
+    // plaster backdrop (scripts/assets/thumbs-retint.ts), so the tile and the card are one surface —
+    // a colourway mat under the render would only draw a ring around it.
     <span
-      className={`block shrink-0 overflow-hidden rounded-chip p-[3px] ${className}`}
-      style={{ width, height, background: tile }}
+      className={`relative block shrink-0 overflow-hidden rounded-chip bg-plaster ${className}`}
+      style={{ width, height }}
     >
+      {/* A still tint, not a shimmer: `loading="lazy"` leaves most of a 71-row list unloaded, and
+          sixty-odd looping animations would keep the compositor busy for nothing. */}
+      {loaded ? null : <span className="absolute inset-0 bg-charcoal/8" aria-hidden="true" />}
       {/* A fixed-size local PNG: next/image would add no optimisation (these are pre-rendered at
           512×384) and its dev-only LCP heuristic warns about lazy thumbnails in a scrolling list. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -83,8 +88,10 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
         height={height}
         loading="lazy"
         decoding="async"
+        onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}
-        className="block h-full w-full rounded-[8px] object-cover"
+        className="block h-full w-full object-cover transition-opacity duration-200 ease-out-soft"
+        style={{ opacity: loaded ? 1 : 0 }}
       />
     </span>
   );

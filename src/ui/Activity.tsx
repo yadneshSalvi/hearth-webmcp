@@ -55,7 +55,8 @@ function Row({ entry, now }: { entry: ActivityEntry; now: number }) {
   );
 
   return (
-    <li className="border-b border-hairline/70 last:border-0">
+    // The receipt id is on the row so the assistant's tool chips can point straight at it.
+    <li className="border-b border-hairline/70 last:border-0" data-receipt-id={entry.id}>
       {expandable ? (
         <button
           type="button"

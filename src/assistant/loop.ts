@@ -11,6 +11,13 @@ export interface AssistantEvents {
   onError(err: { message: string; retryable: boolean }): void;
 }
 
+/**
+ * The per-turn tool-call guard (TOOLS.md §0). Generous enough for a real trajectory — a shopping run
+ * reads the room, searches, previews, places and carts — but bounded, so a looping model cannot
+ * spend the page. The panel's counter and its copy read this same number.
+ */
+export const DEFAULT_MAX_CALLS_PER_TURN = 60;
+
 export interface AssistantOptions {
   endpoint?: string;
   maxCallsPerTurn?: number;
@@ -150,8 +157,8 @@ export function createAssistant(opts: AssistantOptions = {}): {
   reset(): void;
 } {
   const endpoint = opts.endpoint ?? "/api/assistant";
-  const configuredMax = opts.maxCallsPerTurn ?? 60;
-  const maxCalls = Math.max(1, Math.min(8, Math.floor(configuredMax)));
+  const configuredMax = opts.maxCallsPerTurn ?? DEFAULT_MAX_CALLS_PER_TURN;
+  const maxCalls = Math.max(1, Math.min(DEFAULT_MAX_CALLS_PER_TURN, Math.floor(configuredMax)));
   let messages: AssistantMessage[] = [];
   let active: AbortController | undefined;
   let turn = 0;
