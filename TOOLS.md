@@ -16,6 +16,11 @@ the registration lifecycle. Change it here first; code follows. Descriptions are
   `variant` parameter is a plain string that accepts an **id or a name** (case-insensitive; unique prefix ok).
   `item` also accepts `"selected"` (the human's current selection). `room` defaults to the active room.
   Unresolvable → `{ok:false, error:"not_found", alternatives:[…]}` listing the closest 3 candidates.
+- **Parameter aliases.** Models reliably send `room_id`, `item_id` and `product_id` (and the camelCase
+  forms) for `room` / `item` / `product`. The published schemas keep the documented names — nothing here
+  changes — but `src/tools/params.ts` rewrites those six aliases onto the canonical key before zod parses,
+  so a good call is not thrown away as `invalid`. The canonical key wins when both are present, and the
+  alias is dropped; nothing inside `anchor` is rewritten.
 - **Result envelope (all tools):**
   ```ts
   type Ok  = { ok: true;  [data: string]: unknown; conflicts?: ConflictLite[]; hint?: string };

@@ -46,7 +46,7 @@ export type Floor = (typeof floors)[number];
 
 export const ink = {
   text: palette.charcoal,
-  muted: "rgba(62, 58, 54, 0.72)",
+  muted: "rgba(62, 58, 54, 0.74)",
   faint: "rgba(62, 58, 54, 0.52)",
   hairline: "rgba(62, 58, 54, 0.14)",
 } as const;

@@ -74,7 +74,7 @@ test.describe("the fallback Hearth Assistant", () => {
     await openAssistant(page);
     // Copy has to be honest about what this panel is, and about the guard the loop enforces.
     await expect(page.getByText(/this is the fallback/)).toBeVisible();
-    await expect(page.getByText(/up to 60 tool calls a turn/)).toBeVisible();
+    await expect(page.getByText(/up to 60 tool calls per turn/)).toBeVisible();
 
     const starters = page.locator("[data-assistant-starter]");
     await expect(starters).toHaveCount(4);
@@ -129,6 +129,16 @@ test.describe("first run", () => {
 
     await page.reload();
     await expect(page.locator('[data-studio="canvas"]')).toBeVisible();
+    await expect(card).toBeHidden();
+    expect(await page.evaluate((key) => window.localStorage.getItem(key), ONBOARDING_KEY)).toBe("dismissed");
+  });
+
+  test("Escape dismisses the welcome card, like every other overlay", async ({ page }) => {
+    await openStudio(page, { dismissed: false });
+
+    const card = page.getByText("Your agent can see this room").or(page.getByText("No agent can see this room yet"));
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    await page.keyboard.press("Escape");
     await expect(card).toBeHidden();
     expect(await page.evaluate((key) => window.localStorage.getItem(key), ONBOARDING_KEY)).toBe("dismissed");
   });

@@ -1,76 +1,21 @@
 "use client";
 /**
- * GLB pipeline: DRACO + meshopt loading from /assets/glb, normalisation onto the catalog footprint
- * and palette re-tint. Assets are probed before they are requested, so a missing file falls back to
- * the designed procedural placeholder instead of throwing a suspense error.
+ * GLB pipeline: normalisation onto the catalog footprint and the palette re-tint that makes 71 CC0
+ * models from six sources read as one designed set. Which assets exist and when they are allowed to
+ * load is `src/scene/glb.ts`; this file is what happens to one once it has arrived.
  */
-import { Component, useMemo, useSyncExternalStore } from "react";
-import type { ReactNode } from "react";
+import { useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Box3, BufferAttribute, BufferGeometry, CanvasTexture, Color, Mesh, SRGBColorSpace, Vector3 } from "three";
 import type { Group, InterleavedBufferAttribute, Material, Object3D, Texture } from "three";
 import type { CatalogItem } from "../engine/types";
 import { palette } from "../tokens";
+import { DRACO_PATH } from "./glb";
 import { getMaterial, ghostSpec } from "./materials";
 import { normalizeTransform } from "./math";
 import { POT_HEX, retintPlan } from "./retint";
 import type { SourceMaterial } from "./retint";
-
-/** Local decoder copied from three's examples so nothing is fetched from a CDN. */
-export const DRACO_PATH = "/draco/";
-
-export type GlbState = "unknown" | "present" | "missing";
-
-const states = new Map<string, GlbState>();
-const listeners = new Set<() => void>();
-
-function emit(): void {
-  for (const listener of listeners) listener();
-}
-
-function probe(url: string): void {
-  if (states.has(url) || typeof fetch === "undefined") return;
-  states.set(url, "unknown");
-  void fetch(url, { method: "HEAD" })
-    .then((response) => {
-      states.set(url, response.ok ? "present" : "missing");
-    })
-    .catch(() => {
-      states.set(url, "missing");
-    })
-    .finally(emit);
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-/** Probes (once) and reports whether a GLB exists; "unknown" renders the placeholder meanwhile. */
-export function useGlbState(url: string): GlbState {
-  const state = useSyncExternalStore(
-    subscribe,
-    () => states.get(url) ?? "unknown",
-    () => "unknown" as GlbState,
-  );
-  if (typeof window !== "undefined") probe(url);
-  return state;
-}
-
-/** Probes a batch of GLB urls so the first render already knows which assets exist. */
-export function probeGlbs(urls: string[]): void {
-  for (const url of urls) probe(url);
-}
-
-/** Warms the loader cache for a set of catalog ids that are already on screen. */
-export function preloadGlbs(urls: string[]): void {
-  for (const url of urls) {
-    if (states.get(url) === "present") useGLTF.preload(url, DRACO_PATH, true);
-  }
-}
 
 function triangleArea(geometry: BufferGeometry): number {
   const position = geometry.getAttribute("position");
@@ -336,31 +281,3 @@ export function useNormalizedGlb(product: CatalogItem, colorwayHex: string, ghos
   }, [gltf, product, colorwayHex, ghost, recede]);
 }
 
-interface BoundaryProps {
-  fallback: ReactNode;
-  children: ReactNode;
-}
-
-interface BoundaryState {
-  failed: boolean;
-}
-
-/** Falls back to the procedural placeholder when a GLB decodes badly. */
-export class GlbBoundary extends Component<BoundaryProps, BoundaryState> {
-  constructor(props: BoundaryProps) {
-    super(props);
-    this.state = { failed: false };
-  }
-
-  static getDerivedStateFromError(): BoundaryState {
-    return { failed: true };
-  }
-
-  componentDidCatch(): void {
-    // Swallowed on purpose: a missing asset is a designed state, not a page error.
-  }
-
-  render(): ReactNode {
-    return this.state.failed ? this.props.fallback : this.props.children;
-  }
-}

@@ -14,7 +14,7 @@ import { useSpring } from "@react-spring/three";
 import type { OrthographicCamera as OrthographicCameraImpl } from "three";
 import { motion as motionTokens } from "../tokens";
 import { setFocusTarget, useFocusTarget } from "./focus";
-import { introAzimuthOffset, markStudioPainted } from "./intro";
+import { introAzimuthOffset } from "./intro";
 import type { FocusTarget } from "./focus";
 import { useFramedBox } from "./framing";
 import { insetCentreOffsetPx, insetHalfScale, useCanvasInsets, visibleAspect } from "./insets";
@@ -189,7 +189,6 @@ export function CameraRig() {
     camera.top = half;
     camera.bottom = -half;
     camera.updateProjectionMatrix();
-    markStudioPainted();
   });
 
   return <OrthographicCamera ref={cameraRef} makeDefault manual near={1} far={DISTANCE * 3} left={-1} right={1} top={1} bottom={-1} />;

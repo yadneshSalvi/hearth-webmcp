@@ -79,15 +79,17 @@ export function StatusChip({ className = "" }: { className?: string }) {
     <div className={`glass relative flex h-9 shrink-0 items-center rounded-pill ${className}`}>
       <button
         type="button"
-        aria-label={`Agent tools · ${detail}`}
         aria-expanded={unavailable ? undefined : open}
         onClick={() => hearthStore.getState().setUi(unavailable ? { enableSheetOpen: true } : { toolsPanelOpen: !open })}
         className="flex h-9 min-w-0 items-center gap-2 rounded-pill pr-1.5 pl-3 transition-colors duration-200 ease-out-soft hover:bg-plaster"
       >
         <span className={`h-1.5 w-1.5 shrink-0 rounded-pill ${dot}`} aria-hidden="true" />
         <IconTools size={15} className="shrink-0 text-ink-muted" />
+        {/* The name comes from the content rather than an aria-label, so the visible text can never
+            disagree with what a screen reader reads out (Lighthouse `label-content-name-mismatch`).
+            Below 640 px the prefix is only in the accessible name. */}
         <span className="truncate text-[12px] whitespace-nowrap text-ink">
-          <span className="hidden sm:inline">Agent tools · </span>
+          <span className="sr-only sm:not-sr-only">Agent tools · </span>
           {detail}
         </span>
       </button>

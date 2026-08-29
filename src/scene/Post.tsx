@@ -3,15 +3,21 @@
  * Post chain: N8AO ambient occlusion, restrained bloom on emissives only, a barely-there vignette
  * and ACES filmic tone mapping. Three quality tiers step down under 45 fps and back up above 58,
  * with hysteresis and an idle guard so waking from the demand loop never triggers a downgrade.
+ *
+ * Bloom's threshold is not a constant here: it belongs to the hour and is published by the lighting
+ * rig (`src/scene/postState.ts`), because a fixed 1.02 let golden hour's 5.4-intensity key bloom
+ * plaster — the one thing STYLE.md §2 says must never glow.
  */
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { PerformanceMonitor } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, N8AO, ToneMapping, Vignette } from "@react-three/postprocessing";
 import { ToneMappingMode } from "postprocessing";
 import { HalfFloatType } from "three";
+import type { BloomEffect } from "postprocessing";
 import { palette } from "../tokens";
 import { useStudioAwake } from "./idle";
+import { bloomThreshold } from "./postState";
 
 /** 0 = low, 1 = medium, 2 = high. */
 export type QualityTier = 0 | 1 | 2;
@@ -86,6 +92,15 @@ export function Post() {
   const cap: QualityTier = pixels > 7_000_000 ? 0 : pixels > 3_200_000 ? 1 : 2;
   const effective = (pinned ?? Math.min(tier, cap)) as QualityTier;
   const ao = AO[effective] ?? AO[2];
+
+  // The hour's bloom threshold, written on every frame so it tweens with the light rather than
+  // stepping halfway through the two-second time-of-day blend (src/scene/postState.ts).
+  const bloom = useRef<BloomEffect>(null);
+  useFrame(() => {
+    const material = bloom.current?.luminanceMaterial;
+    if (material && material.threshold !== bloomThreshold()) material.threshold = bloomThreshold();
+  });
+
   return (
     <>
       <PerformanceMonitor
@@ -111,7 +126,7 @@ export function Post() {
           color={palette.charcoal}
           screenSpaceRadius={false}
         />
-        <Bloom luminanceThreshold={1.02} luminanceSmoothing={0.28} intensity={effective === 0 ? 0.42 : 0.62} mipmapBlur radius={0.7} levels={BLOOM_LEVELS} />
+        <Bloom ref={bloom} luminanceThreshold={bloomThreshold()} luminanceSmoothing={0.28} intensity={effective === 0 ? 0.42 : 0.62} mipmapBlur radius={0.7} levels={BLOOM_LEVELS} />
         <Vignette offset={0.34} darkness={0.3} />
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       </EffectComposer>

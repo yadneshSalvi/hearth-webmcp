@@ -122,6 +122,9 @@ function ScrollRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
+/** Catalog rows visible at 900 px before anyone scrolls; their thumbnails load eagerly. */
+const ABOVE_THE_FOLD = 5;
+
 export function Catalog({ className = "", collapsible = false }: { className?: string; collapsible?: boolean }) {
   const catalog = useHearthStore((state) => state.catalog);
   const scene = useHearthStore((state) => state.scene);
@@ -291,13 +294,16 @@ export function Catalog({ className = "", collapsible = false }: { className?: s
             </Chip>
           </div>
         ) : (
-          groups.map((group) => (
+          groups.map((group, groupIndex) => (
             <section key={group.category} className="mb-4 last:mb-0">
               <h3 className="label-caps mb-2 px-0.5">{categoryLabel(group.category)}</h3>
               <ul className="flex flex-col gap-2">
-                {group.items.map((product) => (
+                {group.items.map((product, itemIndex) => (
                   <CatalogCard
                     key={product.id}
+                    // The first rows are on screen before anyone scrolls, and the first of them is
+                    // the page's LCP element, so those thumbnails are not lazy (src/ui/CatalogThumb.tsx).
+                    priority={groupIndex === 0 && itemIndex < ABOVE_THE_FOLD}
                     product={product}
                     fit={fitNotes.get(product.id) ?? ""}
                     roomName={room.name}

@@ -16,7 +16,9 @@ import type { CatalogItem, Furniture as FurnitureData, Room, Scene } from "../en
 import type { ColorwayId } from "../tokens";
 import { hearthStore, useHearthStore } from "../state/store";
 import { palette } from "../tokens";
-import { useGlbState, useNormalizedGlb } from "./assets";
+import { useNormalizedGlb } from "./assets";
+import { useGlbState } from "./glb";
+import { THUMB_BACKDROP, thumbnailColorway } from "./thumbnail";
 import { Furniture } from "./Furniture";
 import { LightingRig } from "./LightingRig";
 import { boxCentre, cameraOffset, fitHalfHeight, itemBox } from "./math";
@@ -46,7 +48,10 @@ function parseRequest(catalog: CatalogItem[]): Shot | undefined {
   const product = catalog.find((candidate) => candidate.id === id) ?? (id ? undefined : catalog[0]);
   if (!product) return undefined;
   const asked = params.get("colorway");
+  // With nothing asked for, the shot picks the colourway the catalog should show (src/scene/thumbnail.ts).
+  const fallback = product.colorways.find((entry) => entry.id === thumbnailColorway(product))?.id;
   const colorway: ColorwayId = product.colorways.find((entry) => entry.id === asked)?.id
+    ?? fallback
     ?? product.colorways[0]?.id
     ?? "oak";
   return { product, colorway };
@@ -203,7 +208,7 @@ export function ProductShot() {
       <div
         id="stage"
         data-render={ready ? "ready" : "painting"}
-        style={{ width: SHOT_WIDTH, height: SHOT_HEIGHT, background: palette.plaster }}
+        style={{ width: SHOT_WIDTH, height: SHOT_HEIGHT, background: THUMB_BACKDROP }}
         className="relative overflow-hidden"
       >
         <Canvas
@@ -235,9 +240,10 @@ export function ProductShot() {
 }
 
 /**
- * The backdrop is the card's own plaster: the canvas stays transparent, so a thumbnail sits on the
- * exact same surface as the catalog row it lands in, and the item's weight comes from a soft
- * charcoal contact shadow rather than a second, differently lit floor.
+ * The backdrop is the card's own tile colour: the canvas stays transparent, so a thumbnail sits on
+ * the exact same surface as the catalog tile it lands in (`src/ui/CatalogThumb.tsx` matches
+ * `THUMB_BACKDROP`), and the item's weight comes from a soft charcoal contact shadow rather than a
+ * second, differently lit floor.
  */
 function Backdrop() {
   return (

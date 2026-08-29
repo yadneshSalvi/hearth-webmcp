@@ -6,7 +6,7 @@
 
 **Live:** https://hearth.yadneshsalvi.com · **Video:** _coming_ · **Tools contract:** [TOOLS.md](TOOLS.md) · Licence: MIT
 
-<!-- hero GIF placeholder: docs/hero.gif -->
+![Hearth Studio at golden hour: the living room in dollhouse view, catalog on the left, inspector and activity log on the right](docs/hero.png)
 
 ## Try it with your agent (2 minutes)
 
@@ -26,7 +26,9 @@ tools are available. Then ask:
 extension works too. The production origin ships a WebMCP origin-trial token, so plain Chrome 149+ also exposes the tools.
 
 **No WebMCP browser?** Click *Agent tools → Hearth Assistant*: an in-page agent (Chrome's WebMCP polyfill + `getTools()` /
-`executeTool()`) drives the exact same tools, so the orb, receipts and undo behave identically.
+`executeTool()`) drives the exact same tools, so the orb, receipts and undo behave identically. It runs under the same
+guardrails as any agent: up to 60 tool calls per turn (`DEFAULT_MAX_CALLS_PER_TURN`), and destructive tools still open
+the confirmation dialog.
 
 ## What the agent can do
 
@@ -59,6 +61,14 @@ document.modelContext.registerTool(
   { signal: groups.design.signal },
 );
 ```
+
+## What it looks like
+
+| | |
+|---|---|
+| ![The Tools panel listing the WebMCP tools registered on the page with their schemas](docs/tools-panel.png) <br> **The tools, as an agent sees them** — 26 registered on load, each with its title, description and JSON Schema. | ![A door-swing conflict drawn as a dashed amber arc, with the inspector offering the fix in centimetres](docs/conflict.png) <br> **Conflicts are diagrams, not error text** — a dashed door-swing arc, and a fix in centimetres. |
+| ![Accessibility mode on: 90 cm paths and a 150 cm turning circle drawn on the floor](docs/accessibility.png) <br> **Accessibility mode** — 90 cm paths and Ø150 cm turning circles, checked by the engine. | ![A ghost preview of a sofa in the room with the cart panel showing the line and subtotal](docs/shop-preview.png) <br> **Try before you buy** — `preview_in_room` ghosts the product; confirming it adds the Shopify line. |
+| ![The exported design board: dollhouse render, plan, palette and the item list with prices](docs/board.png) <br> **`export_design_board`** — one 1600 × 1000 PNG with the render, the plan, the palette and the bill. | |
 
 ## How it's built
 

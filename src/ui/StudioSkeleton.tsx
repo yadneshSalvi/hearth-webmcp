@@ -47,9 +47,13 @@ export function StudioSkeleton() {
   return (
     <div className="absolute inset-0 overflow-hidden" data-studio="skeleton">
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-5">
-        <div className="flex flex-col items-center gap-1.5">
-          <p className="font-display text-[26px] leading-none tracking-[-0.01em] text-ink">Hearth</p>
-          <p className="font-display text-[13px] italic text-ink-muted">Warming the studio…</p>
+        {/* The wordmark is display-scale here, not chrome-scale: this is the only thing on the page
+            for a moment, and it is what the browser measures as Largest Contentful Paint. It is
+            server-rendered, so the largest thing anyone sees is on screen at first paint rather than
+            after the studio chunk has hydrated. */}
+        <div className="flex flex-col items-center gap-2">
+          <p className="font-display text-[44px] leading-none tracking-[-0.015em] text-ink">Hearth</p>
+          <p className="font-display text-[14px] italic text-ink-muted">Warming the studio…</p>
         </div>
         <PlanOutline className="breathe h-[46vh] max-h-[420px] w-auto" />
       </div>

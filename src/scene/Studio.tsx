@@ -18,10 +18,12 @@ import { Orb } from "./Orb";
 import { Overlays } from "./Overlays";
 import { Post, pinQualityTier } from "./Post";
 import { Rooms } from "./Rooms";
-import { preloadGlbs, probeGlbs } from "./assets";
+import { planAssetWaves } from "./assetWaves";
 import { setFocusTarget } from "./focus";
 import type { FocusTarget } from "./focus";
+import { warmGlbs, warmQueueDepth } from "./glb";
 import { useWakeOnActivity, wakeStudio } from "./idle";
+import { markStudioPainted, studioPaintedAt, whenStudioPainted } from "./intro";
 import { flyOrbTo } from "./orbCommand";
 import { useMeta } from "./useSceneStore";
 
@@ -126,7 +128,12 @@ function CaptureBridge() {
       if (setLoop === setFrameloop) setLoop = undefined;
     };
   }, [invalidateRoot, setFrameloop]);
-  useEffect(() => addAfterEffect(() => drainCaptures(gl.domElement)), [gl]);
+  useEffect(() => addAfterEffect(() => {
+    // Marked here rather than in the camera rig: `addAfterEffect` runs after `gl.render`, so the
+    // curtain lifts on a frame that exists instead of on the frame that is about to be drawn.
+    markStudioPainted();
+    drainCaptures(gl.domElement);
+  }), [gl]);
   return null;
 }
 
@@ -135,12 +142,19 @@ function DebugBridge() {
   const store = useThree((state) => state.get);
   useEffect(() => {
     if (process.env.NODE_ENV === "production") return;
-    const target = window as unknown as { __hearthStudio?: unknown; __hearthPinQuality?: unknown };
+    const target = window as unknown as {
+      __hearthStudio?: unknown;
+      __hearthPinQuality?: unknown;
+      __hearthPaint?: unknown;
+    };
     target.__hearthStudio = store;
     target.__hearthPinQuality = pinQualityTier;
+    // First paint of the studio, in ms since the page started, plus what the warm-up still owes.
+    target.__hearthPaint = () => ({ firstFrameMs: Math.round(studioPaintedAt()), warm: warmQueueDepth() });
     return () => {
       delete target.__hearthStudio;
       delete target.__hearthPinQuality;
+      delete target.__hearthPaint;
     };
   }, [store]);
   return null;
@@ -150,59 +164,49 @@ function DebugBridge() {
 const ASSET_WAVE_DEADLINE_MS = 4_000;
 
 /**
- * Probes the scene's GLBs so a missing asset falls straight through to the designed placeholder, in
- * waves: the framed room immediately, then the rest of the home, then the remaining catalog — a
- * first paint never queues 71 files for rooms nobody is looking at. The deferred waves wait for an
- * idle moment, because decoding a DRACO mesh on the main thread during someone's drag is exactly
- * the stall this split exists to avoid. Probing is a HEAD request and `preloadGlbs` only warms what
- * the probe found, hence the gap between the two.
+ * The GLB warm-up. Nothing is fetched before the studio has painted, and nothing outside the framed
+ * room is fetched until the browser is idle: the framed room's items load their own assets on the
+ * first render (`src/scene/glb.ts`), then the rest of the home and finally the unplaced catalog
+ * trickle in four at a time. Presence is read from the built manifest, so there are no HEAD probes
+ * at all — the boot used to spend ~140 requests on 71 files for rooms nobody was looking at.
  */
-function AssetProbe() {
+function AssetWarmup() {
   const activeRoomId = useMeta().activeRoomId;
   useEffect(() => {
-    const timers = new Set<ReturnType<typeof setTimeout>>();
-    const idle = new Set<number>();
-    const whenIdle = (run: () => void, immediate: boolean): void => {
-      if (immediate || typeof requestIdleCallback !== "function") {
-        const timer = setTimeout(() => {
-          timers.delete(timer);
-          run();
-        }, 0);
-        timers.add(timer);
+    let cancelled = false;
+    let idleHandle: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const warm = (): void => {
+      if (cancelled) return;
+      const state = hearthStore.getState();
+      const glbFor = new Map(state.catalog.map((product) => [product.id, product.glb]));
+      const waves = planAssetWaves({
+        activeRoomId,
+        placed: state.scene.furniture,
+        glbFor: (catalogId) => glbFor.get(catalogId),
+        catalog: state.catalog.map((product) => product.glb),
+      });
+      // `waves.framed` is deliberately not warmed: those items are on screen and already loading.
+      warmGlbs(waves.rest);
+      warmGlbs(waves.catalog);
+    };
+
+    const schedule = (): void => {
+      if (cancelled) return;
+      if (typeof requestIdleCallback === "function") {
+        idleHandle = requestIdleCallback(warm, { timeout: ASSET_WAVE_DEADLINE_MS });
         return;
       }
-      const handle = requestIdleCallback(() => {
-        idle.delete(handle);
-        run();
-      }, { timeout: ASSET_WAVE_DEADLINE_MS });
-      idle.add(handle);
-    };
-    const wave = (urls: string[], immediate: boolean): void => {
-      if (urls.length === 0) return;
-      whenIdle(() => {
-        probeGlbs(urls);
-        whenIdle(() => preloadGlbs(urls), false);
-      }, immediate);
+      timer = setTimeout(warm, 0);
     };
 
-    const state = hearthStore.getState();
-    const glbFor = new Map(state.catalog.map((product) => [product.id, product.glb]));
-    const placed = state.scene.furniture.filter((item) => item.status !== "ghost");
-    const urlsOf = (items: typeof placed): string[] =>
-      [...new Set(items.map((item) => glbFor.get(item.catalogId)).filter((url): url is string => url !== undefined))];
-
-    const framed = urlsOf(placed.filter((item) => item.roomId === activeRoomId));
-    const seen = new Set(framed);
-    const rest = urlsOf(placed.filter((item) => item.roomId !== activeRoomId)).filter((url) => !seen.has(url));
-    for (const url of rest) seen.add(url);
-    const catalog = [...new Set(state.catalog.map((product) => product.glb))].filter((url) => !seen.has(url));
-
-    wave(framed, true);
-    wave(rest, false);
-    wave(catalog, false);
+    const stopWaiting = whenStudioPainted(schedule);
     return () => {
-      for (const timer of timers) clearTimeout(timer);
-      for (const handle of idle) cancelIdleCallback(handle);
+      cancelled = true;
+      stopWaiting();
+      if (idleHandle !== undefined) cancelIdleCallback(idleHandle);
+      if (timer !== undefined) clearTimeout(timer);
     };
   }, [activeRoomId]);
   return null;
@@ -242,7 +246,7 @@ export default function Studio() {
         <Post />
         <CaptureBridge />
         <DebugBridge />
-        <AssetProbe />
+        <AssetWarmup />
       </Canvas>
     </div>
   );

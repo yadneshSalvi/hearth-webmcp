@@ -8,8 +8,9 @@
  * `LightingRig` at noon, the same loader, the same re-tint — and screenshots the 512×384 stage.
  *
  * Writes `public/assets/thumbs/<id>.png` (overwriting) and one contact sheet at
- * `plans/harness/logs/wow-b-thumbs-contact.png`. It never touches Shopify: the lead re-uploads the
- * images with `pnpm seed`.
+ * `plans/harness/logs/thumbs-contact.png` — or `thumbs-contact-subset.png` when only some ids were
+ * asked for, so a three-item run cannot replace the full set's sheet. It never touches Shopify: the
+ * lead re-uploads the images with `pnpm seed`.
  *
  * Usage:
  *   pnpm assets:thumbs-retint                       # spawns its own dev server on port 3113
@@ -23,6 +24,7 @@ import type { ChildProcess } from "node:child_process";
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { catalogSource } from "../../data/catalog.source";
+import { thumbnailColorway } from "../../src/scene/thumbnail";
 import { atomicWrite } from "./fs";
 import { outputThumbDir, repoRoot } from "./paths";
 
@@ -33,7 +35,10 @@ const SERVER_TIMEOUT_MS = 120_000;
 const READY_TIMEOUT_MS = 60_000;
 const CONTACT_COLUMNS = 8;
 const CONTACT_TILE = 168;
-const contactSheetPath = path.join(repoRoot, "plans/harness/logs/wow-b-thumbs-contact.png");
+const contactSheetDir = path.join(repoRoot, "plans/harness/logs");
+/** The full-set sheet reviewers cite. A partial run writes its own file rather than replacing it. */
+const FULL_SHEET = "thumbs-contact.png";
+const SUBSET_SHEET = "thumbs-contact-subset.png";
 
 interface Target {
   id: string;
@@ -41,7 +46,10 @@ interface Target {
   colorway: string;
 }
 
-/** Every catalog product in its first colorway, or just the ids named on the command line. */
+/**
+ * Every catalog product in its thumbnail colourway (`src/scene/thumbnail.ts` — the first colourway
+ * unless a flat item would vanish into the backdrop), or just the ids named on the command line.
+ */
 function targets(): Target[] {
   const wanted = new Set(process.argv.slice(2).filter((argument) => !argument.startsWith("-")));
   return catalogSource
@@ -49,7 +57,7 @@ function targets(): Target[] {
     .map((product) => ({
       id: product.id,
       name: product.name,
-      colorway: product.colorways[0]?.id ?? "oak",
+      colorway: thumbnailColorway(product),
     }));
 }
 
@@ -107,7 +115,8 @@ async function renderOne(page: Page, origin: string, target: Target): Promise<Ui
 }
 
 /** One sheet of every thumbnail as written, so a reviewer can judge the set in a single glance. */
-async function renderContactSheet(browser: Browser, ids: string[]): Promise<void> {
+async function renderContactSheet(browser: Browser, ids: string[], full: boolean): Promise<void> {
+  const contactSheetPath = path.join(contactSheetDir, full ? FULL_SHEET : SUBSET_SHEET);
   const tiles = await Promise.all(ids.map(async (id) => {
     const file = path.join(outputThumbDir, `${id}.png`);
     const base64 = (await readFile(file)).toString("base64");
@@ -123,7 +132,7 @@ async function renderContactSheet(browser: Browser, ids: string[]): Promise<void
     h1 { font: 500 15px/1 Georgia, serif; color: #3E3A36; margin: 0 0 14px; letter-spacing: .01em; }
     .grid { display: grid; grid-template-columns: repeat(${CONTACT_COLUMNS}, ${CONTACT_TILE - 8}px); gap: 8px; }
     figure { margin: 0; }
-    img { display: block; width: ${CONTACT_TILE - 8}px; height: ${Math.round(((CONTACT_TILE - 8) * 3) / 4)}px; border-radius: 8px; background: #F4EFE6; border: 1px solid rgba(62,58,54,.14); }
+    img { display: block; width: ${CONTACT_TILE - 8}px; height: ${Math.round(((CONTACT_TILE - 8) * 3) / 4)}px; border-radius: 8px; background: #EFE7DB; border: 1px solid rgba(62,58,54,.14); }
     figcaption { margin-top: 4px; letter-spacing: .04em; text-transform: uppercase; }
   </style></head><body>
     <h1>Hearth — catalog thumbnails re-rendered through the studio materials (${tiles.length})</h1>
@@ -154,7 +163,7 @@ export async function renderRetintedThumbnails(): Promise<void> {
       console.log(`[${index + 1}/${list.length}] ${target.id} · ${target.colorway}`);
     }
     await page.close();
-    await renderContactSheet(browser, list.map((target) => target.id));
+    await renderContactSheet(browser, list.map((target) => target.id), list.length === catalogSource.length);
   } finally {
     await browser.close();
     await server.stop();

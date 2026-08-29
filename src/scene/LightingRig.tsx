@@ -2,11 +2,11 @@
 /**
  * The only file in the studio that creates lights (STYLE.md §2, §5). One warm directional key with
  * soft shadows sized to the home, a sky/ground hemisphere fill, a baked Lightformer environment and
- * four time-of-day profiles that interpolate over 2 s — including the page background gradient.
+ * four time-of-day profiles that interpolate over 2 s — including the page background gradient, the
+ * bloom threshold and, in plan view, a softened sun.
  *
- * Sun elevations are stylised, not astronomical: a physically low golden sun leaves an interior
- * floor at a fifth of noon's illumination, so each profile trades a little elevation for enough key
- * to keep the floor readable while still throwing shadows two to three times an object's height.
+ * The profiles themselves and both adjustments live in `src/scene/lighting.ts`, where they are pure
+ * and unit tested; this file is the wiring.
  *
  * Softness comes from variance (VSM) shadow maps rather than drei's `SoftShadows`: that helper
  * patches three's shadow chunk with `unpackRGBAToDepth`, which three 0.185 removed, and the patch
@@ -18,93 +18,13 @@ import { Environment, Lightformer } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useSpring } from "@react-spring/three";
 import type { DirectionalLight, HemisphereLight, PointLight } from "three";
-import type { TimeOfDay } from "../engine/types";
+import type { Profile } from "./lighting";
 import { mix, motion as motionTokens, palette } from "../tokens";
+import { PROFILES, lerpProfile, planSoften } from "./lighting";
 import { M, clamp, easeOut, homeBox, stackElevationCm } from "./math";
-import { lampEmissiveIntensity } from "./retint";
 import { setGlowIntensity } from "./materials";
+import { setBloomThreshold } from "./postState";
 import { useFurniture, useMeta, useProductLookup, useRooms } from "./useSceneStore";
-
-interface Profile {
-  /** Sun compass azimuth in degrees: 0 = south, 90 = east, 180 = north, 270 = west. */
-  azimuth: number;
-  /** Sun elevation above the horizon in degrees. */
-  elevation: number;
-  keyHex: string;
-  keyIntensity: number;
-  skyHex: string;
-  groundHex: string;
-  fillIntensity: number;
-  envIntensity: number;
-  glow: number;
-  bgTop: string;
-  bgBottom: string;
-}
-
-const PROFILES: Record<TimeOfDay, Profile> = {
-  morning: {
-    azimuth: 82,
-    elevation: 26,
-    keyHex: mix(palette.plaster, palette.dustyBlue, 0.16),
-    keyIntensity: 3.9,
-    skyHex: mix(palette.canvasTop, palette.dustyBlue, 0.3),
-    groundHex: mix(palette.oak, palette.plaster, 0.4),
-    fillIntensity: 0.95,
-    envIntensity: 0.38,
-    glow: lampEmissiveIntensity("morning"),
-    bgTop: mix(palette.canvasTop, palette.dustyBlue, 0.07),
-    bgBottom: mix(palette.canvasBottom, palette.dustyBlue, 0.11),
-  },
-  noon: {
-    azimuth: 8,
-    elevation: 62,
-    keyHex: mix(palette.plaster, palette.ochre, 0.08),
-    keyIntensity: 2.95,
-    skyHex: mix(palette.canvasTop, palette.plaster, 0.3),
-    groundHex: mix(palette.oak, palette.plaster, 0.35),
-    fillIntensity: 0.95,
-    envIntensity: 0.4,
-    glow: lampEmissiveIntensity("noon"),
-    bgTop: palette.canvasTop,
-    bgBottom: palette.canvasBottom,
-  },
-  golden: {
-    azimuth: 288,
-    elevation: 21,
-    keyHex: mix(palette.ochre, palette.terracotta, 0.3),
-    keyIntensity: 5.4,
-    skyHex: mix(palette.canvasTop, palette.ochre, 0.24),
-    groundHex: mix(palette.oak, palette.terracotta, 0.18),
-    fillIntensity: 1.0,
-    envIntensity: 0.38,
-    glow: lampEmissiveIntensity("golden"),
-    bgTop: mix(palette.canvasTop, palette.ochre, 0.11),
-    bgBottom: mix(palette.canvasBottom, palette.terracotta, 0.12),
-  },
-  evening: {
-    azimuth: 302,
-    elevation: 13,
-    keyHex: mix(palette.dustyBlue, palette.plum, 0.3),
-    keyIntensity: 2.2,
-    skyHex: mix(palette.dustyBlue, palette.plum, 0.42),
-    groundHex: mix(palette.oak, palette.terracotta, 0.34),
-    fillIntensity: 0.72,
-    envIntensity: 0.24,
-    glow: lampEmissiveIntensity("evening"),
-    bgTop: mix(palette.canvasTop, palette.plum, 0.2),
-    bgBottom: mix(palette.canvasBottom, palette.terracotta, 0.16),
-  },
-};
-
-const NUMERIC = ["azimuth", "elevation", "keyIntensity", "fillIntensity", "envIntensity", "glow"] as const;
-const COLOURS = ["keyHex", "skyHex", "groundHex", "bgTop", "bgBottom"] as const;
-
-function lerpProfile(from: Profile, to: Profile, t: number): Profile {
-  const result = { ...to } as Profile;
-  for (const key of NUMERIC) result[key] = from[key] + (to[key] - from[key]) * t;
-  for (const key of COLOURS) result[key] = mix(from[key], to[key], t);
-  return result;
-}
 
 /** The whole lighting rig, including the shadow-map framing and the CSS background gradient. */
 export function LightingRig() {
@@ -137,9 +57,17 @@ export function LightingRig() {
     blendApi.start({ from: { blend: 0 }, to: { blend: 1 } });
   }, [meta.timeOfDay, blendApi]);
 
+  // The plan-view softening rides the camera's own 600 ms tween, so the shadows shorten as the
+  // camera tips over the room rather than snapping the moment the view flips.
+  const { planMix } = useSpring({
+    planMix: meta.view === "plan" ? 1 : 0,
+    config: { duration: motionTokens.cameraTweenMs, easing: easeOut },
+  });
+
   useFrame((state) => {
-    const profile = lerpProfile(fromRef.current, target, clamp(blend.get(), 0, 1));
-    currentRef.current = profile;
+    const hour = lerpProfile(fromRef.current, target, clamp(blend.get(), 0, 1));
+    currentRef.current = hour;
+    const profile = planSoften(hour, clamp(planMix.get(), 0, 1));
     const azimuth = (profile.azimuth * Math.PI) / 180;
     const elevation = (profile.elevation * Math.PI) / 180;
     const key = keyRef.current;
@@ -162,6 +90,7 @@ export function LightingRig() {
     }
     state.scene.environmentIntensity = profile.envIntensity;
     setGlowIntensity(profile.glow);
+    setBloomThreshold(profile.bloom);
     for (const lamp of lampRefs.current) if (lamp) lamp.intensity = profile.glow * (typeof lamp.userData.gain === "number" ? lamp.userData.gain : 1);
     if (typeof document !== "undefined" && (cssRef.current.top !== profile.bgTop || cssRef.current.bottom !== profile.bgBottom)) {
       cssRef.current = { top: profile.bgTop, bottom: profile.bgBottom };

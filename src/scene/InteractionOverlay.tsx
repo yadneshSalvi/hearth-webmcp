@@ -13,7 +13,8 @@ import { Html, Line } from "@react-three/drei";
 import { rotateDims } from "../engine/geometry";
 import type { CatalogItem, Room, Rotation, Vec2 } from "../engine/types";
 import { mix, motion as motionTokens, palette } from "../tokens";
-import { GlbBoundary, useGlbState, useNormalizedGlb } from "./assets";
+import { useNormalizedGlb } from "./assets";
+import { GlbBoundary, useGlbState } from "./glb";
 import type { Pose } from "./interactionDrag";
 import { roomToWorldCm } from "./interactionMath";
 import type { AlignGuide, DimensionLine, NeighbourGap } from "./interactionMath";
@@ -273,6 +274,12 @@ export interface ToolbarProps {
 
 const BUTTON =
   "flex h-8 w-8 items-center justify-center rounded-pill text-ink transition-colors duration-[180ms] ease-out-soft hover:bg-ochre/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ochre";
+/**
+ * A locked item is not editable, so the two destructive actions read as unavailable instead of
+ * quietly working: `disabled` keeps them in the tab order's shape and the title says why
+ * (SCENE_SCHEMA.md — a lock survives `arrange_room`, and the human set it on purpose).
+ */
+const BUTTON_DISABLED = `${BUTTON} cursor-default text-ink-faint hover:bg-transparent`;
 
 /**
  * Floating glass pill over the selected item: rotate, lock, duplicate, delete. Real buttons, so
@@ -304,10 +311,24 @@ export function MiniToolbar({ position, locked, onRotate, onToggleLock, onDuplic
             <Icon path="M8.5 11V8a5 5 0 0 1 9.5-2M6 11h12v9H6z" />
           )}
         </button>
-        <button type="button" className={BUTTON} title="Duplicate" aria-label="Duplicate item" onClick={onDuplicate}>
+        <button
+          type="button"
+          className={locked ? BUTTON_DISABLED : BUTTON}
+          disabled={locked}
+          title={locked ? "Locked — unlock to duplicate" : "Duplicate"}
+          aria-label={locked ? "Duplicate item — locked, unlock first" : "Duplicate item"}
+          onClick={onDuplicate}
+        >
           <Icon path="M9 9h10v10H9zM5 15V5h10" />
         </button>
-        <button type="button" className={BUTTON} title="Delete (Del)" aria-label="Delete item" onClick={onDelete}>
+        <button
+          type="button"
+          className={locked ? BUTTON_DISABLED : BUTTON}
+          disabled={locked}
+          title={locked ? "Locked — unlock to delete" : "Delete (Del)"}
+          aria-label={locked ? "Delete item — locked, unlock first" : "Delete item"}
+          onClick={onDelete}
+        >
           <Icon path="M6 8h12M9.5 8V6h5v2M8 8l.8 11h6.4L16 8" />
         </button>
       </div>
@@ -324,9 +345,12 @@ export function DropPreviewOverlay({ preview, room }: { preview: { pose: Pose; p
   const { pose, product } = preview;
   const world = roomToWorldCm(room, pose.pos);
   const extents = rotateDims(product.dims, pose.rotation);
+  // A lamp being dropped on a table draws its ring on the table top and its refusal chip above the
+  // lamp, not inside the table (SCENE_SCHEMA.md — stacking).
+  const elevation = (pose.stack?.heightCm ?? 0) * M;
   return (
     <group name="drop-preview">
-      <group position={[world.x * M, 0, world.y * M]}>
+      <group position={[world.x * M, elevation, world.y * M]}>
         <DragRing width={extents.w * M} depth={extents.d * M} valid={pose.valid} />
         {pose.reason ? <ReasonChip position={[0, product.dims.h * M + 0.22, 0]} reason={pose.reason} /> : null}
       </group>

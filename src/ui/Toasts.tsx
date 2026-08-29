@@ -17,7 +17,10 @@ export function Toasts({ className = "" }: { className?: string }) {
   // The live region is always in the tree: a screen reader only announces changes inside a region
   // it was already watching, so creating it together with the first toast would swallow that toast.
   return (
+    // `role="status"` rather than a bare aria-live div: aria-label is only legal on an element with
+    // a role, and axe fails the div otherwise (Lighthouse `aria-prohibited-attr`).
     <div
+      role="status"
       aria-live="polite"
       aria-label="Studio notifications"
       className={`pointer-events-none flex flex-col gap-2 ${className}`}

@@ -16,6 +16,25 @@ import { DEFAULT_MAX_CALLS_PER_TURN } from "./assistantClient";
  */
 export const MAX_CALLS_PER_TURN = DEFAULT_MAX_CALLS_PER_TURN;
 
+/**
+ * The guardrail in words. Three call sites (the footer line, its tooltip, and the line shown once a
+ * turn has spent its budget) all read the number from the loop through these helpers, so the copy
+ * cannot drift from the cap the way "eight tool calls a turn" did when the guard moved to 60.
+ */
+export function callCapLine(max: number = MAX_CALLS_PER_TURN): string {
+  return `up to ${max} tool calls per turn · destructive asks first`;
+}
+
+/** Sentence form, for the footer's `title` and anywhere the cap is explained rather than labelled. */
+export function callCapSentence(max: number = MAX_CALLS_PER_TURN): string {
+  return `Up to ${max} tool calls per turn. Destructive tools ask you first.`;
+}
+
+/** What the footer says once a turn has spent the whole budget. */
+export function callCapSpent(max: number = MAX_CALLS_PER_TURN): string {
+  return `This turn used all ${max} tool calls.`;
+}
+
 export interface AssistantToolCall {
   /** Call id from the loop; unique within a turn. */
   id: string;

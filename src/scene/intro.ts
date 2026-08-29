@@ -57,6 +57,9 @@ let startedAt = 0;
 let reduced = false;
 let finished = true;
 let painted = false;
+/** `performance.now()` of the studio's first painted frame — first paint, measured on the page. */
+let paintedAt = 0;
+const paintWaiters = new Set<() => void>();
 let scale = 1;
 let unwatch: (() => void) | undefined;
 let view: IntroView = { active: false, wallFade: 1, curtain: "gone" };
@@ -96,8 +99,31 @@ export function introSettling(): boolean {
 export function markStudioPainted(): void {
   if (painted) return;
   painted = true;
-  const hold = Math.max(0, CURTAIN_HOLD_MS - (performance.now() - startedAt));
+  paintedAt = performance.now();
+  const hold = Math.max(0, CURTAIN_HOLD_MS - (paintedAt - startedAt));
   setTimeout(revealStudio, hold);
+  for (const waiter of paintWaiters) waiter();
+  paintWaiters.clear();
+}
+
+/** `performance.now()` of the first painted frame, or 0 while the curtain is still up. */
+export function studioPaintedAt(): number {
+  return paintedAt;
+}
+
+/**
+ * Runs `callback` on the first painted frame, or immediately if the studio has already painted.
+ * Deferred work (the GLB warm-up) hangs off this so nothing competes with the first frame.
+ */
+export function whenStudioPainted(callback: () => void): () => void {
+  if (painted) {
+    callback();
+    return () => undefined;
+  }
+  paintWaiters.add(callback);
+  return () => {
+    paintWaiters.delete(callback);
+  };
 }
 
 function revealStudio(): void {
@@ -176,6 +202,10 @@ if (typeof window !== "undefined") {
       view: () => view,
       progress: introProgress,
       painted: () => painted,
+      /** First paint of the studio in ms since the page started (performance.now()). */
+      paintedAt: () => paintedAt,
+      /** Milliseconds from the studio chunk landing to the first painted frame. */
+      firstFrameMs: () => (paintedAt > 0 ? Math.round(paintedAt - startedAt) : undefined),
       settling: introSettling,
       startedAt: () => startedAt,
     };

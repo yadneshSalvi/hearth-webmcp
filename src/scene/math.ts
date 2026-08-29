@@ -220,6 +220,13 @@ export function wallOpacity(outward: Vec2, samples: Vec2[], focusCentre: Vec2, a
   return 1 - cut * (1 - WALL_FADED);
 }
 
+/**
+ * Height of the selection halo above the floor, in metres. Above every rug the catalog ships — the
+ * tallest, `rug-mark`, tops out at 4.13 cm — so selecting a chair standing on a rug draws its ring
+ * on the rug rather than inside it (`tests/scene/assets.test.ts` checks this against the manifest).
+ */
+export const SELECTION_HALO_Y = 0.05;
+
 const STACKABLE = new Set(["table-lamp", "decor"]);
 const SURFACES = new Set(["table", "desk", "shelf", "tv-unit"]);
 

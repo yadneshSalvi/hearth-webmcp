@@ -53,14 +53,14 @@ function ratioOnPlaster(token: string): number {
 
 describe("text contrast", () => {
   it("ink.muted carries label-caps at 11 px: at least 4.5:1 on plaster", () => {
-    expect(rgba(ink.muted).alpha).toBe(0.72);
+    expect(rgba(ink.muted).alpha).toBe(0.74);
     expect(ratioOnPlaster(ink.muted)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("ink.muted still reads on a glass panel over the canvas gradient", () => {
-    // The panel is a touch darker than bare plaster, so the same token lands just under 4.5 there;
-    // 4.4 is the floor that keeps the panel honest if the glass recipe is ever changed.
-    expect(contrast(over(rgba(ink.muted), panel), panel)).toBeGreaterThanOrEqual(4.4);
+  it("ink.muted clears AA on a glass panel too, not just on bare plaster", () => {
+    // 72 % passed on plaster (4.50) and missed on glass (4.48). 74 % is the margin: every surface the
+    // chrome actually paints small-caps on is over 4.5, so the token needs no per-surface exception.
+    expect(contrast(over(rgba(ink.muted), panel), panel)).toBeGreaterThanOrEqual(4.5);
   });
 
   it("ink.text clears AAA body text on plaster", () => {
@@ -92,7 +92,7 @@ describe("token mirrors", () => {
   });
 
   it("STYLE.md's token table states the same percentages", () => {
-    expect(style).toContain("`ink.muted` | `charcoal @ 72%`");
+    expect(style).toContain("`ink.muted` | `charcoal @ 74%`");
     expect(style).toContain("`ink.faint` | `charcoal @ 52%`");
   });
 });

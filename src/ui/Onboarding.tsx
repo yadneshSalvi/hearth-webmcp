@@ -2,7 +2,11 @@
 /**
  * First-run card. It says one true thing about this page — whether an agent can see it — and then
  * gets out of the way. Dismissal is remembered in localStorage.
+ *
+ * Escape dismisses it, like every other overlay in the studio: it is the topmost thing on the page
+ * on a first visit, so Escape has to mean this card before it can mean anything else.
  */
+import { useEffect } from "react";
 import { hearthStore, useHearthStore } from "../state/store";
 import { IconAgent, IconClose, IconTools } from "./icons";
 import { Button, IconButton } from "./primitives";
@@ -19,6 +23,21 @@ export function Onboarding({
 }) {
   const count = useHearthStore((state) => state.tools.available.length);
   const connected = status === "native" || status === "polyfill";
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key !== "Escape") return;
+      // A sheet opened from this card (How to connect / See the tools) owns Escape while it is up,
+      // and inside a text field Escape belongs to the field (BuildPanel resets a room name with it).
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+      event.stopPropagation();
+      onDismiss();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onDismiss]);
 
   return (
     <div className={`glass rise-in pointer-events-auto flex w-[420px] items-start gap-3 p-4 ${className}`}>
