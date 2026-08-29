@@ -3,7 +3,8 @@
  * Furniture layer: one item per `scene.furniture` entry, GLB when the asset exists and the designed
  * procedural stand-in otherwise, plus the STYLE.md §3 choreography — drop-in with a dust ring,
  * arcing moves with an `arrange_room` stagger, shrink-and-fade removals, hover lift and the ochre
- * selection halo.
+ * selection halo. Under `prefers-reduced-motion` every pose is taken immediately and the change is
+ * carried by a 240 ms cross-fade instead, with no dust and no bounce.
  */
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { animated, to, useSpring } from "@react-spring/three";
@@ -13,8 +14,12 @@ import { footprint, polyBBox } from "../engine/geometry";
 import type { CatalogItem, Furniture as FurnitureData, Room } from "../engine/types";
 import { mix, motion as motionTokens, palette } from "../tokens";
 import { hearthStore, useHearthStore } from "../state/store";
+import { toolBatch } from "../state/tool-batch";
 import { GlbBoundary, useGlbState, useNormalizedGlb } from "./assets";
+import { CHOREOGRAPHED_TOOL, noDelays, staggerDelays } from "./choreography";
+import { useMaterialFade } from "./fade";
 import { useIsHovered } from "./hover";
+import { useReducedMotion } from "./idle";
 import { useDraggingItemId } from "./interactionDrag";
 import { M, clamp, rotationRadians, stackElevationCm } from "./math";
 import type { Vec3 } from "./math";
@@ -22,7 +27,7 @@ import { Placeholder } from "./Placeholder";
 import { useSoftRing } from "./textures";
 import { useFramedBox } from "./framing";
 import { introRiseMetres } from "./intro";
-import { useFurniture, useLatestActivity, useMeta, useProductLookup, useRooms } from "./useSceneStore";
+import { useFurniture, useMeta, useProductLookup, useRooms } from "./useSceneStore";
 
 /**
  * Previous world positions for the move choreography. Module scope on purpose: the furniture layer
@@ -37,6 +42,8 @@ const HOVER_LIFT = 0.02;
 const DROP_HEIGHT = 0.4;
 const ARC_HEIGHT = 0.14;
 const EXIT_MS = 240;
+/** Reduced motion carries every change as a cross-fade of this length instead of a glide. */
+const CROSSFADE_MS = 240;
 
 interface Resolved {
   item: FurnitureData;
@@ -74,8 +81,8 @@ export function Furniture() {
   const rooms = useRooms();
   const byId = useProductLookup();
   const meta = useMeta();
-  const activity = useLatestActivity();
   const framed = useFramedBox();
+  const reduced = useReducedMotion();
 
   const resolved = useMemo(
     () =>
@@ -85,7 +92,7 @@ export function Furniture() {
     [furniture, rooms, byId],
   );
 
-  const delays = useMoveChoreography(resolved, activity.tool);
+  const delays = useMoveChoreography(resolved, reduced);
   const exiting = useExitingItems();
   const focusRoomId = framed.roomId ?? meta.activeRoomId;
   const draggingId = useDraggingItemId();
@@ -103,10 +110,11 @@ export function Furniture() {
           recede={entry.item.roomId === focusRoomId ? 0 : RECEDE}
           hidden={entry.item.id === draggingId}
           invalid={dragging?.itemId === entry.item.id && dragging.valid === false}
+          reduced={reduced}
         />
       ))}
       {exiting.map((entry) => (
-        <FurniturePiece key={`exit-${entry.item.id}`} entry={entry} moveDelay={0} selected={false} exiting />
+        <FurniturePiece key={`exit-${entry.item.id}`} entry={entry} moveDelay={0} selected={false} exiting reduced={reduced} />
       ))}
     </IntroLift>
   );
@@ -144,14 +152,19 @@ interface PieceProps {
   hidden?: boolean;
   /** True while the item's current position breaks a rule; the halo turns rose. */
   invalid?: boolean;
+  /** `prefers-reduced-motion`, measured once for the whole layer. */
+  reduced: boolean;
 }
 
-function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = false, recede = 0, hidden = false, invalid = false }: PieceProps) {
+function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = false, recede = 0, hidden = false, invalid = false, reduced }: PieceProps) {
   const { item, product, position, footprintM } = entry;
   const ghost = item.status === "ghost";
-  const calm = ghost || exiting;
+  // "Calm" bodies skip the drop: a ghost, an item on its way out, and every item under reduced
+  // motion, which takes its pose immediately and cross-fades instead (STYLE.md §3).
+  const calm = ghost || exiting || reduced;
   const hovered = useIsHovered(item.id, storeHoverId);
   const [dust, setDust] = useState(!calm);
+  const body = useRef<Group>(null);
 
   const [{ drop, bounce }] = useSpring(
     () => ({
@@ -163,24 +176,37 @@ function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = fa
     [],
   );
 
+  // One fade serves both cross-fades: the reduced-motion arrival at a new pose and the removal that
+  // pairs with the exit shrink. At 1 nothing is faded and no material is cloned.
+  const startFade = useMaterialFade(body);
+
   const previous = useRef<Vec3>(position);
   const [{ ox, oy, oz, arc }, glideApi] = useSpring(() => ({ ox: 0, oy: 0, oz: 0, arc: 1 }), []);
   useLayoutEffect(() => {
     const last = previous.current;
     if (last[0] === position[0] && last[1] === position[1] && last[2] === position[2]) return;
     previous.current = position;
+    if (reduced) {
+      // Reduced motion takes the pose immediately and carries the change on a cross-fade instead.
+      glideApi.set({ ox: 0, oy: 0, oz: 0, arc: 1 });
+      startFade(0.15, 1, CROSSFADE_MS);
+      return;
+    }
     glideApi.start({
       from: { ox: last[0] - position[0], oy: last[1] - position[1], oz: last[2] - position[2], arc: 0 },
       to: { ox: 0, oy: 0, oz: 0, arc: 1 },
       delay: moveDelay,
       config: motionTokens.spring,
     });
-  }, [position, moveDelay, glideApi]);
+  }, [position, moveDelay, glideApi, reduced, startFade]);
 
   const [{ exit }, exitApi] = useSpring(() => ({ exit: 1, config: { duration: EXIT_MS } }), []);
   useEffect(() => {
-    if (exiting) exitApi.start({ exit: 0.4 });
-  }, [exiting, exitApi]);
+    if (!exiting) return;
+    // STYLE.md §3: removal is shrink *and* fade — and a fade alone when motion is reduced.
+    if (!reduced) exitApi.start({ exit: 0.4 });
+    startFade(1, 0, EXIT_MS);
+  }, [exiting, exitApi, reduced, startFade]);
 
   const { hoverY } = useSpring({ hoverY: hovered && !calm ? HOVER_LIFT : 0, config: motionTokens.springSoft });
   const bodyY = to([drop, hoverY, arc], (d, h, a) => d * DROP_HEIGHT + h + ARC_HEIGHT * Math.sin(Math.PI * clamp(a, 0, 1)));
@@ -190,7 +216,7 @@ function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = fa
     <group name={`item-${item.id}`} position={position} visible={!hidden}>
       <animated.group position-x={ox} position-y={oy} position-z={oz}>
         <animated.group position-y={bodyY} scale={bodyScale}>
-          <group rotation-y={rotationRadians(item.rotation)}>
+          <group ref={body} rotation-y={rotationRadians(item.rotation)}>
             <ItemBody product={product} colorway={item.colorway} ghost={ghost} recede={recede} />
           </group>
         </animated.group>
@@ -268,27 +294,32 @@ function DustRing({ width, depth }: { width: number; depth: number }) {
 /**
  * `arrange_room` is choreographed: moved items glide with a 60 ms stagger, longest distance last
  * (STYLE.md §3). Any other move starts immediately.
+ *
+ * The trigger is the mutation batch, not `activity[0]`: the store is updated inside the handler and
+ * the receipt is written after it returns, so by the time a receipt names `arrange_room` the render
+ * that moved everything has already been and gone.
  */
-function useMoveChoreography(resolved: Resolved[], tool?: string): Map<string, number> {
+function useMoveChoreography(resolved: Resolved[], reduced: boolean): ReadonlyMap<string, number> {
+  const tool = toolBatch();
+
   const delays = useMemo(() => {
-    const result = new Map<string, number>();
-    if (tool !== "arrange_room") return result;
-    const moved: { id: string; distance: number }[] = [];
-    for (const entry of resolved) {
+    if (reduced || tool !== CHOREOGRAPHED_TOOL) return noDelays();
+    return staggerDelays(resolved.map((entry) => {
       const last = lastPositions.get(entry.item.id);
-      if (!last) continue;
-      const distance = Math.hypot(entry.position[0] - last[0], entry.position[2] - last[2]);
-      if (distance > 1e-4) moved.push({ id: entry.item.id, distance });
-    }
-    moved
-      .sort((a, b) => a.distance - b.distance)
-      .forEach((entry, index) => result.set(entry.id, index * motionTokens.arrangeStaggerMs));
-    return result;
-  }, [resolved, tool]);
+      return {
+        id: entry.item.id,
+        distance: last ? Math.hypot(entry.position[0] - last[0], entry.position[2] - last[2]) : 0,
+      };
+    }));
+  }, [resolved, tool, reduced]);
+
+  // Recorded straight after the render that measured against them, which is what keeps the stagger
+  // to the one render where the poses actually changed.
   useEffect(() => {
     lastPositions.clear();
     for (const entry of resolved) lastPositions.set(entry.item.id, entry.position);
   }, [resolved]);
+
   return delays;
 }
 

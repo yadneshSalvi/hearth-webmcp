@@ -19,7 +19,19 @@ export interface CartOps {
   checkout(): Promise<{ checkoutUrl: string; storePassword: string } | undefined>;
 }
 
-function variantIdFor(product: CatalogItem, colorway: string): string {
+/**
+ * The variant a colorway maps to, asked of the client that will receive the line. The built-in
+ * catalog (`data/catalog.source.ts`) carries no Shopify ids, so guessing one from the handle only
+ * works against the local client — a real Storefront cart rejects it. The tool handlers resolve the
+ * variant the same way (SHOPIFY.md §7), which is why the human and the agent can share a cart.
+ */
+async function variantIdFor(shopify: ShopifyClient, product: CatalogItem, colorway: string): Promise<string> {
+  const remote = await shopify.product(product.id);
+  if (remote.ok) {
+    const match = remote.value.variants.find((variant) => variant.colorway === colorway)
+      ?? remote.value.variants[0];
+    if (match) return match.id;
+  }
   return product.shopify?.variantIds[colorway] ?? `gid://shopify/ProductVariant/local-${product.id}-${colorway}`;
 }
 
@@ -58,7 +70,7 @@ export function createCartOps(shopify: ShopifyClient, store: StoreApi<HearthStor
   return {
     async add({ product, colorway, itemId }) {
       const result = await shopify.cartAdd([{
-        variantId: variantIdFor(product, colorway),
+        variantId: await variantIdFor(shopify, product, colorway),
         quantity: 1,
         ...(itemId ? { itemId } : {}),
       }]);

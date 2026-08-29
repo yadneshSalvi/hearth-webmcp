@@ -3,22 +3,25 @@
  * The studio's single wiring point: it starts the WebMCP registry, keeps the conflict overlays in
  * sync with the scene, owns the keyboard map and remembers whether this is a first run.
  */
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { useStore } from "zustand";
 import { createCatalog } from "../engine/catalog";
 import { evaluateRoom } from "../engine/conflicts";
 import type { Conflict, TimeOfDay, Yaw } from "../engine/types";
 import { studioApi } from "../scene/Studio";
 import { createLocalShopify } from "../shopify/local";
+import { createSelectedShopify } from "../shopify/select";
+import type { ShopifyMode } from "../shopify/select";
 import { hearthStore, useHearthStore } from "../state/store";
-import type { ToolGroup } from "../state/types";
+import { clearToasts, toastSnapshot } from "../state/toasts";
+import type { ActivityEntry, ToolGroup } from "../state/types";
 import { useWebMCP } from "../tools/useWebMCP";
 import type { WebMCPStatus } from "../tools/useWebMCP";
 import { createCartOps } from "./cartOps";
 import type { CartOps } from "./cartOps";
 import { createToolUi } from "./toolUi";
 import type { HearthToolUi } from "./toolUi";
-import { useAssistantRegistry } from "./assistantTools";
+import { publishStudioRegistry, useAssistantRegistry } from "./assistantTools";
 import { useFirstRun } from "./useFirstRun";
 
 const TIMES: readonly TimeOfDay[] = ["morning", "noon", "golden", "evening"];
@@ -28,12 +31,20 @@ const EMPTY_CONFLICTS: Conflict[] = [];
 /**
  * Page-lifetime singletons. The registry, the confirmation gate and the cart client must outlive
  * any component remount, and this module only ever loads in the browser (AppShell is imported with
- * `ssr: false`). The cart client is shared with the fallback assistant's registry
- * (src/ui/assistantTools.ts) so the two can never hold different carts.
+ * `ssr: false`).
+ *
+ * One client, chosen at startup: the agent's tools and the human's cart panel are the same cart
+ * (SHOPIFY.md §7), so the registry below is handed this exact instance — and so is the registry the
+ * fallback assistant starts for itself (src/ui/assistantTools.ts), which is why this is exported.
  */
-export const shopify = createLocalShopify(hearthStore.getState().catalog);
+export const shopify = createSelectedShopify({ local: createLocalShopify(hearthStore.getState().catalog) });
 export const toolUi: HearthToolUi = createToolUi(studioApi, hearthStore);
 export const cartOps: CartOps = createCartOps(shopify, hearthStore);
+
+/** Which Shopify the studio is talking to, so the cart panel can say so honestly. */
+export function useShopifyMode(): ShopifyMode {
+  return useSyncExternalStore(shopify.subscribe, () => shopify.mode, () => "checking" as ShopifyMode);
+}
 
 export interface Hearth {
   status: WebMCPStatus;
@@ -92,10 +103,19 @@ function step<T>(list: readonly T[], value: T, delta: number): T {
 }
 
 /** Closes every dismissible overlay; the confirmation dialog handles Escape itself (it declines). */
-function closeOverlays(): void {
+function closeOverlays(): boolean {
   const { ui, setUi } = hearthStore.getState();
-  if (!ui.toolsPanelOpen && !ui.shortcutsOpen && !ui.enableSheetOpen && !ui.boardOpen) return;
+  if (!ui.toolsPanelOpen && !ui.shortcutsOpen && !ui.enableSheetOpen && !ui.boardOpen) return false;
   setUi({ toolsPanelOpen: false, shortcutsOpen: false, enableSheetOpen: false, boardOpen: false });
+  return true;
+}
+
+/**
+ * True while a modal owns the page, so a single-key shortcut cannot stack a second sheet at the
+ * same z-index. The DOM is the honest test: every sheet is an `aria-modal` dialog, whoever opened it.
+ */
+function sheetIsOpen(): boolean {
+  return document.querySelector('[role="dialog"][aria-modal="true"]') !== null;
 }
 
 /** Publishes the active room's conflicts so the renderer draws diagrams and the panels agree. */
@@ -123,10 +143,29 @@ export function useHistoryDepth(): { past: number; future: number } {
   return { past, future };
 }
 
+let historyReceipts = 0;
+
+/** Writes the human-side receipt for an undo or redo, naming what actually changed. */
+function historyReceipt(kind: "Undo" | "Redo", entries: ActivityEntry[]): void {
+  if (entries.length === 0) return;
+  historyReceipts += 1;
+  const what = (entries[0]?.summary ?? "a change").replace(/^(You|Agent|Assistant|System) /, "");
+  hearthStore.getState().pushActivity({
+    id: `history-${Date.now()}-${historyReceipts}`,
+    t: Date.now(),
+    source: "human",
+    title: kind,
+    summary: entries.length === 1
+      ? `You ${kind === "Undo" ? "undid" : "redid"}: ${what}`
+      : `You ${kind === "Undo" ? "undid" : "redid"} ${entries.length} changes`,
+    itemIds: entries.flatMap((entry) => entry.itemIds),
+  });
+}
+
 /** Undoes n steps, but never calls into zundo with an empty history. */
 export function undoSteps(steps = 1): void {
   if (hearthStore.temporal.getState().pastStates.length === 0) return;
-  hearthStore.getState().undo(steps);
+  historyReceipt("Undo", hearthStore.getState().undo(steps));
 }
 
 /** A snapshot of the undo depth, so a toast can undo exactly the steps one interaction produced. */
@@ -137,13 +176,13 @@ export function historyMarker(): number {
 /** Undoes back to a marker taken before an interaction (selection changes included). */
 export function undoTo(marker: number): void {
   const steps = hearthStore.temporal.getState().pastStates.length - marker;
-  if (steps > 0) hearthStore.getState().undo(steps);
+  if (steps > 0) historyReceipt("Undo", hearthStore.getState().undo(steps));
 }
 
 /** Redoes n steps, but never calls into zundo with an empty future. */
 export function redoSteps(steps = 1): void {
   if (hearthStore.temporal.getState().futureStates.length === 0) return;
-  hearthStore.getState().redo(steps);
+  historyReceipt("Redo", hearthStore.getState().redo(steps));
 }
 
 export function useHearth(): Hearth {
@@ -170,6 +209,12 @@ export function useHearth(): Hearth {
   useEffect(() => {
     if (status === "unavailable") hearthStore.getState().setToolsMirror([], "unavailable");
   }, [status]);
+
+  // The fallback assistant runs its tool calls through this same registry, as the assistant.
+  useEffect(() => {
+    publishStudioRegistry(registry ?? undefined);
+    return () => publishStudioRegistry(undefined);
+  }, [registry]);
 
   useEffect(() => {
     void cartOps.refresh();
@@ -225,10 +270,12 @@ export function useHearth(): Hearth {
           store.setTimeOfDay("human", step(TIMES, timeOfDay, 1));
           break;
         case "?":
-          store.setUi({ shortcutsOpen: true });
+          // Two sheets at z-[60] is a stack with no reading order; the open one wins.
+          if (!sheetIsOpen()) store.setUi({ shortcutsOpen: true });
           break;
         case "Escape":
-          closeOverlays();
+          // Escape unwinds the page one layer at a time: overlays first, then any toasts.
+          if (!closeOverlays() && toastSnapshot().length > 0) clearToasts();
           break;
         default:
           return;

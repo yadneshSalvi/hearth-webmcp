@@ -129,11 +129,9 @@ export function Activity({
   const activity = useHearthStore((state) => state.activity);
   const [now, setNow] = useState(() => Date.now());
 
-  // A selection is not a change to the design, so those rows never reach the receipt log.
-  const rows = useMemo(
-    () => activity.filter((entry) => entry.tool !== undefined || entry.title !== "Set selection").slice(0, VISIBLE_ROWS),
-    [activity],
-  );
+  // Every row in `activity[]` is a change to the design: selection, hover and room focus are not
+  // written there at all any more (they live in `meta.selection`), so nothing is filtered by title.
+  const rows = useMemo(() => activity.slice(0, VISIBLE_ROWS), [activity]);
 
   const newest = rows[0];
   const undoable = newest

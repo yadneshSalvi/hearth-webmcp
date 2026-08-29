@@ -8,9 +8,13 @@
  * change and must never land in the zundo history.
  */
 import { useSyncExternalStore } from "react";
+import { DEFAULT_MAX_CALLS_PER_TURN } from "./assistantClient";
 
-/** TOOLS.md §4 guardrail mirrored in the UI: one turn may spend at most this many tool calls. */
-export const MAX_CALLS_PER_TURN = 8;
+/**
+ * The guardrail the UI quotes is the one the loop enforces — re-exported rather than restated, so
+ * the counter in the header can never drift from what actually blocks a runaway turn.
+ */
+export const MAX_CALLS_PER_TURN = DEFAULT_MAX_CALLS_PER_TURN;
 
 export interface AssistantToolCall {
   /** Call id from the loop; unique within a turn. */
@@ -68,6 +72,22 @@ export const initialAssistantState: AssistantState = {
   maxCallsPerTurn: MAX_CALLS_PER_TURN,
   sequence: 0,
 };
+
+/**
+ * Models write Markdown whether or not they were asked to, and Hearth has one type system and no
+ * Markdown renderer (STYLE.md §5 forbids drop-in component looks). So the emphasis markers are
+ * dropped and the reply is read as prose: `**Top fix:**` becomes `Top fix:`, not three asterisks.
+ * Bullets keep their dash, which reads as a list without pretending to be one.
+ */
+export function plainText(text: string): string {
+  return text
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^(\s*)[*+]\s+/gm, "$1- ")
+    .replace(/(\*\*|__)(?=\S)([\s\S]*?\S)\1/g, "$2")
+    .replace(/(?<![\w*])\*(?=\S)([^*\n]*?\S)\*(?![\w*])/g, "$1")
+    .replace(/(?<![\w_])_(?=\S)([^_\n]*?\S)_(?![\w_])/g, "$1")
+    .replace(/`([^`\n]+)`/g, "$1");
+}
 
 /** The result envelope reports success with `ok: true`; anything else is a failure (TOOLS.md §0). */
 function envelopeOk(result: unknown): boolean {

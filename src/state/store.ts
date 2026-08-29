@@ -11,17 +11,14 @@ import {
   actionActivity as activity, assertRotation, cloneScene, nextOpeningId, notchPoly, placedOrigin, prependActivity,
   productName, recomputeCart, requiredItem, requiredOpening, requiredRoom, storeCatalog as catalog, uniqueRoomId, validateOpening,
 } from "./store-helpers";
-import { uid } from "./ids";
 import { HearthError } from "./types";
 import type { ActivityEntry, HearthStore, ToolMirror } from "./types";
 import { toolBatchIsActive } from "./tool-batch";
+import { pushToast } from "./toasts";
 
 const historyLabels: ActivityEntry[] = [];
 const futureLabels: ActivityEntry[] = [];
 let pendingHistoryLabel: ActivityEntry | undefined;
-
-/** Newest-last toast queue depth; older entries are dropped rather than stacked over the canvas. */
-const TOAST_LIMIT = 4;
 
 /**
  * Runs a mutation without an undo entry. Pointer gestures repeat `setGhost` many times a second
@@ -101,7 +98,7 @@ export const hearthStore = createStore<HearthStore>()(
       cart: { lines: [], subtotalUsd: 0, status: "idle" },
       activity: [],
       tools: { available: [], status: "unknown" },
-      ui: { boardOpen: false, assistantOpen: false, toolsPanelOpen: false, toasts: [], pulseIds: [] },
+      ui: { boardOpen: false, assistantOpen: false, toolsPanelOpen: false, pulseIds: [] },
       overlays: { conflicts: [] },
 
       placeItem: (source, input) => {
@@ -124,12 +121,14 @@ export const hearthStore = createStore<HearthStore>()(
         return { ...placed, pos: { ...placed.pos } };
       },
 
-      moveItem: (source, id, patch) => {
+      moveItem: (source, id, patch, opts) => {
         const state = get();
         const found = requiredItem(state, id);
         if (patch.roomId) requiredRoom(state, patch.roomId);
         if (patch.rotation !== undefined) assertRotation(patch.rotation);
-        set((draft) => {
+        // `quiet` is how a held arrow key stays one undoable step and one receipt: the first press
+        // records the move, every auto-repeat after it lands quietly on top of that same entry.
+        quietly(opts, () => set((draft) => {
           const item = draft.scene.furniture.find((candidate) => candidate.id === id) as typeof draft.scene.furniture[number];
           if (patch.pos) item.pos = { ...patch.pos };
           if (patch.rotation !== undefined) item.rotation = patch.rotation;
@@ -138,8 +137,8 @@ export const hearthStore = createStore<HearthStore>()(
           draft.scene.meta.selection.lastMovedBy = source;
           draft.scene.meta.selection.lastMovedAt = Date.now();
           draft.ui.compare = undefined;
-          prepend(draft, activity(source, "Move furniture", `moved ${productName(found)}`, [id]));
-        });
+          if (!opts?.quiet) prepend(draft, activity(source, "Move furniture", `moved ${productName(found)}`, [id]));
+        }));
       },
 
       removeItem: (source, id) => {
@@ -220,16 +219,21 @@ export const hearthStore = createStore<HearthStore>()(
         draft.scene.meta.mode = mode;
         prepend(draft, activity(source, "Switch mode", `switched to ${mode} mode`));
       }),
-      setView: (source, patch) => {
+      setView: (source, patch, opts) => {
         if (patch.focusRoomId) requiredRoom(get(), patch.focusRoomId);
         if (patch.focusItemId) requiredItem(get(), patch.focusItemId);
-        set((draft) => {
+        // `quiet` is the design board switching to plan for one frame and switching straight back:
+        // not a change the human made, so neither a receipt nor an undo step.
+        quietly(opts, () => set((draft) => {
           if (patch.view) draft.scene.meta.view = patch.view;
           if (patch.yaw) draft.scene.meta.yaw = patch.yaw;
           if (patch.focusRoomId) draft.scene.meta.selection.roomId = patch.focusRoomId;
           if (patch.focusItemId) draft.scene.meta.selection.itemId = patch.focusItemId;
-          prepend(draft, activity(source, "Set view", `changed the view to ${draft.scene.meta.view}`));
-        });
+          // A yaw-only change never changes the view name, so the receipt names the corner instead.
+          if (!opts?.quiet) prepend(draft, activity(source, "Set view", patch.yaw && !patch.view
+            ? `turned the ${draft.scene.meta.view} view to face ${draft.scene.meta.yaw.toUpperCase()}`
+            : `changed the view to ${draft.scene.meta.view}`));
+        }));
       },
       setTimeOfDay: (source, time) => set((draft) => {
         draft.scene.meta.timeOfDay = time;
@@ -267,17 +271,19 @@ export const hearthStore = createStore<HearthStore>()(
       },
       setActiveRoom: (source, roomId) => {
         const room = requiredRoom(get(), roomId);
+        // Focusing a room is not a change to the design: it already lives in `meta`, and writing
+        // it to `activity[]` evicted real receipts through the 200-row cap (one row per click).
+        void room;
         withoutHistory(() => set((draft) => {
           draft.scene.meta.activeRoomId = roomId;
-          prepend(draft, activity(source, "Select room", `selected ${room.name}`));
         }));
       },
       setSelection: (source, selection) => {
         if (selection.roomId) requiredRoom(get(), selection.roomId);
         if (selection.itemId) requiredItem(get(), selection.itemId);
+        // Selection and hover live in `meta.selection`; they are never receipts (see setActiveRoom).
         withoutHistory(() => set((draft) => {
           Object.assign(draft.scene.meta.selection, selection);
-          prepend(draft, activity(source, "Set selection", "changed the selection", selection.itemId ? [selection.itemId] : []));
         }));
       },
 
@@ -438,17 +444,16 @@ export const hearthStore = createStore<HearthStore>()(
       setToolsMirror: (list: ToolMirror[], status) => set((draft) => { draft.tools = { available: structuredClone(list), status }; }),
       pushActivity: (entry) => set((draft) => { prepend(draft, structuredClone(entry)); }),
       setUi: (patch) => set((draft) => { Object.assign(draft.ui, patch); }),
-      toast: (entry) => {
-        const toastEntry = { ...entry, id: uid(), t: Date.now() };
-        set((draft) => {
-          draft.ui.toasts.push(toastEntry);
-          if (draft.ui.toasts.length > TOAST_LIMIT) draft.ui.toasts.splice(0, draft.ui.toasts.length - TOAST_LIMIT);
-        });
-        return toastEntry.id;
-      },
-      dismissToast: (id) => set((draft) => { draft.ui.toasts = draft.ui.toasts.filter((entry) => entry.id !== id); }),
+      // One queue, one renderer: the canvas pushes straight into src/state/toasts.ts, which
+      // src/ui/Toasts.tsx renders. A second copy in store state had no consumer and went unseen.
+      toast: (entry) => pushToast({ title: entry.message, tone: entry.tone, ...(entry.detail ? { detail: entry.detail } : {}) }),
       pulse: (itemIds) => set((draft) => { draft.ui.pulseIds = [...new Set(itemIds)]; }),
       setDragging: (dragging) => set((draft) => { draft.ui.dragging = dragging ? { ...dragging } : undefined; }),
+      previewFurniture: (furniture) => {
+        withoutHistory(() => set((draft) => {
+          draft.scene.furniture = furniture.map((item) => ({ ...item, pos: { ...item.pos } }));
+        }));
+      },
       setOverlays: (patch) => set((draft) => {
         draft.overlays = { conflicts: patch.conflicts ? structuredClone(patch.conflicts) : (draft.overlays?.conflicts ?? []) };
       }),

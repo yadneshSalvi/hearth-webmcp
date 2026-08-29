@@ -12,10 +12,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createCatalog } from "../engine/catalog";
 import { hearthStore, useHearthStore } from "../state/store";
 import { createAssistant } from "./assistantClient";
-import type { Assistant as AssistantLoop, AssistantEvents } from "./assistantClient";
-import { ensureAssistantTools } from "./assistantTools";
+import type { AssistantEvents, AssistantSession } from "./assistantClient";
+import { ensureAssistantTools, executeAssistantTool } from "./assistantTools";
 import {
-  MAX_CALLS_PER_TURN, capReached, dispatchAssistant, retryableTurn, useAssistantState,
+  MAX_CALLS_PER_TURN, capReached, dispatchAssistant, plainText, retryableTurn, useAssistantState,
 } from "./assistantStore";
 import type { AssistantMessage, AssistantToolCall } from "./assistantStore";
 import { compactJson, splitNumerals } from "./format";
@@ -28,7 +28,7 @@ import { shopify, toolUi, useConflicts } from "./useHearth";
 function Prose({ text }: { text: string }) {
   return (
     <>
-      {splitNumerals(text).map((run, index) => (
+      {splitNumerals(plainText(text)).map((run, index) => (
         <span key={`${index}-${run.text}`} className={run.numeric ? "numerals" : undefined}>
           {run.text}
         </span>
@@ -225,7 +225,7 @@ export function Assistant({ className = "" }: { className?: string }) {
   const state = useAssistantState();
   const prompts = useStarterPrompts();
   const [draft, setDraft] = useState("");
-  const loop = useRef<AssistantLoop | null>(null);
+  const loop = useRef<AssistantSession | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const retry = retryableTurn(state);
@@ -268,7 +268,9 @@ export function Assistant({ className = "" }: { className?: string }) {
       onError: (error) => void dispatchAssistant({ type: "error", message: error.message, retryable: error.retryable }),
     };
     void ensureAssistantTools({ ui: toolUi, shopify }).then(() => {
-      loop.current ??= createAssistant({ maxCallsPerTurn: MAX_CALLS_PER_TURN });
+      // `execute` routes every call through Hearth's own registry as the assistant, so the receipt
+      // is filed in plum rather than as an agent's work (src/ui/assistantTools.ts).
+      loop.current ??= createAssistant({ maxCallsPerTurn: MAX_CALLS_PER_TURN, execute: executeAssistantTool });
       return loop.current.send(trimmed, events);
     }).catch((error: unknown) => {
       dispatchAssistant({
@@ -339,10 +341,13 @@ export function Assistant({ className = "" }: { className?: string }) {
           </div>
           <p className="flex items-center gap-1.5 text-[10.5px] leading-none text-ink-faint">
             <IconAgent size={11} className="shrink-0" />
-            <span className="min-w-0 flex-1 truncate">
+            <span
+              className="min-w-0 flex-1 truncate"
+              title={`Up to ${state.maxCallsPerTurn} tool calls a turn. Destructive tools ask you first.`}
+            >
               {capReached(state)
                 ? `This turn used all ${state.maxCallsPerTurn} tool calls.`
-                : `${state.maxCallsPerTurn} tool calls a turn · destructive asks first`}
+                : `up to ${state.maxCallsPerTurn} tool calls a turn · destructive asks first`}
             </span>
             <Kbd>⌘↩</Kbd>
           </p>

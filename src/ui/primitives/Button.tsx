@@ -14,7 +14,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const BASE =
-  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-chip font-sans font-medium " +
+  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-chip font-sans font-medium whitespace-nowrap " +
   "transition-[background-color,color,border-color,box-shadow] duration-200 ease-out-soft " +
   "disabled:cursor-not-allowed disabled:opacity-40";
 
@@ -24,7 +24,7 @@ const SIZES: Record<ButtonSize, string> = {
 };
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-terracotta text-white shadow-chip hover:bg-terracotta/88 active:bg-terracotta",
+  primary: "bg-terracotta text-plaster shadow-chip hover:bg-terracotta/88 active:bg-terracotta",
   secondary: "border border-hairline bg-plaster/70 text-ink hover:border-charcoal/24 hover:bg-plaster",
   ghost: "text-ink-muted hover:bg-charcoal/6 hover:text-ink",
 };

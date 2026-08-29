@@ -48,11 +48,13 @@ export interface CartState {
   status: "idle" | "pending" | "offline";
 }
 
-/** One queued toast. The chrome renders and dismisses them; the canvas only pushes. */
-export interface ToastEntry {
-  id: string;
-  t: number;
-  tone: "info" | "success" | "warn" | "error";
+/**
+ * A toast the canvas asks for. There is one queue (src/state/toasts.ts) and one renderer
+ * (src/ui/Toasts.tsx); `store.toast()` is the canvas-side door into it, so nothing is queued
+ * anywhere the human cannot see it.
+ */
+export interface ToastRequest {
+  tone: "info" | "success" | "warn";
   /** ≤ 90 chars, sentence case, units included (STYLE.md §4). */
   message: string;
   detail?: string;
@@ -72,8 +74,6 @@ export interface HearthUiState {
   assistantOpen: boolean;
   toolsPanelOpen: boolean;
   pendingConfirm?: { id: string; message: string };
-  /** Newest-last toast queue, capped at 4. */
-  toasts: ToastEntry[];
   /** Item ids the UI should pulse once (an invalid nudge, a fresh duplicate, a tool action). */
   pulseIds: string[];
   dragging?: DraggingState;
@@ -167,7 +167,7 @@ export class HearthError extends Error {
 
 export interface HearthActions {
   placeItem(source: ActionSource, input: PlaceItemInput): Furniture;
-  moveItem(source: ActionSource, id: string, patch: { pos?: Vec2; rotation?: Rotation; roomId?: string }): void;
+  moveItem(source: ActionSource, id: string, patch: { pos?: Vec2; rotation?: Rotation; roomId?: string }, opts?: QuietOpts): void;
   removeItem(source: ActionSource, id: string): void;
   setColorway(source: ActionSource, id: string, colorway: string): void;
   setLocked(source: ActionSource, id: string, locked: boolean): void;
@@ -175,7 +175,7 @@ export interface HearthActions {
   clearGhost(source: ActionSource, opts?: QuietOpts): void;
   confirmGhost(source: ActionSource): Furniture;
   setMode(source: ActionSource, mode: Mode): void;
-  setView(source: ActionSource, patch: { view?: View; yaw?: Yaw; focusRoomId?: string; focusItemId?: string }): void;
+  setView(source: ActionSource, patch: { view?: View; yaw?: Yaw; focusRoomId?: string; focusItemId?: string }, opts?: QuietOpts): void;
   setTimeOfDay(source: ActionSource, time: TimeOfDay): void;
   setPalette(source: ActionSource, paletteId: PaletteId, roomIds: string[]): void;
   setAccessibility(source: ActionSource, on: boolean): void;
@@ -199,11 +199,16 @@ export interface HearthActions {
   setToolsMirror(list: ToolMirror[], status: HearthState["tools"]["status"]): void;
   pushActivity(entry: ActivityEntry): void;
   setUi(patch: Partial<HearthUiState>): void;
-  toast(entry: Omit<ToastEntry, "id" | "t">): string;
-  dismissToast(id: string): void;
+  toast(request: ToastRequest): string;
   pulse(itemIds: string[]): void;
   setDragging(dragging: DraggingState | undefined): void;
   setOverlays(patch: Partial<OverlaysState>): void;
+  /**
+   * Swaps the whole furniture list for a transient capture — the compare split view and the design
+   * board load a variant, photograph it and put the room back. No receipt, no undo entry: nothing a
+   * person did, so nothing to undo. Callers pass furniture that already belongs to this scene.
+   */
+  previewFurniture(furniture: Furniture[]): void;
   undo(steps?: number): ActivityEntry[];
   redo(steps?: number): ActivityEntry[];
   resetScene(scene: Scene): void;

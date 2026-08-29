@@ -31,6 +31,14 @@ export function Sheet({
   const restore = useRef<HTMLElement | null>(null);
   const titleId = `sheet-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
+  // Callers pass a fresh arrow function every render, so `onClose` cannot be an effect dependency:
+  // any state change inside the sheet (a "copied" flash) would tear the focus trap down, hand focus
+  // back to the trigger and then grab the first control again mid-interaction.
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
     restore.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -42,7 +50,7 @@ export function Sheet({
       if (event.key === "Escape") {
         event.preventDefault();
         event.stopPropagation();
-        onClose();
+        close.current();
         return;
       }
       if (event.key !== "Tab" || !node) return;
@@ -64,7 +72,7 @@ export function Sheet({
       document.removeEventListener("keydown", onKey, true);
       restore.current?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

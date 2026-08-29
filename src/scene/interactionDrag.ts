@@ -234,7 +234,12 @@ export function validatePose(request: PoseRequest, snap: { pos: Vec2; rotation: 
   const blocking = evaluateRoom(trialScene, room.id, catalog).find(
     (conflict) => conflict.severity === "error" && conflict.items.includes(itemId),
   );
-  return { valid: blocking === undefined, reason: blocking ? conflictReason(blocking, itemId) : undefined };
+  // Openings keep their ids (door-1 reads fine); furniture gets its catalog name.
+  const nameOf = (id: string): string => {
+    const other = scene.furniture.find((entry) => entry.id === id);
+    return (other && catalog.byId(other.catalogId)?.name) ?? id;
+  };
+  return { valid: blocking === undefined, reason: blocking ? conflictReason(blocking, itemId, nameOf) : undefined };
 }
 
 /** Measure and validate one snapped pose. */

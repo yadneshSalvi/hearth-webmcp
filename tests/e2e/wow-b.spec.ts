@@ -8,6 +8,10 @@ import { catalogSource } from "../../data/catalog.source";
  * Wow pass B: the fallback Hearth Assistant, the first-run choreography and the re-rendered
  * thumbnails. The assistant is exercised through `?webmcp=polyfill`, so the tools it calls are the
  * ones an agent would find on `document.modelContext` — no internal shortcut.
+ *
+ * `/api/assistant` is stubbed with a canned stream in its own SSE contract: the panel, the real
+ * client loop and the real tool execution all run, deterministically and without spending a model
+ * call. The live round-trip is verified by hand (see the round-2 report).
  */
 
 // Playwright runs from the repo root (playwright.config.ts lives there).
@@ -29,6 +33,24 @@ async function openStudio(page: Page, opts: { dismissed?: boolean; query?: strin
   await expect(page.locator('[data-studio="canvas"]')).toBeVisible();
 }
 
+/**
+ * A canned `/api/assistant` stream in the loop's own SSE contract (`src/assistant/loop.ts`): round
+ * one says a sentence and asks for a tool, round two answers once the result is back.
+ */
+async function stubAssistant(page: Page, tool: { name: string; input: Record<string, unknown> }): Promise<void> {
+  let round = 0;
+  const block = (event: string, data: unknown): string => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  await page.route("**/api/assistant", async (route) => {
+    round += 1;
+    const body = round === 1
+      ? block("text", { delta: "Arranging the room around the focal wall. " })
+        + block("tool_call", { call_id: "call-1", name: tool.name, arguments: JSON.stringify(tool.input) })
+        + block("done", { usage: null })
+      : block("text", { delta: "That is the new layout." }) + block("done", { usage: null });
+    await route.fulfill({ status: 200, headers: { "Content-Type": "text/event-stream" }, body });
+  });
+}
+
 /** Opens the fallback assistant from the status chip's menu. */
 async function openAssistant(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Agent options" }).click();
@@ -44,14 +66,15 @@ function pngSize(file: string): { width: number; height: number } {
 
 test.describe("the fallback Hearth Assistant", () => {
   test("runs a starter prompt through WebMCP and links the receipt it wrote", async ({ page }) => {
+    await stubAssistant(page, { name: "arrange_room", input: { room: "living", style: "conversation" } });
     await openStudio(page, { query: "?webmcp=polyfill" });
     // The polyfill was asked for by the URL, so the chip must say polyfill rather than native.
-    await expect(page.getByRole("button", { name: /Agent tools · polyfill/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Agent tools · \d+ ready · polyfill/ })).toBeVisible();
 
     await openAssistant(page);
-    // Copy has to be honest about what this panel is.
+    // Copy has to be honest about what this panel is, and about the guard the loop enforces.
     await expect(page.getByText(/this is the fallback/)).toBeVisible();
-    await expect(page.getByText(/8 tool calls a turn/)).toBeVisible();
+    await expect(page.getByText(/up to 60 tool calls a turn/)).toBeVisible();
 
     const starters = page.locator("[data-assistant-starter]");
     await expect(starters).toHaveCount(4);
@@ -69,13 +92,17 @@ test.describe("the fallback Hearth Assistant", () => {
     await expect(page.getByText("Result", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: /Show receipt in the activity log/ }).click();
 
-    // The activity log is back, focused on the row this call wrote.
+    // The activity log is back, focused on the row this call wrote — filed as the assistant's work,
+    // not an agent's, because the loop executes through the registry with source "assistant".
     await expect(page.getByRole("heading", { name: "ACTIVITY" })).toBeVisible();
     const focused = page.locator("[data-receipt-id]:has(button:focus)");
     await expect(focused).toHaveCount(1);
+    await expect(focused).toContainText("Assistant");
+    await expect(focused).toContainText("arrange_room");
   });
 
   test("Escape closes the panel and ⌘↩ sends", async ({ page }) => {
+    await stubAssistant(page, { name: "measure", input: { subject: "north" } });
     await openStudio(page, { query: "?webmcp=polyfill" });
     await openAssistant(page);
 

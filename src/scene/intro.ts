@@ -31,14 +31,19 @@ const SWEEP_RAD = (INTRO_SWEEP_DEG * Math.PI) / 180;
  * beat, and then the welcome card comes in.
  */
 const MOTION_MS = 1200;
-const CURTAIN_FADE_MS = 320;
-/** The plaster curtain holds at least this long, so a fast first frame still cross-fades. */
+/** The plaster curtain holds at least this long, so a very fast first frame still shows the plan. */
 const CURTAIN_HOLD_MS = 180;
 /** No frame at all (no WebGL, a failed context) must never leave the studio behind plaster. */
 const CURTAIN_SAFETY_MS = 1600;
 
-/** "solid" hides the canvas behind the loading plan, "gone" is unmounted. */
-export type Curtain = "solid" | "fading" | "gone";
+/**
+ * "solid" shows the loading plan through the not-yet-painted canvas; "gone" is unmounted. There is
+ * no fade between them on purpose: a CSS opacity transition anywhere on this page costs the studio
+ * whole frames on a software renderer, and `studioApi.capture()` is waiting for those (Compare and
+ * the design board both photograph the canvas). The two images are plaster with the same plan in the
+ * middle, so the cut reads as the room arriving rather than as a change of screen.
+ */
+export type Curtain = "solid" | "gone";
 
 export interface IntroView {
   /** True until the settle has finished; the welcome card waits for false. */
@@ -97,9 +102,7 @@ export function markStudioPainted(): void {
 
 function revealStudio(): void {
   if (view.curtain !== "solid") return;
-  // Scheduled before the fade is published, so the unmount cannot be lost to a throwing listener.
-  setTimeout(() => publish({ curtain: "gone" }), CURTAIN_FADE_MS);
-  publish({ curtain: "fading" });
+  publish({ curtain: "gone" });
 }
 
 /**

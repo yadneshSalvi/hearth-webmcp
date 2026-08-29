@@ -12,8 +12,11 @@ import Studio from "../scene/Studio";
 import { useHearthStore } from "../state/store";
 import { Activity } from "./Activity";
 import { Assistant } from "./Assistant";
+import { Board } from "./Board";
+import { BuildPanel } from "./BuildPanel";
 import { Cart } from "./Cart";
 import { Catalog } from "./Catalog";
+import { Compare } from "./Compare";
 import { ConfirmModal } from "./ConfirmModal";
 import { EnableSheet } from "./EnableSheet";
 import { IconCart, IconPanelRight, IconRoom, IconTools } from "./icons";
@@ -29,6 +32,7 @@ import { ToolsPanel } from "./ToolsPanel";
 import { TopBar } from "./TopBar";
 import { hearthStore } from "../state/store";
 import { useConflictSync, useHearth } from "./useHearth";
+import type { WebMCPStatus } from "../tools/useWebMCP";
 import { useOnboardingReveal } from "./useFirstRun";
 import { useViewportTier } from "./useViewportTier";
 import type { ViewportTier } from "./useViewportTier";
@@ -37,6 +41,20 @@ import type { ViewportTier } from "./useViewportTier";
 function ConflictSync() {
   useConflictSync();
   return null;
+}
+
+/**
+ * The welcome card waits for the opening settle to finish (src/scene/intro.ts). It subscribes here,
+ * in a leaf, rather than in the shell: a shell-wide re-render also re-renders the R3F tree, and four
+ * of those while the studio is compiling its first frame is a real cost on a machine without a GPU.
+ */
+function FirstRunCard({ status, onDismiss }: { status: WebMCPStatus; onDismiss(): void }) {
+  if (!useOnboardingReveal()) return null;
+  return (
+    <div className="pointer-events-none absolute top-[88px] left-1/2 z-40 -translate-x-1/2">
+      <Onboarding status={status} onDismiss={onDismiss} />
+    </div>
+  );
 }
 
 /**
@@ -63,11 +81,12 @@ export default function AppShell() {
   const catalogCollapsed = useHearthStore((state) => state.ui.catalogCollapsed);
   const inspectorCollapsed = useHearthStore((state) => state.ui.inspectorCollapsed);
   const toolsOpen = useHearthStore((state) => state.ui.toolsPanelOpen);
+  // Build mode edits the shell of the home, so the left panel becomes Rooms & openings.
+  const buildMode = useHearthStore((state) => state.scene.meta.mode) === "build";
   // Exactly one of the log, the cart and the assistant is expanded: three full panels never fit
   // 900 px. The assistant takes the log's slot and links back to the rows it wrote.
   const cartOpen = useHearthStore((state) => state.ui.cartOpen ?? false);
   const assistantOpen = useHearthStore((state) => state.ui.assistantOpen);
-  const revealed = useOnboardingReveal();
 
   const catalogVisible = panelVisible(tier, catalogCollapsed);
   const sideVisible = panelVisible(tier, inspectorCollapsed);
@@ -75,6 +94,8 @@ export default function AppShell() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
+      {/* Before the canvas: the curtain is what shows *through* it until the first frame paints. */}
+      <StudioCurtain />
       <Studio />
       <ConflictSync />
 
@@ -83,7 +104,9 @@ export default function AppShell() {
 
         <div className="flex min-h-0 min-w-0 flex-1 gap-4">
           {catalogVisible ? (
-            <Catalog className="w-[328px] shrink-0" collapsible />
+            buildMode
+              ? <BuildPanel className="w-[328px] shrink-0" collapsible />
+              : <Catalog className="w-[328px] shrink-0" collapsible />
           ) : rails ? (
             <Rail>
               <IconButton
@@ -140,7 +163,7 @@ export default function AppShell() {
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
-          <PromptBar className="min-w-0 flex-1" />
+          <PromptBar className="min-w-0 flex-1" tier={tier} />
           <StatusChip className="pointer-events-auto" />
         </div>
       </div>
@@ -149,13 +172,10 @@ export default function AppShell() {
         <ToolsPanel toolGroups={toolGroups} />
       </div>
 
-      {firstRun && revealed ? (
-        <div className="pointer-events-none absolute top-[88px] left-1/2 z-40 -translate-x-1/2">
-          <Onboarding status={status} onDismiss={dismissFirstRun} />
-        </div>
-      ) : null}
+      {firstRun ? <FirstRunCard status={status} onDismiss={dismissFirstRun} /> : null}
 
-      <StudioCurtain />
+      <Compare />
+      <Board />
       <ConfirmModal />
       <EnableSheet />
       <ShortcutsSheet />

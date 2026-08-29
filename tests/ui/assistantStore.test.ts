@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_MAX_CALLS_PER_TURN } from "../../src/assistant/loop";
 import {
-  MAX_CALLS_PER_TURN, assistantReducer, capReached, initialAssistantState, retryableTurn,
+  MAX_CALLS_PER_TURN, assistantReducer, capReached, initialAssistantState, plainText, retryableTurn,
 } from "../../src/ui/assistantStore";
 import type { AssistantAction, AssistantState } from "../../src/ui/assistantStore";
 
@@ -10,6 +11,22 @@ function fold(actions: AssistantAction[], from: AssistantState = initialAssistan
 }
 
 const OK = { ok: true, room: "living", moved: 3 };
+
+describe("plainText", () => {
+  it("reads the model's Markdown as prose", () => {
+    expect(plainText("**Living Room: 99/100.** **Top fix:** add a lamp"))
+      .toBe("Living Room: 99/100. Top fix: add a lamp");
+    expect(plainText("## Living Room\n* move the sofa\n+ add a lamp")).toBe("Living Room\n- move the sofa\n- add a lamp");
+    expect(plainText("call `get_room_details` first")).toBe("call get_room_details first");
+    expect(plainText("_gently_ nudge it 40 cm")).toBe("gently nudge it 40 cm");
+  });
+
+  it("leaves tool names, ids and arithmetic alone", () => {
+    expect(plainText("arrange_room moved sofa-1 and tv_unit")).toBe("arrange_room moved sofa-1 and tv_unit");
+    expect(plainText("2 * 3 clearances")).toBe("2 * 3 clearances");
+    expect(plainText("Plain prose, unchanged.")).toBe("Plain prose, unchanged.");
+  });
+});
 
 describe("assistantStore — sending a turn", () => {
   it("writes the human's bubble and opens a streaming reply", () => {
@@ -114,6 +131,12 @@ describe("assistantStore — tool calls", () => {
 });
 
 describe("assistantStore — the per-turn cap", () => {
+  it("quotes the guard the loop actually enforces", () => {
+    // The header counter and the composer hint both read this; if it drifts, the panel lies.
+    expect(MAX_CALLS_PER_TURN).toBe(DEFAULT_MAX_CALLS_PER_TURN);
+    expect(MAX_CALLS_PER_TURN).toBe(60);
+  });
+
   it("counts calls for the turn in flight and resets on the next send", () => {
     const spend = (n: number): AssistantAction[] =>
       Array.from({ length: n }, (_unused, index) => ({

@@ -6,7 +6,7 @@
  */
 import { useState } from "react";
 import type { Category } from "../engine/types";
-import { palette } from "../tokens";
+import { mix, palette } from "../tokens";
 import { colorwayHex } from "./format";
 
 const SILHOUETTES: Record<Category, string[]> = {
@@ -43,16 +43,19 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const height = Math.round((width * 3) / 4);
+  // A 12 % wash of the item's own colourway, for the *drawn* fallback only: with no render to sit
+  // on, the silhouette reads as a designed swatch rather than a blank square.
+  const tile = mix(palette.plaster, colorwayHex(colorway), 0.12);
 
   if (failed) {
     return (
       <span
-        className={`block overflow-hidden rounded-chip bg-plaster ${className}`}
-        style={{ width, height }}
+        className={`block overflow-hidden rounded-chip ${className}`}
+        style={{ width, height, background: tile }}
         {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })}
       >
         <svg viewBox="0 0 128 96" width={width} height={height} aria-hidden="true">
-          <rect width="128" height="96" fill={palette.plaster} />
+          <rect width="128" height="96" fill={tile} />
           <ellipse cx="64" cy="80" rx="42" ry="5" fill={palette.charcoal} opacity="0.1" />
           <g fill={colorwayHex(colorway)}>
             {SILHOUETTES[category].map((path) => (
@@ -65,8 +68,9 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
   }
 
   return (
-    // A breathing plaster tile holds the space until the PNG has decoded, so a scrolling list never
-    // reflows and never shows a half-painted image (STYLE.md §4).
+    // Edge to edge on plaster: the thumbnails are rendered through the studio's own materials on a
+    // plaster backdrop (scripts/assets/thumbs-retint.ts), so the tile and the card are one surface —
+    // a colourway mat under the render would only draw a ring around it.
     <span
       className={`relative block shrink-0 overflow-hidden rounded-chip bg-plaster ${className}`}
       style={{ width, height }}

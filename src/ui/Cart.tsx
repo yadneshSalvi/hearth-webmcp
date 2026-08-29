@@ -1,21 +1,27 @@
 "use client";
 /**
- * The cart panel. Lines mirror the same `ShopifyClient` the agent's `update_cart` tool writes to,
- * the budget lives in `meta.budgetUsd`, and checkout follows SHOPIFY.md §6: the store password is
- * posted into a named window before the checkout URL is opened, and is only ever shown masked.
+ * The cart panel. Lines mirror the same `ShopifyClient` the agent's `update_cart` tool writes to —
+ * the very instance, chosen at startup (src/shopify/select.ts) — so the dot says which Shopify this
+ * is talking to rather than which one exists. Checkout follows SHOPIFY.md §6: a named window is
+ * opened on the click itself, the store password is posted into it, and the window is then sent to
+ * the real `checkoutUrl`. The password is only ever shown masked.
  */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createCatalog } from "../engine/catalog";
 import { hearthStore, useHearthStore } from "../state/store";
+import type { ShopifyMode } from "../shopify/select";
 import { CatalogThumb } from "./CatalogThumb";
 import { useCopyFlash } from "./clipboard";
 import { colorwayLabel, maskSecret, plural, usd } from "./format";
 import { IconCart, IconChevronDown, IconChevronUp, IconCopy, IconMinus, IconPlus, IconTrash } from "./icons";
 import { Button, EmptyState, Field, IconButton, Panel } from "./primitives";
 import { pushToast } from "./toast-bus";
-import { cartOps } from "./useHearth";
+import { cartOps, useShopifyMode } from "./useHearth";
 
-type Health = "checking" | "live" | "local";
+/** The window the password form and the checkout URL share, per SHOPIFY.md §6. */
+const WINDOW_NAME = "hearth-shop";
+/** The Lax `_shopify_essential` cookie has to land before the checkout URL is requested. */
+const UNLOCK_MS = 1_100;
 
 /** Commits the typed budget on blur or Enter, so one edit is one undoable change. */
 function commitBudget(raw: string): void {
@@ -25,31 +31,10 @@ function commitBudget(raw: string): void {
   hearthStore.getState().setBudget("human", next);
 }
 
-/** Probes the Storefront API once; anything other than a healthy answer means the local catalog. */
-function useShopifyHealth(): Health {
-  const [health, setHealth] = useState<Health>("checking");
-  useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
-    fetch("/api/health/shopify", { signal: controller.signal })
-      .then((response) => (response.ok ? response.json() as Promise<{ storefront?: boolean }> : undefined))
-      .then((body) => {
-        if (!cancelled) setHealth(body?.storefront ? "live" : "local");
-      })
-      .catch(() => {
-        if (!cancelled) setHealth("local");
-      });
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, []);
-  return health;
-}
-
-function StatusDot({ health, offline }: { health: Health; offline: boolean }) {
-  const tone = offline ? "bg-rose" : health === "live" ? "bg-sage" : health === "local" ? "bg-ochre" : "bg-ink-faint";
-  const label = offline ? "Cart offline" : health === "live" ? "Shopify live" : health === "local" ? "Local catalog" : "Checking Shopify";
+/** The dot reports the client in use, not a probe result — those two disagreed before. */
+function StatusDot({ mode, offline }: { mode: ShopifyMode; offline: boolean }) {
+  const tone = offline ? "bg-rose" : mode === "live" ? "bg-sage" : mode === "local" ? "bg-ochre" : "bg-ink-faint";
+  const label = offline ? "Cart offline" : mode === "live" ? "Shopify live" : mode === "local" ? "Local catalog" : "Checking Shopify";
   return (
     <span className="flex items-center gap-1.5">
       <span className={`h-1.5 w-1.5 rounded-pill ${tone}`} aria-hidden="true" />
@@ -58,19 +43,22 @@ function StatusDot({ health, offline }: { health: Health; offline: boolean }) {
   );
 }
 
-async function startCheckout(setPassword: (value: string) => void): Promise<void> {
-  const link = await cartOps.checkout();
-  if (!link) return;
+interface CheckoutLink {
+  checkoutUrl: string;
+  storePassword: string;
+}
+
+/** Posts the store password into an already-open window, then sends that window to the checkout. */
+function unlockAndOpen(target: Window | null, link: CheckoutLink): void {
   const { checkoutUrl, storePassword } = link;
   if (!storePassword) {
-    window.open(checkoutUrl, "hearth-shop", "noopener");
+    if (target) target.location.replace(checkoutUrl);
     return;
   }
-  setPassword(storePassword);
   const form = document.createElement("form");
   form.method = "post";
   form.action = new URL("/password", checkoutUrl).toString();
-  form.target = "hearth-shop";
+  form.target = WINDOW_NAME;
   const field = document.createElement("input");
   field.type = "hidden";
   field.name = "password";
@@ -79,8 +67,28 @@ async function startCheckout(setPassword: (value: string) => void): Promise<void
   document.body.appendChild(form);
   form.submit();
   form.remove();
-  setTimeout(() => window.open(checkoutUrl, "hearth-shop"), 1_100);
-  pushToast({ title: "Opening checkout", detail: "The store password is entered for you.", tone: "info" });
+  // The same window is navigated rather than opened a second time: `window.open` with `noopener`
+  // treats a named target as `_blank` (per spec), which would lose the password cookie's window.
+  if (target) setTimeout(() => target.location.replace(checkoutUrl), UNLOCK_MS);
+}
+
+/**
+ * Checkout, click-first. The window is opened synchronously so the click's transient activation is
+ * still valid; the awaited `/api/checkout` round-trip then navigates it. When the popup is blocked
+ * the panel keeps the link and the password visible instead of failing silently.
+ */
+async function startCheckout(onLink: (link: CheckoutLink) => void): Promise<void> {
+  const target = window.open("", WINDOW_NAME);
+  const link = await cartOps.checkout();
+  if (!link?.checkoutUrl) {
+    target?.close();
+    return;
+  }
+  onLink(link);
+  unlockAndOpen(target, link);
+  pushToast(target
+    ? { title: "Opening checkout", detail: "The store password is entered for you.", tone: "info" }
+    : { title: "Checkout is ready", detail: "Your browser blocked the window — use the link in the cart.", tone: "warn" });
 }
 
 export function Cart({ className = "" }: { className?: string }) {
@@ -88,8 +96,8 @@ export function Cart({ className = "" }: { className?: string }) {
   const catalogItems = useHearthStore((state) => state.catalog);
   const budgetUsd = useHearthStore((state) => state.scene.meta.budgetUsd);
   const open = useHearthStore((state) => state.ui.cartOpen ?? false);
-  const health = useShopifyHealth();
-  const [password, setPassword] = useState("");
+  const mode = useShopifyMode();
+  const [link, setLink] = useState<CheckoutLink | undefined>(undefined);
   const passwordCopy = useCopyFlash();
   const catalog = createCatalog(catalogItems);
   const remaining = budgetUsd === undefined ? undefined : budgetUsd - cart.subtotalUsd;
@@ -114,23 +122,38 @@ export function Cart({ className = "" }: { className?: string }) {
       footer={open ? (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <StatusDot health={health} offline={cart.status === "offline"} />
+            <StatusDot mode={mode} offline={cart.status === "offline"} />
             <Button
               variant="primary"
               size="sm"
               icon={IconCart}
-              disabled={cart.lines.length === 0}
-              onClick={() => void startCheckout(setPassword)}
+              disabled={cart.lines.length === 0 || mode !== "live"}
+              onClick={() => void startCheckout(setLink)}
             >
               Checkout
             </Button>
           </div>
-          {password ? (
-            <div className="flex items-center justify-between gap-2 rounded-chip border border-hairline bg-plaster/60 px-2.5 py-1.5">
-              <span className="text-[11.5px] text-ink-muted">Store password: {maskSecret(password)}</span>
-              <Button variant="ghost" size="sm" icon={IconCopy} onClick={() => passwordCopy.copy(password)}>
-                {passwordCopy.copied ? "Copied" : "Copy"}
-              </Button>
+          {mode === "local" ? (
+            <p className="text-[11.5px] leading-snug text-ink-muted">
+              Checkout needs the live Shopify store; this session is browsing the local catalog.
+            </p>
+          ) : null}
+          {link ? (
+            <div className="flex flex-col gap-1.5 rounded-chip border border-hairline bg-plaster/60 px-2.5 py-2">
+              <a
+                href={link.checkoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate text-[11.5px] text-dusty-blue underline decoration-dusty-blue/40 underline-offset-2"
+              >
+                Open checkout
+              </a>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11.5px] text-ink-muted">Store password: {maskSecret(link.storePassword)}</span>
+                <Button variant="ghost" size="sm" icon={IconCopy} onClick={() => passwordCopy.copy(link.storePassword)}>
+                  {passwordCopy.copied ? "Copied" : "Copy"}
+                </Button>
+              </div>
             </div>
           ) : null}
         </div>
