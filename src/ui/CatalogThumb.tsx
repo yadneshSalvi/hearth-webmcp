@@ -6,7 +6,7 @@
  */
 import { useState } from "react";
 import type { Category } from "../engine/types";
-import { palette } from "../tokens";
+import { mix, palette } from "../tokens";
 import { colorwayHex } from "./format";
 
 const SILHOUETTES: Record<Category, string[]> = {
@@ -42,16 +42,19 @@ export interface CatalogThumbProps {
 export function CatalogThumb({ productId, category, colorway, name, className = "", width = 88, decorative = false }: CatalogThumbProps) {
   const [failed, setFailed] = useState(false);
   const height = Math.round((width * 3) / 4);
+  // A 12 % wash of the item's own colourway under the render: the tile reads as a designed swatch
+  // while the PNG decodes (and if it never arrives), never as a dark hole where an image failed.
+  const tile = mix(palette.plaster, colorwayHex(colorway), 0.12);
 
   if (failed) {
     return (
       <span
-        className={`block overflow-hidden rounded-chip bg-plaster ${className}`}
-        style={{ width, height }}
+        className={`block overflow-hidden rounded-chip ${className}`}
+        style={{ width, height, background: tile }}
         {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })}
       >
         <svg viewBox="0 0 128 96" width={width} height={height} aria-hidden="true">
-          <rect width="128" height="96" fill={palette.plaster} />
+          <rect width="128" height="96" fill={tile} />
           <ellipse cx="64" cy="80" rx="42" ry="5" fill={palette.charcoal} opacity="0.1" />
           <g fill={colorwayHex(colorway)}>
             {SILHOUETTES[category].map((path) => (
@@ -64,19 +67,25 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
   }
 
   return (
-    // A fixed-size local PNG: next/image would add no optimisation (these are pre-rendered at 512×384)
-    // and its dev-only LCP heuristic warns about lazy thumbnails in a scrolling list.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={`/assets/thumbs/${productId}.png`}
-      alt={decorative ? "" : name}
-      width={width}
-      height={height}
-      loading="lazy"
-      decoding="async"
-      onError={() => setFailed(true)}
-      className={`block shrink-0 rounded-chip bg-plaster object-cover ${className}`}
-      style={{ width, height }}
-    />
+    // The render sits on a mat of its own colourway rather than edge to edge, so a dark product
+    // (a charcoal sofa) reads as a photograph on a swatch instead of a hole in the card.
+    <span
+      className={`block shrink-0 overflow-hidden rounded-chip p-[3px] ${className}`}
+      style={{ width, height, background: tile }}
+    >
+      {/* A fixed-size local PNG: next/image would add no optimisation (these are pre-rendered at
+          512×384) and its dev-only LCP heuristic warns about lazy thumbnails in a scrolling list. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/assets/thumbs/${productId}.png`}
+        alt={decorative ? "" : name}
+        width={width}
+        height={height}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+        className="block h-full w-full rounded-[8px] object-cover"
+      />
+    </span>
   );
 }

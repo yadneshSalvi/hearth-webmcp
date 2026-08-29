@@ -175,7 +175,7 @@ export interface HearthActions {
   clearGhost(source: ActionSource, opts?: QuietOpts): void;
   confirmGhost(source: ActionSource): Furniture;
   setMode(source: ActionSource, mode: Mode): void;
-  setView(source: ActionSource, patch: { view?: View; yaw?: Yaw; focusRoomId?: string; focusItemId?: string }): void;
+  setView(source: ActionSource, patch: { view?: View; yaw?: Yaw; focusRoomId?: string; focusItemId?: string }, opts?: QuietOpts): void;
   setTimeOfDay(source: ActionSource, time: TimeOfDay): void;
   setPalette(source: ActionSource, paletteId: PaletteId, roomIds: string[]): void;
   setAccessibility(source: ActionSource, on: boolean): void;
@@ -204,6 +204,12 @@ export interface HearthActions {
   pulse(itemIds: string[]): void;
   setDragging(dragging: DraggingState | undefined): void;
   setOverlays(patch: Partial<OverlaysState>): void;
+  /**
+   * Swaps the whole furniture list for a transient capture — the compare split view and the design
+   * board load a variant, photograph it and put the room back. No receipt, no undo entry: nothing a
+   * person did, so nothing to undo. Callers pass furniture that already belongs to this scene.
+   */
+  previewFurniture(furniture: Furniture[]): void;
   undo(steps?: number): ActivityEntry[];
   redo(steps?: number): ActivityEntry[];
   resetScene(scene: Scene): void;

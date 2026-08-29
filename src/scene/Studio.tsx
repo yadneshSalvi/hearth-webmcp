@@ -36,6 +36,37 @@ export interface StudioApi {
 type Resolver = { resolve: (blob: Blob) => void; reject: (error: Error) => void };
 let pendingCaptures: Resolver[] = [];
 
+/**
+ * The live root's own `invalidate` and `setFrameloop`, published by CaptureBridge. The module-level
+ * import can bind to a different copy of the R3F runtime than the one driving this canvas, in which
+ * case it schedules a frame nobody renders — and a `frameloop="demand"` canvas renders nothing on
+ * its own, so a capture would wait forever.
+ */
+let requestFrame: (() => void) | undefined;
+let setLoop: ((mode: "always" | "demand") => void) | undefined;
+
+/** Frames to keep asking for while a capture is pending; the pump stops the moment one is drained. */
+const CAPTURE_FRAME_BUDGET = 180;
+
+/**
+ * While a capture is queued the loop runs continuously and is nudged every animation frame, then
+ * drops straight back to demand. A capture is the one moment where a frame is not optional.
+ */
+function pumpFrames(): void {
+  let budget = CAPTURE_FRAME_BUDGET;
+  setLoop?.("always");
+  const kick = (): void => {
+    if (pendingCaptures.length === 0 || budget <= 0) {
+      setLoop?.("demand");
+      return;
+    }
+    budget -= 1;
+    (requestFrame ?? invalidate)();
+    requestAnimationFrame(kick);
+  };
+  kick();
+}
+
 /** Imperative studio handle. Stable across remounts so tool handlers can hold onto it. */
 export const studioApi: StudioApi = {
   focus(target) {
@@ -50,7 +81,7 @@ export const studioApi: StudioApi = {
     return new Promise<Blob>((resolve, reject) => {
       pendingCaptures.push({ resolve, reject });
       wakeStudio();
-      invalidate();
+      pumpFrames();
     });
   },
 };
@@ -84,6 +115,16 @@ function drainCaptures(canvas: HTMLCanvasElement): void {
 /** Reads the freshly rendered frame for `studioApi.capture()` before the buffer is cleared. */
 function CaptureBridge() {
   const gl = useThree((state) => state.gl);
+  const invalidateRoot = useThree((state) => state.invalidate);
+  const setFrameloop = useThree((state) => state.setFrameloop);
+  useEffect(() => {
+    requestFrame = invalidateRoot;
+    setLoop = setFrameloop;
+    return () => {
+      if (requestFrame === invalidateRoot) requestFrame = undefined;
+      if (setLoop === setFrameloop) setLoop = undefined;
+    };
+  }, [invalidateRoot, setFrameloop]);
   useEffect(() => addAfterEffect(() => drainCaptures(gl.domElement)), [gl]);
   return null;
 }

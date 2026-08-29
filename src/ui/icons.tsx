@@ -3,7 +3,7 @@
  * colour from `currentColor` (STYLE.md §5 forbids icon libraries).
  */
 import type { ComponentType, SVGProps } from "react";
-import type { ActionSource, ConflictKind } from "../engine/types";
+import type { ActionSource, ConflictKind, OpeningKind } from "../engine/types";
 
 export interface IconProps {
   size?: number;
@@ -85,6 +85,10 @@ export const IconRoom = icon(<><path d="M3.4 6.4 10 3.4l6.6 3v10.2H3.4z" /><path
 export const IconSwing = icon(<><path d="M5 15V5" /><path d="M15 5A10 10 0 0 1 5 15" strokeDasharray="2.6 2.2" /></>);
 export const IconZone = icon(<rect x="4" y="4" width="12" height="12" rx="2" strokeDasharray="2.8 2.4" />);
 export const IconPath = icon(<path d="M3.6 15.4c3.2 0 3.2-4.4 6.4-4.4s3.2-4.4 6.4-4.4" strokeDasharray="2.6 2.2" />);
+export const IconDoor = icon(<><path d="M6.2 4.2h7.6v11.6H6.2z" /><path d="M3.6 15.8h12.8" /><path d="M11.6 10h.01" /></>);
+export const IconWindow = icon(<><rect x="4.2" y="4.6" width="11.6" height="10.8" rx="1.6" /><path d="M10 4.6v10.8" /><path d="M4.2 10h11.6" /></>);
+export const IconArch = icon(<><path d="M5.2 15.8V9.8a4.8 4.8 0 0 1 9.6 0v6" /><path d="M3.4 15.8h13.2" /></>);
+export const IconCompare = icon(<><rect x="3.2" y="4.6" width="13.6" height="10.8" rx="1.8" /><path d="M10 3.2v13.6" /><path d="M5.6 10h2.2" /><path d="M12.2 10h2.2" /></>);
 export const IconDrag = icon(<><path d="M7.4 5.4h.01" /><path d="M12.6 5.4h.01" /><path d="M7.4 10h.01" /><path d="M12.6 10h.01" /><path d="M7.4 14.6h.01" /><path d="M12.6 14.6h.01" /></>);
 
 /** The diagram glyph that matches how the conflict is drawn on the floor (STYLE.md §3). */
@@ -97,6 +101,18 @@ export function ConflictIcon({ kind, size, className }: { kind: ConflictKind } &
       return <IconPath size={size} className={className} />;
     default:
       return <IconZone size={size} className={className} />;
+  }
+}
+
+/** The list glyph for an opening kind (build panel). */
+export function OpeningIcon({ kind, size, className }: { kind: OpeningKind } & IconProps) {
+  switch (kind) {
+    case "door":
+      return <IconDoor size={size} className={className} />;
+    case "window":
+      return <IconWindow size={size} className={className} />;
+    default:
+      return <IconArch size={size} className={className} />;
   }
 }
 

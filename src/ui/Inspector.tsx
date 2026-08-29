@@ -18,7 +18,7 @@ import { CatalogThumb } from "./CatalogThumb";
 import { ConflictRow } from "./ConflictRow";
 import { categoryLabel } from "./catalogQuery";
 import { colorwayLabel, dimsFull, plural, usd } from "./format";
-import { IconCart, IconCheck, IconLock, IconPanelRight, IconRotateRight, IconTrash, IconUnlock } from "./icons";
+import { IconCart, IconCheck, IconCompare, IconLock, IconPanelRight, IconRotateRight, IconTrash, IconUnlock } from "./icons";
 import { Button, EmptyState, IconButton, Panel, Tag } from "./primitives";
 import { pushToast } from "./toast-bus";
 
@@ -88,6 +88,14 @@ function RoomCard({ room }: { room: Room }) {
     [scene, room.id, catalogItems, conflicts],
   );
   const items = scene.furniture.filter((item) => item.roomId === room.id && item.status === "placed").length;
+  const keys = Object.keys(SCORE_LABELS) as (keyof DesignScores)[];
+  // A perfect room does not need six full bars arguing with it.
+  const perfect = report.score === 100 || keys.every((key) => report.scores[key] === 10);
+  // The two newest saved layouts of this room, in the order they were saved.
+  const pair = [...scene.variants.filter((variant) => variant.roomId === room.id)]
+    .sort((a, b) => b.savedAt - a.savedAt)
+    .slice(0, 2)
+    .reverse();
 
   return (
     <div className="flex min-h-0 flex-col gap-3.5">
@@ -107,11 +115,30 @@ function RoomCard({ room }: { room: Room }) {
       <p className="numerals text-[12px] text-ink-muted">{wallsLine(room)}</p>
       <p className="text-[12.5px] leading-relaxed text-ink-muted">{report.summary}</p>
 
-      <ul className="flex flex-col gap-1.5">
-        {(Object.keys(SCORE_LABELS) as (keyof DesignScores)[]).map((key) => (
-          <ScoreBar key={key} label={SCORE_LABELS[key]} value={report.scores[key]} />
-        ))}
-      </ul>
+      {perfect ? (
+        <p className="flex items-center gap-1.5 rounded-chip border border-sage/35 bg-sage/10 px-2.5 py-2 text-[12.5px] text-ink">
+          <IconCheck size={14} className="shrink-0 text-sage" />
+          Nothing to fix — all six measures are at 10.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {keys.map((key) => (
+            <ScoreBar key={key} label={SCORE_LABELS[key]} value={report.scores[key]} />
+          ))}
+        </ul>
+      )}
+
+      {pair.length === 2 ? (
+        <Button
+          size="sm"
+          icon={IconCompare}
+          onClick={() => hearthStore.getState().setUi({
+            compare: { left: pair[0]?.name ?? "", right: pair[1]?.name ?? "", roomId: room.id },
+          })}
+        >
+          Compare “{pair[0]?.name}” with “{pair[1]?.name}”
+        </Button>
+      ) : null}
 
       {report.suggestions[0] ? (
         <div className="rounded-chip border border-hairline bg-plaster/60 p-2.5">
