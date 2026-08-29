@@ -74,9 +74,18 @@ export interface HearthUiState {
   pendingConfirm?: { id: string; message: string };
   /** Newest-last toast queue, capped at 4. */
   toasts: ToastEntry[];
-  /** Item ids the UI should pulse once (an invalid nudge, a fresh duplicate). */
+  /** Item ids the UI should pulse once (an invalid nudge, a fresh duplicate, a tool action). */
   pulseIds: string[];
   dragging?: DraggingState;
+  /**
+   * Studio chrome state (src/ui). Optional so existing store and tool fixtures stay valid literals;
+   * every reader defaults it.
+   */
+  catalogCollapsed?: boolean;
+  inspectorCollapsed?: boolean;
+  cartOpen?: boolean;
+  shortcutsOpen?: boolean;
+  enableSheetOpen?: boolean;
 }
 
 /** Rules-engine output the renderer draws as floor diagrams (src/scene/Overlays.tsx). */
@@ -170,6 +179,7 @@ export interface HearthActions {
   setTimeOfDay(source: ActionSource, time: TimeOfDay): void;
   setPalette(source: ActionSource, paletteId: PaletteId, roomIds: string[]): void;
   setAccessibility(source: ActionSource, on: boolean): void;
+  setBudget(source: ActionSource, budgetUsd: number | undefined): void;
   setActiveRoom(source: ActionSource, roomId: string): void;
   setSelection(source: ActionSource, selection: Partial<Selection>): void;
   saveVariant(source: ActionSource, roomId: string, name: string): void;
