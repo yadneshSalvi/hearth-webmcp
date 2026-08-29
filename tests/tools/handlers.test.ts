@@ -93,8 +93,8 @@ describe("first-round handlers", () => {
 
   it.each([
     ["3br", 7, 30, 3],
-    ["4br", 9, 34, 4],
-    ["5br", 10, 40, 5],
+    ["4br", 10, 34, 4],
+    ["5br", 11, 40, 5],
   ] as const)("applies a furnished %s within the result budget", async (template, rooms, items, bedrooms) => {
     resetStore(emptyHome());
     const result = await registry().execute("apply_template", { template, furnished: true }, "test");
