@@ -1,6 +1,6 @@
 import type { ColorwayId, Floor, PaletteId, WallColor } from "../tokens";
 import type {
-  ActionSource, Furniture, Mode, Opening, Room, RoomType, Rotation, Scene, Selection, Side, TemplateId, TimeOfDay, Vec2, View, Yaw,
+  ActionSource, Conflict, Furniture, Mode, Opening, Room, RoomType, Rotation, Scene, Selection, Side, TemplateId, TimeOfDay, Vec2, View, Yaw,
 } from "../engine/types";
 
 export type { ActionSource } from "../engine/types";
@@ -56,6 +56,11 @@ export interface HearthUiState {
   pendingConfirm?: { id: string; message: string };
 }
 
+/** Rules-engine output the renderer draws as floor diagrams (src/scene/Overlays.tsx). */
+export interface OverlaysState {
+  conflicts: Conflict[];
+}
+
 export interface HearthState {
   scene: Scene;
   catalog: import("../engine/types").CatalogItem[];
@@ -63,6 +68,8 @@ export interface HearthState {
   activity: ActivityEntry[];
   tools: { available: ToolMirror[]; status: "native" | "polyfill" | "unavailable" | "unknown" };
   ui: HearthUiState;
+  /** Optional, non-undoable: the latest conflict set for the overlay layer. */
+  overlays?: OverlaysState;
 }
 
 export interface PlaceItemInput {
@@ -149,6 +156,7 @@ export interface HearthActions {
   setToolsMirror(list: ToolMirror[], status: HearthState["tools"]["status"]): void;
   pushActivity(entry: ActivityEntry): void;
   setUi(patch: Partial<HearthUiState>): void;
+  setOverlays(patch: Partial<OverlaysState>): void;
   undo(steps?: number): ActivityEntry[];
   redo(steps?: number): ActivityEntry[];
   resetScene(scene: Scene): void;

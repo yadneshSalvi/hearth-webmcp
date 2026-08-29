@@ -41,13 +41,16 @@
 
 :root {
   color-scheme: light only;
+  /* Written every frame by src/scene/LightingRig.tsx as the time of day tweens. */
+  --studio-bg-top: #f7f3ec;
+  --studio-bg-bottom: #efe7db;
 }
 
 html,
 body {
   height: 100%;
   margin: 0;
-  background: linear-gradient(180deg, var(--color-canvas-top) 0%, var(--color-canvas-bottom) 100%);
+  background: linear-gradient(180deg, var(--studio-bg-top) 0%, var(--studio-bg-bottom) 100%);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
