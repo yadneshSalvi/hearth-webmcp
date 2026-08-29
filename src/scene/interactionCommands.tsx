@@ -1,8 +1,8 @@
 "use client";
 /**
  * Small commands and helpers shared by the pointer, the keyboard and the mini-toolbar: duplicate,
- * keyboard selection traversal, and the dev-only `window.__hearth` handle the screenshot harness
- * and Playwright aim with.
+ * keyboard selection traversal, and the `window.__hearth` handle the screenshot harness and
+ * Playwright aim with (gated in src/scene/devBridge.ts).
  */
 import { useEffect, useRef } from "react";
 import { Vector3 } from "three";
@@ -13,6 +13,7 @@ import { polyBBox } from "../engine/geometry";
 import type { CatalogItem, Furniture, Room, Vec2 } from "../engine/types";
 import { hearthStore } from "../state/store";
 import { toastSnapshot } from "../state/toasts";
+import { devBridgesEnabled } from "./devBridge";
 import { getDraggingItemId, getHoveredRoomId } from "./interactionDrag";
 import type { Pose } from "./interactionDrag";
 import { roomToWorldCm } from "./interactionMath";
@@ -115,7 +116,7 @@ export interface DebugHandleProps {
   pick: (clientX: number, clientY: number) => string | undefined;
 }
 
-/** Dev-only handle so the screenshot harness and Playwright can read and aim at studio state. */
+/** Test-only handle so the screenshot harness and Playwright can read and aim at studio state. */
 export function DebugHandle({ camera, canvas, getPose, pick }: DebugHandleProps) {
   const getPoseRef = useRef(getPose);
   const pickRef = useRef(pick);
@@ -124,7 +125,7 @@ export function DebugHandle({ camera, canvas, getPose, pick }: DebugHandleProps)
     pickRef.current = pick;
   }, [getPose, pick]);
   useEffect(() => {
-    if (process.env.NODE_ENV === "production") return;
+    if (!devBridgesEnabled()) return;
     const target = window as unknown as { __hearth?: unknown };
     target.__hearth = {
       state: () => hearthStore.getState(),

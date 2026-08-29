@@ -63,7 +63,8 @@ async function settle(page: Page): Promise<void> {
 
 /** Loads the studio, waits for the canvas handle and leaves one sofa alone in an empty 2BR. */
 async function openStudio(page: Page): Promise<void> {
-  await page.goto("/");
+  // `?e2e=1` installs `window.__hearth` on a production build (src/scene/devBridge.ts).
+  await page.goto("/?e2e=1");
   await page.waitForFunction(() => window.__hearth !== undefined && window.__hearth.project("living", { x: 0, y: 0 }) !== undefined, undefined, { timeout: 30_000 });
   await page.evaluate((catalogId) => {
     const store = window.__hearth!.state();

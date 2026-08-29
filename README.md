@@ -108,6 +108,18 @@ pnpm test                       # engine + tools + budgets
 pnpm test:e2e                   # Playwright (loads the WebMCP polyfill)
 ```
 
+The same 30 Playwright specs also run against the bundle a visitor gets. The suite reads studio
+state back through `window.__hearth*`, which a production build only installs when it is asked to —
+so build with the switch on, then point the suite at it:
+
+```bash
+NEXT_PUBLIC_HEARTH_E2E=1 pnpm build && pnpm start --port 3210
+PLAYWRIGHT_BASE_URL=http://localhost:3210 pnpm test:e2e
+```
+
+A build without that variable exposes nothing; `?e2e=1` on the URL turns the handles on for one
+page load instead, which is what the specs append so any production build can be driven.
+
 ## Credits
 
 Furniture models: CC0 sets by Kenney, Quaternius, Kay Lousberg (KayKit) and poly.pizza contributors — see

@@ -42,10 +42,37 @@ export interface CatalogThumbProps {
    * lazy makes the browser wait for layout before it even asks for the file.
    */
   priority?: boolean;
+  /**
+   * true for the few tiles that appear mid-session, where the grey loading wash reads as a broken
+   * image rather than as art on its way — a cart line an agent just added. The drawn silhouette
+   * stands in until the PNG decodes, and the PNG is fetched eagerly because there are never many.
+   */
+  sketch?: boolean;
+}
+
+/** The designed stand-in: a category silhouette in the item's colourway, on its own warm tile. */
+function Silhouette({ category, colorway, width, height, tile }: {
+  category: Category;
+  colorway: string;
+  width: number;
+  height: number;
+  tile: string;
+}) {
+  return (
+    <svg viewBox="0 0 128 96" width={width} height={height} aria-hidden="true">
+      <rect width="128" height="96" fill={tile} />
+      <ellipse cx="64" cy="80" rx="42" ry="5" fill={palette.charcoal} opacity="0.1" />
+      <g fill={colorwayHex(colorway)}>
+        {SILHOUETTES[category].map((path) => (
+          <path key={path} d={path} />
+        ))}
+      </g>
+    </svg>
+  );
 }
 
 /** A 4:3 product tile: rendered asset when present, drawn silhouette when not. */
-export function CatalogThumb({ productId, category, colorway, name, className = "", width = 88, decorative = false, priority = false }: CatalogThumbProps) {
+export function CatalogThumb({ productId, category, colorway, name, className = "", width = 88, decorative = false, priority = false, sketch = false }: CatalogThumbProps) {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const height = Math.round((width * 3) / 4);
@@ -56,19 +83,11 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
   if (failed) {
     return (
       <span
-        className={`block overflow-hidden rounded-chip ${className}`}
+        className={`block shrink-0 overflow-hidden rounded-chip ${className}`}
         style={{ width, height, background: tile }}
         {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })}
       >
-        <svg viewBox="0 0 128 96" width={width} height={height} aria-hidden="true">
-          <rect width="128" height="96" fill={tile} />
-          <ellipse cx="64" cy="80" rx="42" ry="5" fill={palette.charcoal} opacity="0.1" />
-          <g fill={colorwayHex(colorway)}>
-            {SILHOUETTES[category].map((path) => (
-              <path key={path} d={path} />
-            ))}
-          </g>
-        </svg>
+        <Silhouette category={category} colorway={colorway} width={width} height={height} tile={tile} />
       </span>
     );
   }
@@ -82,8 +101,16 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
       style={{ width, height }}
     >
       {/* A still tint, not a shimmer: `loading="lazy"` leaves most of a 71-row list unloaded, and
-          sixty-odd looping animations would keep the compositor busy for nothing. */}
-      {loaded ? null : <span className="absolute inset-0 bg-charcoal/8" aria-hidden="true" />}
+          sixty-odd looping animations would keep the compositor busy for nothing. A sketch keeps its
+          silhouette underneath after the PNG arrives, so the render cross-fades onto the drawing
+          instead of flashing an empty tile between the two. */}
+      {loaded && !sketch ? null : (
+        <span className="absolute inset-0" style={sketch ? { background: tile } : undefined} aria-hidden="true">
+          {sketch
+            ? <Silhouette category={category} colorway={colorway} width={width} height={height} tile={tile} />
+            : <span className="block h-full w-full bg-charcoal/8" />}
+        </span>
+      )}
       {/* A fixed-size local PNG: next/image would add no optimisation (these are pre-rendered at
           512×384) and its dev-only LCP heuristic warns about lazy thumbnails in a scrolling list. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -92,12 +119,12 @@ export function CatalogThumb({ productId, category, colorway, name, className = 
         alt={decorative ? "" : name}
         width={width}
         height={height}
-        loading={priority ? "eager" : "lazy"}
+        loading={priority || sketch ? "eager" : "lazy"}
         fetchPriority={priority ? "high" : "auto"}
         decoding="async"
         onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}
-        className="block h-full w-full object-cover transition-opacity duration-200 ease-out-soft"
+        className="relative block h-full w-full object-cover transition-opacity duration-200 ease-out-soft"
         style={{ opacity: loaded ? 1 : 0 }}
       />
     </span>

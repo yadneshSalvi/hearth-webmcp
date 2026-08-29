@@ -95,6 +95,10 @@ export default function AppShell() {
   // 900 px. The assistant takes the log's slot and links back to the rows it wrote.
   const cartOpen = useHearthStore((state) => state.ui.cartOpen ?? false);
   const assistantOpen = useHearthStore((state) => state.ui.assistantOpen);
+  // The item card is a fixed 356 px tall (thumbnail, dimensions, colourway chips); the room card is
+  // a scroller. So the inspector's floor depends on which one it is showing — with an item selected
+  // and a grown cart under it, a 300 px floor hid the colourway row under the activity panel.
+  const itemSelected = useHearthStore((state) => state.scene.meta.selection.itemId !== undefined);
   // Both modals already render nothing when closed, and neither animates out, so gating the mount
   // here changes only when their chunk is fetched.
   const compareOpen = useHearthStore((state) => state.ui.compare !== undefined);
@@ -139,7 +143,10 @@ export default function AppShell() {
             // then their own scrollers take over, and the column itself scrolls as a last resort.
             <div className="flex min-h-0 w-[344px] shrink-0 flex-col gap-3 overflow-y-auto panel-scroll">
               {/* The assistant needs room to hold a conversation, so the inspector yields to it. */}
-              <Inspector className={assistantOpen ? "max-h-[27%] min-h-[148px]" : "min-h-[300px]"} collapsible />
+              <Inspector
+                className={assistantOpen ? "max-h-[27%] min-h-[148px]" : itemSelected ? "min-h-[356px]" : "min-h-[300px]"}
+                collapsible
+              />
               {assistantOpen ? (
                 <Assistant className="min-h-[320px] flex-1" />
               ) : (
@@ -150,7 +157,10 @@ export default function AppShell() {
                   readOnlyTools={readOnlyTools}
                 />
               )}
-              <Cart className={cartOpen ? "min-h-[244px] max-h-[52%]" : "shrink-0"} />
+              {/* 280 px is the cart's own money and checkout — subtotal, budget, the Shopify dot, the
+                  Checkout button and the store-password block. Below that its body loses the fight
+                  with its pinned footer and the two draw over each other. */}
+              <Cart className={cartOpen ? "min-h-[280px] max-h-[52%]" : "shrink-0"} />
             </div>
           ) : rails ? (
             <Rail>

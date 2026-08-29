@@ -169,16 +169,19 @@ export function Cart({ className = "" }: { className?: string }) {
                 const product = catalog.byId(line.handle);
                 return (
                   <li key={line.id} className="flex items-center gap-2.5 border-b border-hairline/70 px-3.5 py-2.5 last:border-0">
-                    {product ? (
-                      <CatalogThumb
-                        productId={product.id}
-                        category={product.category}
-                        colorway={line.colorway}
-                        name={line.title}
-                        width={44}
-                        decorative
-                      />
-                    ) : null}
+                    {/* A line can appear the instant a tool adds it (`confirm_preview` → cart), well
+                        before its render decodes — and a product the live store has but this
+                        snapshot does not has no render at all. Either way the tile draws the local
+                        `/assets/thumbs` art or its silhouette, never an empty grey square. */}
+                    <CatalogThumb
+                      productId={product?.id ?? line.handle}
+                      category={product?.category ?? "decor"}
+                      colorway={line.colorway}
+                      name={line.title}
+                      width={44}
+                      decorative
+                      sketch
+                    />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-[12.5px] text-ink">{line.title}</span>
                       <span className="label-caps text-[10px]">{colorwayLabel(line.colorway)}</span>

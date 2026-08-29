@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const FLASH_MS = 1_800;
+/** The hand-off flash on a prompt chip: long enough to read "paste into ChatGPT" and act on it. */
+export const HANDOFF_FLASH_MS = 2_500;
 
 /** Copies text, falling back to a hidden textarea when the async clipboard is blocked. */
 export async function copyText(text: string): Promise<boolean> {
@@ -27,8 +29,8 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
-/** `copied` stays true for 1.8 s after a successful copy so a label can flash. */
-export function useCopyFlash(): { copied: boolean; copy(text: string): void } {
+/** `copied` stays true for `flashMs` (1.8 s by default) after a successful copy, so a label can flash. */
+export function useCopyFlash(flashMs = FLASH_MS): { copied: boolean; copy(text: string): void } {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -41,9 +43,9 @@ export function useCopyFlash(): { copied: boolean; copy(text: string): void } {
       if (!ok) return;
       setCopied(true);
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setCopied(false), FLASH_MS);
+      timer.current = setTimeout(() => setCopied(false), flashMs);
     });
-  }, []);
+  }, [flashMs]);
 
   return { copied, copy };
 }

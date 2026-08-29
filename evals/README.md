@@ -22,6 +22,17 @@ RUN_BROWSER_EVALS=1 pnpm evals
 
 Browser mode navigates to `?webmcp=polyfill`, which opts a non-native browser into Hearth's bundled WebMCP polyfill. The default app behavior remains native-only.
 
+## Driving a production build
+
+The end-to-end suite and the screenshot harness read studio state through `window.__hearth`, `__hearthStore`, `__hearthStudio`, `__hearthPinQuality` and `__hearthPaint`. Those are always on in `next dev`; a production build installs them only when the build sets `NEXT_PUBLIC_HEARTH_E2E=1` or the page is opened with `?e2e=1` (src/scene/devBridge.ts). So the production run is:
+
+```sh
+NEXT_PUBLIC_HEARTH_E2E=1 pnpm build && pnpm start --port 3210
+PLAYWRIGHT_BASE_URL=http://localhost:3210 pnpm test:e2e
+```
+
+Nothing is exposed on a build made without the variable, and the deployed site is built without it.
+
 ## Verified run
 
 On 2026-08-29, local mode completed all 32 prompts twice with both `openai:gpt-5.6-sol` and `anthropic:claude-sonnet-5`; the raw JSON/HTML reports and consolidated findings are under `reports/`. The assistant route was also exercised against the live Responses API on port 3105 and streamed both a `get_scene_summary` call and the follow-up answer. The optional CLI browser eval was not run, so browser automation remains separately opt-in.

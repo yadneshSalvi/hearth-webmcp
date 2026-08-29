@@ -8,6 +8,7 @@ import { useStore } from "zustand";
 import { createCatalog } from "../engine/catalog";
 import { evaluateRoom } from "../engine/conflicts";
 import type { Conflict, TimeOfDay, Yaw } from "../engine/types";
+import { devBridgesEnabled } from "../scene/devBridge";
 import { studioApi } from "../scene/Studio";
 import { createLocalShopify } from "../shopify/local";
 import { createSelectedShopify } from "../shopify/select";
@@ -221,9 +222,9 @@ export function useHearth(): Hearth {
     seedOpeningReceipt();
   }, []);
 
-  // Dev-only handle so the screenshot harness can read and drive chrome state (see DebugBridge).
+  // Test-only handle so the screenshot harness can read and drive chrome state (see DebugBridge).
   useEffect(() => {
-    if (process.env.NODE_ENV === "production") return;
+    if (!devBridgesEnabled()) return;
     const target = window as unknown as { __hearthStore?: unknown };
     target.__hearthStore = hearthStore;
     return () => {

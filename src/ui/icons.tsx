@@ -68,6 +68,8 @@ export const IconLock = icon(<><rect x="5.2" y="9.2" width="9.6" height="7.2" rx
 export const IconUnlock = icon(<><rect x="5.2" y="9.2" width="9.6" height="7.2" rx="1.8" /><path d="M7.6 9.2V7.4a2.4 2.4 0 0 1 4.7-.6" /></>);
 export const IconTrash = icon(<><path d="M4.4 6.4h11.2" /><path d="M8 6.4V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.4" /><path d="M6.2 6.4l.7 9a1.1 1.1 0 0 0 1.1 1h4a1.1 1.1 0 0 0 1.1-1l.7-9" /></>);
 export const IconCart = icon(<><path d="M4.2 7h11.6l-1.3 8a1.5 1.5 0 0 1-1.5 1.3H7a1.5 1.5 0 0 1-1.5-1.3z" /><path d="M7.4 7V5.6a2.6 2.6 0 0 1 5.2 0V7" /></>);
+/** Up and out: the prompt is on the clipboard, the next move happens in the agent. */
+export const IconHandoff = icon(<><path d="M6.6 13.4 13.4 6.6" /><path d="M8.2 6.6h5.2v5.2" /></>);
 export const IconCopy = icon(<><rect x="3.4" y="3.4" width="9" height="9" rx="1.6" /><rect x="7.6" y="7.6" width="9" height="9" rx="1.6" /></>);
 export const IconCheck = icon(<path d="M4.8 10.4 8.4 14 15.2 6.4" />);
 export const IconPlus = icon(<><path d="M10 5.4v9.2" /><path d="M5.4 10h9.2" /></>);
