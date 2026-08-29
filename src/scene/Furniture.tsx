@@ -8,14 +8,14 @@
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { animated, to, useSpring } from "@react-spring/three";
 import { useFrame } from "@react-three/fiber";
-import type { ThreeEvent } from "@react-three/fiber";
 import type { MeshBasicMaterial } from "three";
 import { footprint, polyBBox } from "../engine/geometry";
 import type { CatalogItem, Furniture as FurnitureData, Room } from "../engine/types";
 import { mix, motion as motionTokens, palette } from "../tokens";
-import { hearthStore } from "../state/store";
+import { hearthStore, useHearthStore } from "../state/store";
 import { GlbBoundary, useGlbState, useNormalizedGlb } from "./assets";
-import { setPointerHover, useIsHovered } from "./hover";
+import { useIsHovered } from "./hover";
+import { useDraggingItemId } from "./interactionDrag";
 import { M, clamp, rotationRadians, stackElevationCm } from "./math";
 import type { Vec3 } from "./math";
 import { Placeholder } from "./Placeholder";
@@ -87,6 +87,8 @@ export function Furniture() {
   const delays = useMoveChoreography(resolved, activity.tool);
   const exiting = useExitingItems();
   const focusRoomId = framed.roomId ?? meta.activeRoomId;
+  const draggingId = useDraggingItemId();
+  const dragging = useHearthStore((state) => state.ui.dragging);
 
   return (
     <group name="furniture">
@@ -98,6 +100,8 @@ export function Furniture() {
           selected={meta.selection.itemId === entry.item.id}
           storeHoverId={meta.selection.hoverItemId}
           recede={entry.item.roomId === focusRoomId ? 0 : RECEDE}
+          hidden={entry.item.id === draggingId}
+          invalid={dragging?.itemId === entry.item.id && dragging.valid === false}
         />
       ))}
       {exiting.map((entry) => (
@@ -114,9 +118,13 @@ interface PieceProps {
   storeHoverId?: string;
   exiting?: boolean;
   recede?: number;
+  /** True while the pointer is carrying this item: src/scene/Interaction.tsx draws it instead. */
+  hidden?: boolean;
+  /** True while the item's current position breaks a rule; the halo turns rose. */
+  invalid?: boolean;
 }
 
-function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = false, recede = 0 }: PieceProps) {
+function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = false, recede = 0, hidden = false, invalid = false }: PieceProps) {
   const { item, product, position, footprintM } = entry;
   const ghost = item.status === "ghost";
   const calm = ghost || exiting;
@@ -156,19 +164,8 @@ function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = fa
   const bodyY = to([drop, hoverY, arc], (d, h, a) => d * DROP_HEIGHT + h + ARC_HEIGHT * Math.sin(Math.PI * clamp(a, 0, 1)));
   const bodyScale = to([bounce, exit], (b, e) => b * e);
 
-  const onOver = (event: ThreeEvent<PointerEvent>) => {
-    event.stopPropagation();
-    if (!calm) setPointerHover(item.id);
-  };
-  const onOut = () => setPointerHover(undefined);
-  const onClick = (event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation();
-    if (calm) return;
-    hearthStore.getState().setSelection("human", { itemId: item.id, roomId: item.roomId });
-  };
-
   return (
-    <group name={`item-${item.id}`} position={position} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick}>
+    <group name={`item-${item.id}`} position={position} visible={!hidden}>
       <animated.group position-x={ox} position-y={oy} position-z={oz}>
         <animated.group position-y={bodyY} scale={bodyScale}>
           <group rotation-y={rotationRadians(item.rotation)}>
@@ -176,7 +173,7 @@ function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = fa
           </group>
         </animated.group>
       </animated.group>
-      {selected && !ghost ? <Halo width={footprintM.w} depth={footprintM.d} /> : null}
+      {selected && !ghost ? <Halo width={footprintM.w} depth={footprintM.d} invalid={invalid} /> : null}
       {dust && !calm ? <DustRing width={footprintM.w} depth={footprintM.d} /> : null}
     </group>
   );
@@ -202,14 +199,21 @@ function GlbBody({ product, hex, ghost, recede }: { product: CatalogItem; hex: s
   return <primitive object={model} />;
 }
 
-/** Soft ochre halo on the floor beneath the selected item — no hard outline. */
-function Halo({ width, depth }: { width: number; depth: number }) {
+/** Soft halo on the floor beneath the selected item — ochre normally, rose when it breaks a rule. */
+function Halo({ width, depth, invalid = false }: { width: number; depth: number; invalid?: boolean }) {
   const map = useSoftRing();
   const size = Math.max(width, depth) + 0.36;
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.036, 0]} renderOrder={2}>
       <planeGeometry args={[size, size]} />
-      <meshBasicMaterial map={map ?? undefined} color={palette.ochre} transparent opacity={0.6} depthWrite={false} toneMapped={false} />
+      <meshBasicMaterial
+        map={map ?? undefined}
+        color={invalid ? palette.rose : palette.ochre}
+        transparent
+        opacity={0.6}
+        depthWrite={false}
+        toneMapped={false}
+      />
     </mesh>
   );
 }

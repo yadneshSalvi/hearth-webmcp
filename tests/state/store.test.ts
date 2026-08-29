@@ -10,7 +10,7 @@ function reset(): void {
     activity: [],
     cart: { lines: [], subtotalUsd: 0, status: "idle" },
     tools: { available: [], status: "unknown" },
-    ui: { boardOpen: false, assistantOpen: false, toolsPanelOpen: false },
+    ui: { boardOpen: false, assistantOpen: false, toolsPanelOpen: false, toasts: [], pulseIds: [] },
   });
   hearthStore.temporal.getState().clear();
 }

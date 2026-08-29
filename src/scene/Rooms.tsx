@@ -20,6 +20,7 @@ import { DOLLHOUSE_PITCH, DOOR_H, DOOR_LEAF_T, M, PLAN_PITCH, WALL_H, easeOut, w
 import { WALL_HEIGHT_M, WALL_THICKNESS_M, buildRoomWalls, disposeWalls, polygonShape, primaryDoorIds } from "./walls";
 import type { Group, Mesh } from "three";
 import type { WallBuild } from "./walls";
+import { useHoveredRoomId } from "./interactionDrag";
 import { useFloorTexture } from "./textures";
 import { useFramedBox } from "./framing";
 import { useMeta, useOpenings, useRooms } from "./useSceneStore";
@@ -276,8 +277,9 @@ function SwingArcs({ room, openings }: { room: Room; openings: Opening[] }) {
   );
 }
 
-/** Plan-view room label: small-caps name plus the Fraunces area in m². */
+/** Plan-view room label: small-caps name plus the Fraunces area in m², lifting on pointer hover. */
 function RoomLabel({ room }: { room: Room }) {
+  const hovered = useHoveredRoomId() === room.id;
   const centre = useMemo(() => {
     const sum = room.poly.reduce((acc, point) => ({ x: acc.x + point.x, y: acc.y + point.y }), { x: 0, y: 0 });
     return { x: sum.x / room.poly.length, y: sum.y / room.poly.length };
@@ -289,8 +291,13 @@ function RoomLabel({ room }: { room: Room }) {
       pointerEvents="none"
       zIndexRange={[20, 0]}
     >
-      <div className="pointer-events-none flex select-none flex-col items-center gap-1">
-        <span className="label-caps whitespace-nowrap">{room.name}</span>
+      <div
+        className="pointer-events-none flex select-none flex-col items-center gap-1 transition-transform duration-[180ms] ease-out-soft"
+        style={{ transform: hovered ? "translateY(-7px)" : "none" }}
+      >
+        <span className="label-caps whitespace-nowrap" style={hovered ? { color: "var(--color-ink)" } : undefined}>
+          {room.name}
+        </span>
         <span className="numerals text-[13px] text-ink">{roomAreaM2(room).toFixed(1)} m²</span>
       </div>
     </Html>
