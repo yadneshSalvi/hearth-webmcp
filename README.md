@@ -4,7 +4,7 @@
 > checks clearances and door swings, shops a real Shopify catalog, and prepares checkout — through **36 WebMCP tools**
 > registered on the page with `document.modelContext.registerTool`. You drag, it plans; both of you see the same scene.
 
-**Live:** https://hearth.yadneshsalvi.com · **Video:** _coming_ · **Tools contract:** [TOOLS.md](TOOLS.md) · Licence: MIT
+**Live:** https://hearth.yadneshsalvi.com (mirror: https://hearth-wheat-ten.vercel.app) · **Video:** _coming_ · **Tools contract:** [TOOLS.md](TOOLS.md) · Licence: MIT
 
 ![Hearth Studio at golden hour: the living room in dollhouse view, catalog on the left, inspector and activity log on the right](docs/hero.png)
 
@@ -87,8 +87,14 @@ document.modelContext.registerTool(
 - **Shopify** (`src/shopify`, `app/api`): Storefront API 2026-07 (search, product, cart, checkout URL) behind route
   handlers; catalog metafields (`hearth.dims_cm`, `hearth.colorways`, …); a committed snapshot keeps browsing and
   previews working offline.
-- **Quality**: `pnpm typecheck && pnpm lint && pnpm test` (engine, tools, budgets), Playwright smoke, `webmcp-evals`
-  prompt suite in [`evals/`](evals/), Lighthouse's *Registered WebMCP tools* audit.
+- **Quality**: `pnpm typecheck && pnpm lint && pnpm test` (58 files / 616 tests: engine, tools, budgets, UI), 30 Playwright
+  e2e specs (drag, catalog drop, confirm dialogs, compare, board, assistant), a `webmcp-evals` prompt suite in
+  [`evals/`](evals/), and Lighthouse on the production build (performance 98 · accessibility 96 · best practices 100).
+
+  | Eval suite (32 prompts × 2 runs, `evals/prompts.json`) | gpt-5.6-sol | claude-sonnet-5 |
+  |---|---:|---:|
+  | Key-call accuracy — right tool, right arguments, in order (`evals/reports/KEYCALL.md`) | **64/64** | **64/64** |
+  | Strict positional trajectory (the CLI's own metric; extra context reads count as misses) | 52/64 | 41/64 |
 
 ## Run it locally
 
