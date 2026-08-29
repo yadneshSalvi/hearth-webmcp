@@ -1,6 +1,6 @@
 import type { Catalog } from "./catalog";
-import { freeSpans, polyInside, resolveWall, walls } from "./geometry";
-import type { CatalogItem, Category, Room, Scene, Side, Span, Wall } from "./types";
+import { footprint, freeSpans, polyInside, resolveWall, walls } from "./geometry";
+import type { CatalogItem, Category, Room, Scene, Side, Span, Vec2, Wall } from "./types";
 
 type CatalogSource = Catalog | CatalogItem[];
 
@@ -43,6 +43,65 @@ function spanLength(span: Span): number {
   return span.end - span.start;
 }
 
+function lookup(catalog: CatalogSource, id: string): CatalogItem | undefined {
+  return Array.isArray(catalog) ? catalog.find((item) => item.id === id) : catalog.byId(id);
+}
+
+function projections(wall: Wall, point: Vec2): { along: number; inward: number } {
+  const dx = (wall.b.x - wall.a.x) / wall.length;
+  const dy = (wall.b.y - wall.a.y) / wall.length;
+  return {
+    along: (point.x - wall.a.x) * dx + (point.y - wall.a.y) * dy,
+    inward: (point.x - wall.a.x) * -dy + (point.y - wall.a.y) * dx,
+  };
+}
+
+function depthBlockers(
+  scene: Scene,
+  room: Room,
+  wall: Wall,
+  depth: number,
+  catalog: CatalogSource,
+  ignored: Set<string>,
+): Span[] {
+  return scene.furniture.flatMap((item): Span[] => {
+    if (item.roomId !== room.id || item.status !== "placed" || ignored.has(item.id)) return [];
+    const itemCat = lookup(catalog, item.catalogId);
+    if (!itemCat) return [];
+    const projected = footprint(item, itemCat).map((point) => projections(wall, point));
+    const minDepth = Math.min(...projected.map((point) => point.inward));
+    const maxDepth = Math.max(...projected.map((point) => point.inward));
+    if (maxDepth < 0 || minDepth > depth + 5) return [];
+    const along = projected.map((point) => point.along);
+    return [{
+      start: Math.max(0, Math.min(wall.length, ...along)),
+      end: Math.max(0, Math.min(wall.length, Math.max(...along))),
+    }];
+  }).filter((span) => span.end > span.start);
+}
+
+function subtractBlockers(spans: Span[], blockers: Span[]): Span[] {
+  return blockers.reduce<Span[]>((free, blocker) => free.flatMap((span): Span[] => {
+    if (blocker.end <= span.start || blocker.start >= span.end) return [span];
+    return [
+      ...(blocker.start > span.start ? [{ start: span.start, end: Math.min(span.end, blocker.start) }] : []),
+      ...(blocker.end < span.end ? [{ start: Math.max(span.start, blocker.end), end: span.end }] : []),
+    ];
+  }), spans);
+}
+
+function productSpans(
+  scene: Scene,
+  room: Room,
+  wall: Wall,
+  cat: CatalogItem,
+  catalog: CatalogSource,
+  ignoreItemIds: string[] = [],
+): Span[] {
+  const spans = freeSpans(room, wall, scene, catalog, { ignoreItemIds, minLength: 0, itemHeight: cat.dims.h });
+  return subtractBlockers(spans, depthBlockers(scene, room, wall, cat.dims.d, catalog, new Set(ignoreItemIds)));
+}
+
 /** Finds the tightest currently free wall span that can hold a product's width. */
 export function fitsOnWall(
   scene: Scene,
@@ -52,7 +111,7 @@ export function fitsOnWall(
   catalog: CatalogSource,
   opts: { ignoreItemIds?: string[] } = {},
 ): WallFit {
-  const spans = freeSpans(room, wall, scene, catalog, { ignoreItemIds: opts.ignoreItemIds, minLength: 0, itemHeight: cat.dims.h });
+  const spans = productSpans(scene, room, wall, cat, catalog, opts.ignoreItemIds);
   const fitting = spans
     .filter((span) => spanLength(span) >= cat.dims.w)
     .sort((a, b) => spanLength(a) - spanLength(b) || a.start - b.start)[0];

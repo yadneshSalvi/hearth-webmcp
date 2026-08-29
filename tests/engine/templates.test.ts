@@ -98,12 +98,9 @@ describe("floor-plan templates", () => {
     }
 
     const accessible = evaluateHome(scene, catalog, { accessibility: true });
-    // Expected: 90 cm routes flag the sofa, armchair, and two beds; the centred main bed also lacks a 150 cm side turn.
+    // Endpoint-owned zones no longer cap route width; one real pinch and the main-bed side turn remain.
     expect(accessible.map((conflict) => [conflict.kind, conflict.items[0]])).toEqual([
-      ["access_path", "armchair-1"],
-      ["access_path", "bed-1"],
       ["access_path", "bed-2"],
-      ["access_path", "sofa-1"],
       ["turning_circle", "bed-1"],
     ]);
   });

@@ -32,7 +32,7 @@ describe("traffic grid and required routes", () => {
     expect(first[0]?.from).toBe("door-n");
     expect(first[0]?.to).toBe("door-s");
     expect(first[0]?.ok).toBe(true);
-    expect(first[0]?.minWidthCm).toBe(90);
+    expect(first[0]?.minWidthCm).toBe(190);
     expect(first[0]?.pinch).toBeDefined();
     expect(first[0]?.points.length).toBeGreaterThanOrEqual(2);
     expect(first[0]?.points.every((point) => pointInPoly(point, input.rooms[0]!.poly))).toBe(true);
@@ -102,9 +102,9 @@ describe("traffic grid and required routes", () => {
     const input = scene([opening("door-n", "w0", 50), opening("door-s", "w2", 50)]);
     const standard = trafficPaths(input, "r", catalog, { accessibility: false });
     const accessible = trafficPaths(input, "r", catalog, { accessibility: true });
-    expect(standard[0]?.minWidthCm).toBe(90);
+    expect(standard[0]?.minWidthCm).toBe(190);
     expect(standard[0]?.ok).toBe(true);
-    expect(accessible[0]?.minWidthCm).toBe(90);
+    expect(accessible[0]?.minWidthCm).toBe(190);
     expect(accessible[0]?.ok).toBe(true);
     expect(accessible[0]?.from).toBe(standard[0]?.from);
     expect(accessible[0]?.to).toBe(standard[0]?.to);

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { catalogSource } from "../../data/catalog.source";
+import { resolveAnchor } from "../../src/engine/anchors";
 import { createCatalog } from "../../src/engine/catalog";
 import { fitNote, fitsInRoom, fitsOnWall, searchCatalog, wallFits } from "../../src/engine/fit";
-import { resolveWall } from "../../src/engine/geometry";
+import { resolveWall, walls } from "../../src/engine/geometry";
+import { createTemplate } from "../../src/engine/templates";
 import type { Furniture, Opening, Room, Scene } from "../../src/engine/types";
 
 const catalog = createCatalog(catalogSource);
@@ -69,6 +71,30 @@ describe("wall fitting", () => {
     expect(ignored.fits).toBe(true);
     expect(ignored.spareCm).toBe(180);
     expect(ignored.span).toEqual({ start: 0, end: 400 });
+  });
+
+  it("projects off-wall blockers through the product-depth band", () => {
+    const target = room();
+    const plant: Furniture = { id: "plant-1", catalogId: "plant-pilea", roomId: "room", pos: { x: 200, y: 40 }, rotation: 0, colorway: "sage", status: "placed" };
+    const current = scene([], [plant], target);
+    const wall = resolveWall(target, "north")!;
+    const sofa = catalog.byId("sofa-liva")!;
+    expect(fitsOnWall(current, target, wall, sofa, catalog)).toEqual({ fits: true, spareCm: 0, span: { start: 0, end: 180 } });
+    expect(fitNote(current, target, wall, sofa, catalog)).toBe("fits north wall · 0 cm spare");
+  });
+
+  it("agrees with wall-anchor placement across a furnished living room", () => {
+    const current = createTemplate("2br", { furnished: true });
+    const target = current.rooms.find((entry) => entry.id === "living")!;
+    for (const productId of ["sofa-liva", "plant-pilea", "shelf-lund"]) {
+      const product = catalog.byId(productId)!;
+      for (const wall of walls(target)) {
+        const fit = fitsOnWall(current, target, wall, product, catalog);
+        const along = fit.span ? (fit.span.start + fit.span.end) / 2 : wall.length / 2;
+        const placement = resolveAnchor(current, target.id, product, { anchor: { wall: wall.id, along }, maxNudgeCm: wall.length }, catalog);
+        expect(placement.ok, `${product.id} on ${wall.side}`).toBe(fit.fits);
+      }
+    }
   });
 
   it("summarises every wall by stable wall id and side", () => {

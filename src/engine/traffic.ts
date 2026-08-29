@@ -33,6 +33,7 @@ export interface TrafficPath {
 interface Endpoint {
   id: string;
   point: Vec2;
+  excluded: Vec2[][];
 }
 
 interface Grid {
@@ -44,6 +45,7 @@ interface Grid {
   blocked: Uint8Array;
   soft: Uint8Array;
   distance: Float64Array;
+  obstacles: Array<{ id: string; box: Bounds }>;
 }
 
 interface Bounds {
@@ -64,7 +66,7 @@ function roomOpenings(scene: Scene, room: Room): Endpoint[] {
     .sort((a, b) => a.id.localeCompare(b.id))
     .flatMap((opening) => {
       const zone = openingClearZone(opening, room);
-      return zone && zone.length > 0 ? [{ id: opening.id, point: center(zone) }] : [];
+      return zone && zone.length > 0 ? [{ id: opening.id, point: center(zone), excluded: [zone] }] : [];
     });
 }
 
@@ -76,8 +78,38 @@ function furnitureUsePoints(scene: Scene, room: Room, catalog: Catalog): Endpoin
       const cat = catalog.byId(item.catalogId);
       if (!cat || !USE_CATEGORIES.has(cat.category)) return [];
       const zone = clearanceZone(item, cat);
-      return zone.length > 0 ? [{ id: item.id, point: center(zone) }] : [];
+      return zone.length > 0 ? [{ id: item.id, point: center(zone), excluded: [zone, footprint(item, cat)] }] : [];
     });
+}
+
+function insideEndpoint(point: Vec2, endpoint: Endpoint): boolean {
+  return endpoint.excluded.some((poly) => pointInPoly(point, poly));
+}
+
+function measuredCells(grid: Grid, cells: number[], from: Endpoint, to: Endpoint): number[] {
+  return cells.filter((cell) => {
+    const point = cellPoint(grid, cell);
+    return !insideEndpoint(point, from) && !insideEndpoint(point, to);
+  });
+}
+
+function endpointDistance(grid: Grid, cell: number, from: Endpoint, to: Endpoint): number {
+  const point = cellPoint(grid, cell);
+  let distance = distanceToRoomEdge(point, grid.room);
+  for (const obstacle of grid.obstacles) {
+    if (obstacle.id !== from.id && obstacle.id !== to.id) {
+      distance = Math.min(distance, distanceToBounds(point, obstacle.box));
+    }
+  }
+  return distance;
+}
+
+function visibleCells(grid: Grid, cells: number[], from: Endpoint, to: Endpoint): number[] {
+  let start = 0;
+  while (start < cells.length && insideEndpoint(cellPoint(grid, cells[start] as number), from)) start += 1;
+  let end = cells.length - 1;
+  while (end >= start && insideEndpoint(cellPoint(grid, cells[end] as number), to)) end -= 1;
+  return cells.slice(start, end + 1);
 }
 
 function cellPoint(grid: Grid, index: number): Vec2 {
@@ -118,13 +150,13 @@ function buildGrid(scene: Scene, room: Room, catalog: Catalog, clearanceCost: bo
   const cols = Math.ceil(bounds.w / GRID_CM);
   const rows = Math.ceil(bounds.d / GRID_CM);
   if (cols <= 0 || rows <= 0) return undefined;
-  const blockers: Bounds[] = [];
+  const blockers: Array<{ id: string; box: Bounds }> = [];
   const softZones: Bounds[] = [];
   for (const item of scene.furniture) {
     if (item.roomId !== room.id || item.status !== "placed") continue;
     const cat = catalog.byId(item.catalogId);
     if (!cat) continue;
-    if (!NON_BLOCKING.has(cat.category)) blockers.push(polyBBox(footprint(item, cat)));
+    if (!NON_BLOCKING.has(cat.category)) blockers.push({ id: item.id, box: polyBBox(footprint(item, cat)) });
     if (clearanceCost) {
       const zone = clearanceZone(item, cat);
       if (zone.length > 0) softZones.push(polyBBox(zone));
@@ -140,18 +172,19 @@ function buildGrid(scene: Scene, room: Room, catalog: Catalog, clearanceCost: bo
     blocked: new Uint8Array(size),
     soft: new Uint8Array(size),
     distance: new Float64Array(size),
+    obstacles: blockers,
   };
   for (let index = 0; index < size; index += 1) {
     const point = cellPoint(grid, index);
     const inside = pointInPoly(point, room.poly);
-    const occupied = inside && blockers.some((box) => inBounds(point, box));
+    const occupied = inside && blockers.some((blocker) => inBounds(point, blocker.box));
     if (!inside || occupied) {
       grid.blocked[index] = 1;
       grid.distance[index] = 0;
       continue;
     }
     let distance = distanceToRoomEdge(point, room);
-    for (const box of blockers) distance = Math.min(distance, distanceToBounds(point, box));
+    for (const blocker of blockers) distance = Math.min(distance, distanceToBounds(point, blocker.box));
     grid.distance[index] = distance;
     if (softZones.some((box) => inBounds(point, box))) grid.soft[index] = 1;
   }
@@ -319,18 +352,22 @@ export function trafficPaths(scene: Scene, roomId: string, catalog: Catalog, opt
     if (start === undefined || goal === undefined) return { from: from.id, to: to.id, points: [], minWidthCm: 0, ok: false };
     const cells = route(grid, start, goal, requiredWidth);
     if (cells.length === 0) return { from: from.id, to: to.id, points: [], minWidthCm: 0, ok: false };
-    let pinchCell = cells[0] as number;
-    for (const cell of cells) if (grid.distance[cell]! < grid.distance[pinchCell]! - EPSILON) pinchCell = cell;
-    const minWidthCm = Math.max(0, Math.floor(grid.distance[pinchCell]! * 2 + EPSILON));
-    const raw = cells.map((cell) => cellPoint(grid, cell));
-    raw[0] = { ...from.point };
-    raw[raw.length - 1] = { ...to.point };
+    const measured = measuredCells(grid, cells, from, to);
+    let pinchCell = measured[0];
+    for (const cell of measured) {
+      if (pinchCell === undefined || endpointDistance(grid, cell, from, to) < endpointDistance(grid, pinchCell, from, to) - EPSILON) pinchCell = cell;
+    }
+    const minWidthCm = pinchCell === undefined
+      ? requiredWidth
+      : Math.max(0, Math.floor(endpointDistance(grid, pinchCell, from, to) * 2 + EPSILON));
+    const visible = visibleCells(grid, cells, from, to);
+    const raw = (visible.length > 0 ? visible : cells).map((cell) => cellPoint(grid, cell));
     return {
       from: from.id,
       to: to.id,
       points: simplify(raw),
       minWidthCm,
-      pinch: cellPoint(grid, pinchCell),
+      ...(pinchCell === undefined ? {} : { pinch: cellPoint(grid, pinchCell) }),
       ok: minWidthCm >= requiredWidth,
     };
   });

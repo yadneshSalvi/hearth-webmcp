@@ -44,7 +44,8 @@ Traffic uses a 10 cm occupancy grid and deterministic octile A* between every pa
 of doors/arches and from the primary opening to sofa, armchair, bed, and desk use
 points. Conflict `zone` stores the simplified raw path polyline for dotted rendering.
 One distance field supplies its narrowest width; standard/access paths require
-60/90 cm. Accessibility also checks 150 cm turning circles and 120 cm reach zones.
+60/90 cm, excluding each route endpoint's own use/door zone and item footprint.
+Accessibility also checks 150 cm turning circles and 120 cm reach zones.
 The grid is `O(cells × obstacles)` to build and each path is `O(cells log cells)`;
 the canonical 520×440 cm room is designed for sub-frame evaluation.
 ## Placement
@@ -59,6 +60,8 @@ result names obstacles and returns every requested-wall free span with a `fits`
 flag and an actionable midpoint or narrower-item suggestion. Windows block an
 item only when `item.dims.h > (window.sillHeight ?? 90)`; sofas, beds, desks and
 other low pieces may sit below a sill while tall storage must move off its span.
+`freeSpans` stays wall-hugging only; product fit also projects blockers through
+the product-depth band.
 Rugs may stack below anything; lamps/decor may stack fully inside supported surfaces.
 
 `arrangeRoom` excludes preview ghosts, reuses wall-span calculations within one
