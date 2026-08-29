@@ -3082,101 +3082,12 @@
         }
       },
       {
-        "functionName": "get_room_details",
+        "functionName": "measure",
         "arguments": {
-          "room": {
-            "$pattern": "(?i)living"
+          "subject": {
+            "$pattern": "(?i)north"
           }
         },
-        "mockOutput": {
-          "ok": true,
-          "room": {
-            "id": "living",
-            "name": "Living Room",
-            "type": "living",
-            "size_cm": "520x440",
-            "area_m2": 22.9,
-            "floor": "oak",
-            "wall_color": "plaster"
-          },
-          "walls": [
-            {
-              "id": "w0",
-              "side": "north",
-              "length_cm": 520,
-              "free_spans": "0-145,500-520"
-            },
-            {
-              "id": "w1",
-              "side": "east",
-              "length_cm": 440,
-              "free_spans": "0-75,270-440"
-            },
-            {
-              "id": "w2",
-              "side": "south",
-              "length_cm": 520,
-              "free_spans": "0-20,110-170,350-520"
-            },
-            {
-              "id": "w3",
-              "side": "west",
-              "length_cm": 440,
-              "free_spans": "0-40,234-440"
-            }
-          ],
-          "openings": [
-            {
-              "id": "door-living-hall",
-              "kind": "door",
-              "wall": "w2",
-              "offset_cm": 20,
-              "width_cm": 90,
-              "swing": "in",
-              "hinge": "right"
-            },
-            {
-              "id": "door-living-kitchen",
-              "kind": "door",
-              "wall": "w1",
-              "offset_cm": 180,
-              "width_cm": 90,
-              "swing": "in",
-              "hinge": "left"
-            },
-            {
-              "id": "window-living-north",
-              "kind": "window",
-              "wall": "w0",
-              "offset_cm": 340,
-              "width_cm": 160
-            },
-            {
-              "id": "window-living-west",
-              "kind": "window",
-              "wall": "w3",
-              "offset_cm": 40,
-              "width_cm": 140
-            }
-          ],
-          "items": [
-            "sofa-1 Endre Sofa @255,48 r0 220x95 sage",
-            "tv-unit-1 Linje TV Unit @260,420 r180 180x40 oak",
-            "rug-1 Loop Rug @260,240 r90 300x200 terracotta",
-            "armchair-1 Nook Armchair @41,245 r270 82x78 terracotta",
-            "floor-lamp-1 Glow Floor Lamp @400,195 r0 30x30 ochre",
-            "plant-1 Fern Plant @40,120 r0 50x50 sage",
-            "shelf-1 Kant Shelf @503,125 r90 35x100 oak"
-          ],
-          "more": 0,
-          "conflicts": 0,
-          "hint": "Items are 'id name @x,y rotation WxD colorway'. measure gives gaps and spans."
-        }
-      },
-      {
-        "functionName": "measure",
-        "arguments": {},
-        "optional": true,
         "mockOutput": {
           "ok": true,
           "subject": {
@@ -3200,7 +3111,17 @@
             }
           ],
           "hint": "Add to to measure a gap or distance from this subject."
-        }
+        },
+        "alternatives": [
+          {
+            "functionName": "get_room_details",
+            "arguments": {
+              "room": {
+                "$pattern": "(?i)living"
+              }
+            }
+          }
+        ]
       },
       {
         "functionName": "get_conflicts",
@@ -20583,7 +20504,17 @@
             }
           ],
           "hint": "Add to to measure a gap or distance from this subject."
-        }
+        },
+        "alternatives": [
+          {
+            "functionName": "get_room_details",
+            "arguments": {
+              "room": {
+                "$pattern": "(?i)living"
+              }
+            }
+          }
+        ]
       },
       {
         "functionName": "get_conflicts",

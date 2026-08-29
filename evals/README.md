@@ -25,3 +25,8 @@ Browser mode navigates to `?webmcp=polyfill`, which opts a non-native browser in
 ## Verified run
 
 On 2026-08-29, local mode completed all 32 prompts twice with both `openai:gpt-5.6-sol` and `anthropic:claude-sonnet-5`; the raw JSON/HTML reports and consolidated findings are under `reports/`. The assistant route was also exercised against the live Responses API on port 3105 and streamed both a `get_scene_summary` call and the follow-up answer. The optional CLI browser eval was not run, so browser automation remains separately opt-in.
+
+## Two metrics
+
+- **Strict trajectory accuracy** (the CLI's own scoring, `SUMMARY.md`): positional match of the expected call tree. Optional context reads (`optional: true`, with realistic `mockOutput` from the real handlers) tolerate the reads our descriptions encourage, but any other extra call fails the run.
+- **Key-call accuracy** (`scripts/evals/score.py` → `KEYCALL.md`): every required tool with its argument constraints appears in order somewhere in the trajectory; extra calls are ignored; `alternatives` on a required node accept an equivalent tool (e.g. `get_room_details` answers a free-span question as well as `measure`). This is the number we tune descriptions against.

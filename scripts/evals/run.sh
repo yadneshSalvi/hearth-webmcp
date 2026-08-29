@@ -123,3 +123,5 @@ if [[ "${RUN_BROWSER_EVALS:-0}" == "1" ]]; then
   stop_server
   trap cleanup EXIT
 fi
+
+python3 scripts/evals/score.py
