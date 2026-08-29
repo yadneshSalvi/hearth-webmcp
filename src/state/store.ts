@@ -302,16 +302,47 @@ export const hearthStore = createStore<HearthStore>()(
         });
       },
       loadVariant: (source, roomId, name) => {
-        requiredRoom(get(), roomId);
-        const variant = get().scene.variants.find((candidate) => candidate.roomId === roomId && candidate.name.toLowerCase() === name.trim().toLowerCase());
+        const state = get();
+        requiredRoom(state, roomId);
+        const variant = state.scene.variants.find((candidate) => candidate.roomId === roomId && candidate.name.toLowerCase() === name.trim().toLowerCase());
         if (!variant) throw new HearthError("not_found", `Variant ${name} was not found in ${roomId}`);
         const furniture = variant.furniture.map((item) => structuredClone(item));
+        const outside = state.scene.furniture.filter((item) => item.roomId !== roomId);
+        const outsideIds = new Set(outside.map((item) => item.id));
+        const usedIds = new Set([...outsideIds, ...furniture.map((item) => item.id)]);
+        const reassigned: Array<{ from: string; to: string }> = [];
+        for (const item of furniture) {
+          if (!outsideIds.has(item.id)) continue;
+          const product = catalog.byId(item.catalogId);
+          if (!product) throw new HearthError("invalid", `Variant ${variant.name} contains unknown product ${item.catalogId}`);
+          const from = item.id;
+          const to = nextItemId(product.category, usedIds);
+          item.id = to;
+          usedIds.add(to);
+          reassigned.push({ from, to });
+        }
+        const outsideLineIds = new Set(outside.flatMap((item) => item.cartLineId ? [item.cartLineId] : []));
+        for (const item of furniture) {
+          if (!item.cartLineId) continue;
+          const lineExists = state.cart.lines.some((line) => line.id === item.cartLineId);
+          if (!lineExists || outsideLineIds.has(item.cartLineId)) delete item.cartLineId;
+        }
+        const replacedIds = new Set(state.scene.furniture.filter((item) => item.roomId === roomId).map((item) => item.id));
         set((draft) => {
           draft.scene.furniture = draft.scene.furniture.filter((item) => item.roomId !== roomId || item.status === "ghost");
           draft.scene.furniture.push(...furniture);
+          const saved = draft.scene.variants.find((candidate) => candidate.roomId === roomId && candidate.name.toLowerCase() === name.trim().toLowerCase());
+          if (saved) saved.furniture = furniture.map((item) => structuredClone(item));
+          for (const line of draft.cart.lines) if (line.itemId && replacedIds.has(line.itemId)) delete line.itemId;
+          for (const item of furniture) {
+            if (!item.cartLineId) continue;
+            const line = draft.cart.lines.find((candidate) => candidate.id === item.cartLineId);
+            if (line) line.itemId = item.id;
+          }
           draft.ui.compare = undefined;
           prepend(draft, activity(source, "Load variant", `loaded variant “${variant.name}”`, furniture.map((item) => item.id)));
         });
+        return reassigned;
       },
       deleteVariant: (source, roomId, name) => {
         requiredRoom(get(), roomId);
@@ -347,7 +378,10 @@ export const hearthStore = createStore<HearthStore>()(
         });
       },
       applyTemplate: (source, id, furnished) => set((draft) => {
-        draft.scene = createTemplate(id, { furnished });
+        const scene = createTemplate(id, { furnished });
+        for (const item of scene.furniture) delete item.cartLineId;
+        draft.scene = scene;
+        for (const line of draft.cart.lines) delete line.itemId;
         draft.ui.compare = undefined;
         prepend(draft, activity(source, "Apply template", `applied the ${id} template${furnished ? " furnished" : ""}`));
       }),
@@ -436,13 +470,27 @@ export const hearthStore = createStore<HearthStore>()(
         requiredItem(get(), itemId);
         withoutHistory(() => set((draft) => {
           const item = draft.scene.furniture.find((candidate) => candidate.id === itemId) as typeof draft.scene.furniture[number];
+          const previousLineId = item.cartLineId;
           item.shopifyVariantId = variantId;
-          if (lineId) item.cartLineId = lineId;
-          else delete item.cartLineId;
+          if (lineId) {
+            item.cartLineId = lineId;
+            const line = draft.cart.lines.find((candidate) => candidate.id === lineId);
+            if (line) line.itemId = itemId;
+          } else {
+            delete item.cartLineId;
+            for (const line of draft.cart.lines) {
+              if (line.itemId === itemId || line.id === previousLineId) delete line.itemId;
+            }
+          }
         }));
       },
 
-      setCart: (cartState) => set((draft) => { draft.cart = structuredClone(cartState); }),
+      setCart: (cartState) => set((draft) => {
+        const locallyUnlinked = new Set(draft.cart.lines.filter((line) => line.itemId === undefined).map((line) => line.id));
+        const next = structuredClone(cartState);
+        for (const line of next.lines) if (locallyUnlinked.has(line.id)) delete line.itemId;
+        draft.cart = next;
+      }),
       setCartStatus: (status) => set((draft) => { draft.cart.status = status; }),
       setToolsMirror: (list: ToolMirror[], status) => set((draft) => { draft.tools = { available: structuredClone(list), status }; }),
       pushActivity: (entry) => set((draft) => { prepend(draft, structuredClone(entry)); }),

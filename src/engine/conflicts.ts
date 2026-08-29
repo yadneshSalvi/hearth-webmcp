@@ -68,7 +68,7 @@ function resolvedItems(scene: Scene, roomId: string, catalog: Catalog): Resolved
 }
 
 function stackingAllowed(a: ResolvedItem, b: ResolvedItem): boolean {
-  if (a.cat.category === "rug" || b.cat.category === "rug") return a.cat.category !== b.cat.category;
+  if (a.cat.category === "rug" || b.cat.category === "rug") return true;
   if (STACKABLES.has(a.cat.category) && SURFACES.has(b.cat.category)) return polyInside(b.poly, a.poly);
   if (STACKABLES.has(b.cat.category) && SURFACES.has(a.cat.category)) return polyInside(a.poly, b.poly);
   return false;
@@ -219,7 +219,7 @@ function clearanceConflicts(items: ResolvedItem[], room: Room): Conflict[] {
 function doorConflicts(scene: Scene, items: ResolvedItem[], room: Room): Conflict[] {
   const result: Conflict[] = [];
   const openings = scene.openings.filter((opening) => opening.roomId === room.id && opening.kind !== "window").sort((a, b) => a.id.localeCompare(b.id));
-  for (const item of items.filter((entry) => entry.item.status === "placed")) {
+  for (const item of items.filter((entry) => entry.item.status === "placed" && entry.cat.category !== "rug")) {
     for (const opening of openings) {
       let clear: Vec2[] | null = null;
       let swing: Vec2[] | null = null;

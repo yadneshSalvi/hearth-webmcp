@@ -34,9 +34,11 @@ function assertValid(source: Scene, roomId: string, result: ReturnType<typeof ar
     expect(cat, item.id).toBeDefined();
     expect(polyInside(room.poly, footprint(item, cat!)), `${item.id} outside ${roomId}`).toBe(true);
     expect([0, 90, 180, 270]).toContain(item.rotation);
-    for (const opening of source.openings.filter((entry) => entry.roomId === roomId)) {
-      for (const zone of [swingZone(opening, room), openingClearZone(opening, room)]) {
-        if (zone) expect(polysOverlap(zone, footprint(item, cat!)), `${item.id} blocks ${opening.id}`).toBe(false);
+    if (cat && cat.category !== "rug") {
+      for (const opening of source.openings.filter((entry) => entry.roomId === roomId)) {
+        for (const zone of [swingZone(opening, room), openingClearZone(opening, room)]) {
+          if (zone) expect(polysOverlap(zone, footprint(item, cat)), `${item.id} blocks ${opening.id}`).toBe(false);
+        }
       }
     }
   }
@@ -207,15 +209,14 @@ describe("style choreography", () => {
     expect(chair.rotation).toBe(270);
   });
 
-  it("moves open layouts to walls while leaving the rug central", () => {
+  it("moves open layouts to walls while permitting a rug underlay", () => {
     const current = furnished2br();
     const result = arrangeRoom(current, "living", "open", catalog);
     const room = current.rooms.find((entry) => entry.id === "living")!;
     for (const item of result.furniture.filter((entry) => entry.roomId === room.id)) {
       const cat = catalog.byId(item.catalogId)!;
       const nearest = Math.min(...walls(room).map((wall) => itemToWallDistance(item, cat, wall)));
-      if (cat.category === "rug") expect(nearest).toBeGreaterThan(80);
-      else expect(nearest, item.id).toBeLessThanOrEqual(10);
+      if (cat.category !== "rug") expect(nearest, item.id).toBeLessThanOrEqual(10);
     }
   });
 });

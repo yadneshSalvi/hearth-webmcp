@@ -183,7 +183,7 @@ export interface HearthActions {
   setActiveRoom(source: ActionSource, roomId: string): void;
   setSelection(source: ActionSource, selection: Partial<Selection>): void;
   saveVariant(source: ActionSource, roomId: string, name: string): void;
-  loadVariant(source: ActionSource, roomId: string, name: string): void;
+  loadVariant(source: ActionSource, roomId: string, name: string): Array<{ from: string; to: string }>;
   deleteVariant(source: ActionSource, roomId: string, name: string): void;
   clearRoom(source: ActionSource, roomId: string): void;
   applyArrangement(source: ActionSource, roomId: string, furniture: Furniture[]): void;

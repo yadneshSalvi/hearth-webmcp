@@ -7,6 +7,7 @@ import {
 } from "./define";
 import type { DefinedTool, ToolContext, ToolResult, ToolSource, ToolUi } from "./define";
 import { allToolDefinitions } from "./handlers";
+import { alternatives } from "./handlers/resolve";
 
 const GROUPS: readonly ToolGroup[] = [
   "core", "design", "shop", "present", "preview", "variants", "checkout", "build",
@@ -232,7 +233,16 @@ export function createRegistry(options: RegistryOptions): Registry {
     sync,
     async execute(name, input, source) {
       const tool = byName.get(name);
-      if (!tool) return { ok: false, error: "not_found", detail: `Tool ${name} is not defined.`, alternatives: definitions.slice(0, 3).map((candidate) => candidate.name) };
+      if (!tool) return {
+        ok: false,
+        error: "not_found",
+        detail: `Tool ${name} is not defined.`,
+        alternatives: alternatives(name, definitions.map((candidate) => ({
+          id: candidate.name,
+          name: candidate.title ?? candidate.name,
+          type: candidate.group,
+        }))),
+      };
       if (source !== "test" && !desiredToolGroups(options.store.getState()).includes(tool.group)) {
         const mode = options.store.getState().scene.meta.mode;
         const detail = tool.group === "build"

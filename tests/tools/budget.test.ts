@@ -171,4 +171,35 @@ describe("WebMCP budgets", () => {
       expect(JSON.stringify(result).length, `loft:${name}`).toBeLessThanOrEqual(1500);
     }
   });
+
+  it("covers conflict-heavy build mutation results", async () => {
+    resetStore(furnished2br());
+    let registry = createRegistry({
+      modelContext: new EmptyModelContext(),
+      store: hearthStore,
+      ui: testUi(),
+      shopify: createLocalShopify(hearthStore.getState().catalog),
+    });
+    const added = await registry.execute("add_opening", {
+      room: "living", wall: "north", kind: "door", offset_cm: 215, width_cm: 90,
+    }, "test");
+    expect(added).toMatchObject({ ok: true, conflicts: expect.any(Array) });
+    expect(JSON.stringify(added).length).toBeLessThanOrEqual(1500);
+
+    const crowded = worstCase2br();
+    crowded.furniture = crowded.furniture.filter((item) => item.roomId === "living");
+    expect(crowded.furniture).toHaveLength(12);
+    resetStore(crowded);
+    registry = createRegistry({
+      modelContext: new EmptyModelContext(),
+      store: hearthStore,
+      ui: testUi(),
+      shopify: createLocalShopify(hearthStore.getState().catalog),
+    });
+    const resized = await registry.execute("update_room", {
+      room: "living", width_cm: 500, depth_cm: 300,
+    }, "test");
+    expect(resized).toMatchObject({ ok: true, conflicts: expect.any(Array), conflicts_count: expect.any(Number) });
+    expect(JSON.stringify(resized).length).toBeLessThanOrEqual(1500);
+  });
 });

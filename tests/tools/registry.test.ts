@@ -152,6 +152,13 @@ describe("registry lifecycle against the real polyfill", () => {
     expect(hearthStore.getState().scene).toEqual(before);
   });
 
+  it("ranks unknown tool alternatives by tokens and edit distance", async () => {
+    const result = await registryWith(loadRealPolyfill()).execute("cart", {}, "assistant");
+    expect(result).toMatchObject({ ok: false, error: "not_found" });
+    expect(!result.ok && result.alternatives?.[0]).toBe("get_cart");
+    expect(!result.ok && result.alternatives).toHaveLength(3);
+  });
+
   it("accepts JSON strings and objects, validates paths, and writes one receipt each", async () => {
     const registry = registryWith(loadRealPolyfill());
     registry.start();

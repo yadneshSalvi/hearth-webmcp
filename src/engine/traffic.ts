@@ -248,7 +248,15 @@ function octile(a: number, b: number, cols: number): number {
   return GRID_CM * (Math.max(dx, dy) + (Math.SQRT2 - 1) * Math.min(dx, dy));
 }
 
-function route(grid: Grid, start: number, goal: number, requiredWidth: number): number[] {
+function route(
+  grid: Grid,
+  start: number,
+  goal: number,
+  requiredWidth: number,
+  from: Endpoint,
+  to: Endpoint,
+  constrainWidth: boolean,
+): number[] {
   const size = grid.cols * grid.rows;
   const g = new Float64Array(size);
   const f = new Float64Array(size);
@@ -263,6 +271,14 @@ function route(grid: Grid, start: number, goal: number, requiredWidth: number): 
     || (Math.abs(f[a]! - f[b]!) <= EPSILON && (octile(a, goal, grid.cols) < octile(b, goal, grid.cols) - EPSILON
       || (Math.abs(octile(a, goal, grid.cols) - octile(b, goal, grid.cols)) <= EPSILON && a < b))));
   heap.push(start);
+  const blocked = (cell: number): boolean => {
+    if (grid.blocked[cell] === 1) return true;
+    if (!constrainWidth || grid.distance[cell]! >= requiredWidth / 2 - EPSILON) return false;
+    const point = cellPoint(grid, cell);
+    if (!insideEndpoint(point, from) && !insideEndpoint(point, to)) return true;
+    return grid.obstacles.some((obstacle) => obstacle.id !== from.id && obstacle.id !== to.id
+      && distanceToBounds(point, obstacle.box) < requiredWidth / 2 - EPSILON);
+  };
   while (heap.size > 0) {
     const current = heap.pop();
     if (current === undefined || closed[current] === 1) continue;
@@ -282,13 +298,13 @@ function route(grid: Grid, start: number, goal: number, requiredWidth: number): 
       const nextRow = row + dy;
       if (nextCol < 0 || nextCol >= grid.cols || nextRow < 0 || nextRow >= grid.rows) continue;
       const next = nextRow * grid.cols + nextCol;
-      if (grid.blocked[next] === 1 || closed[next] === 1) continue;
+      if (blocked(next) || closed[next] === 1) continue;
       if (dx !== 0 && dy !== 0) {
         const horizontal = row * grid.cols + nextCol;
         const vertical = nextRow * grid.cols + col;
-        if (grid.blocked[horizontal] === 1 || grid.blocked[vertical] === 1) continue;
+        if (blocked(horizontal) || blocked(vertical)) continue;
       }
-      const widthPenalty = Math.max(0, requiredWidth / 2 - grid.distance[next]!) * 4;
+      const widthPenalty = constrainWidth ? 0 : Math.max(0, requiredWidth / 2 - grid.distance[next]!) * 4;
       const tentative = g[current]! + baseCost + widthPenalty + (grid.soft[next] === 1 ? GRID_CM * 2 : 0);
       if (tentative + EPSILON < g[next]!) {
         previous[next] = current;
@@ -350,7 +366,10 @@ export function trafficPaths(scene: Scene, roomId: string, catalog: Catalog, opt
     const start = pointToCell(grid, from.point);
     const goal = pointToCell(grid, to.point);
     if (start === undefined || goal === undefined) return { from: from.id, to: to.id, points: [], minWidthCm: 0, ok: false };
-    const cells = route(grid, start, goal, requiredWidth);
+    const constrained = route(grid, start, goal, requiredWidth, from, to, true);
+    const cells = constrained.length > 0
+      ? constrained
+      : route(grid, start, goal, requiredWidth, from, to, false);
     if (cells.length === 0) return { from: from.id, to: to.id, points: [], minWidthCm: 0, ok: false };
     const measured = measuredCells(grid, cells, from, to);
     let pinchCell = measured[0];

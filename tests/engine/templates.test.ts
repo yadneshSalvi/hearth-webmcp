@@ -27,6 +27,7 @@ describe("floor-plan templates", () => {
       expect(scene.meta.timeOfDay).toBe("golden");
       expect(scene.meta.paletteId).toBe("warm-clay");
       expect(scene.meta.accessibilityMode).toBe(false);
+      expect(scene.meta.budgetUsd).toBe(3000);
       expect(scene.meta.activeRoomId).toBe(id === "studio" ? "studio" : id === "loft" ? "loft" : "living");
       expect(scene.furniture).toEqual([]);
       expect(scene.variants).toEqual([]);

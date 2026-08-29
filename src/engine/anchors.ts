@@ -271,8 +271,10 @@ function checkPlacement(room: Room, item: Furniture, cat: CatalogItem, blockers:
     if (other.clearanceBox && boxesOverlap(box, other.clearanceBox)) soft.push(`${other.id}'s clearance`);
   }
   for (const opening of blockers.openings) {
-    if (opening.swing && opening.swingBox && boxesOverlap(box, opening.swingBox) && polysOverlap(poly, opening.swing)) hard.push(`${opening.id}'s swing`);
-    if (opening.clearBox && boxesOverlap(box, opening.clearBox)) hard.push(`${opening.id}'s clear zone`);
+    if (cat.category !== "rug") {
+      if (opening.swing && opening.swingBox && boxesOverlap(box, opening.swingBox) && polysOverlap(poly, opening.swing)) hard.push(`${opening.id}'s swing`);
+      if (opening.clearBox && boxesOverlap(box, opening.clearBox)) hard.push(`${opening.id}'s clear zone`);
+    }
     if (opening.window) {
       const { wall, start: windowStart, end: windowEnd } = opening.window;
       const dx = (wall.b.x - wall.a.x) / wall.length;
