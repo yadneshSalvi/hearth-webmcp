@@ -65,10 +65,10 @@ body {
   background: rgb(201 164 76 / 0.35);
 }
 
+/* Ochre focus ring on every control (STYLE.md §4). The element keeps its own radius so pills stay pills. */
 :focus-visible {
   outline: 2px solid var(--color-ochre);
   outline-offset: 2px;
-  border-radius: var(--radius-chip);
 }
 
 /* Utilities shared by every panel (STYLE.md §1, §4). */
@@ -76,6 +76,14 @@ body {
   background: var(--color-glass);
   backdrop-filter: blur(var(--blur-glass));
   -webkit-backdrop-filter: blur(var(--blur-glass));
+  border: 1px solid var(--color-hairline);
+  box-shadow: var(--shadow-panel);
+  border-radius: var(--radius-panel);
+}
+
+/* For overlays that sit above other glass panels: opaque plaster, same frame. */
+@utility glass-solid {
+  background: var(--color-plaster);
   border: 1px solid var(--color-hairline);
   box-shadow: var(--shadow-panel);
   border-radius: var(--radius-panel);
@@ -94,6 +102,56 @@ body {
   font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
+}
+
+/* Thin, warm scrollbars inside floating panels. */
+@utility panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(62 58 54 / 0.2) transparent;
+  overscroll-behavior: contain;
+}
+
+/* Chrome enters: 6–10 px rise + fade, 180–320 ms, ease-out, never a bounce (STYLE.md §3). */
+@keyframes hearth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hearth-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hearth-breathe {
+  0%,
+  100% {
+    opacity: 0.68;
+  }
+  50% {
+    opacity: 0.96;
+  }
+}
+
+@utility rise-in {
+  animation: hearth-rise 240ms var(--ease-out-soft) both;
+}
+
+@utility fade-in {
+  animation: hearth-fade 180ms var(--ease-out-soft) both;
+}
+
+@utility breathe {
+  animation: hearth-breathe 2.6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

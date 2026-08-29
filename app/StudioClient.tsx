@@ -1,20 +1,19 @@
 "use client";
 /**
- * Client boundary for the studio: three/R3F never runs on the server, so the canvas is imported
- * dynamically with `ssr: false` and the store is seeded with the furnished 2BR if it is empty.
+ * Client boundary for the studio. Everything three/R3F touches lives inside `src/ui/AppShell`,
+ * which is imported dynamically with `ssr: false`; the fallback is the designed plan skeleton.
  */
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import { createTemplate } from "@/src/engine/templates";
 import { hearthStore, useHearthStore } from "@/src/state/store";
-import { LabStrip } from "./LabStrip";
+import { StudioSkeleton } from "@/src/ui/StudioSkeleton";
 
-const Studio = dynamic(() => import("@/src/scene/Studio"), {
+const AppShell = dynamic(() => import("@/src/ui/AppShell"), {
   ssr: false,
   loading: () => <StudioSkeleton />,
 });
 
-/** Full-bleed studio plus the temporary lab controls. */
 export default function StudioClient() {
   const roomCount = useHearthStore((state) => state.scene.rooms.length);
   useEffect(() => {
@@ -22,17 +21,7 @@ export default function StudioClient() {
   }, [roomCount]);
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <Studio />
-      <LabStrip />
-    </div>
-  );
-}
-
-/** Designed loading state: a calm plaster wash while the canvas boots. */
-function StudioSkeleton() {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center">
-      <p className="font-display text-ink-muted text-lg italic">Warming the studio…</p>
+      <AppShell />
     </div>
   );
 }

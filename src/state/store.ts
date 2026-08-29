@@ -186,6 +186,18 @@ export const hearthStore = createStore<HearthStore>()(
         draft.scene.meta.accessibilityMode = on;
         prepend(draft, activity(source, "Accessibility", `turned accessibility mode ${on ? "on" : "off"}`));
       }),
+      setBudget: (source, budgetUsd) => {
+        if (budgetUsd !== undefined && (!Number.isFinite(budgetUsd) || budgetUsd < 0)) {
+          throw new HearthError("invalid", "Budget must be a non-negative number of USD");
+        }
+        const rounded = budgetUsd === undefined ? undefined : Math.round(budgetUsd);
+        set((draft) => {
+          draft.scene.meta.budgetUsd = rounded;
+          prepend(draft, activity(source, "Set budget", rounded === undefined
+            ? "cleared the design budget"
+            : `set the design budget to $${rounded.toLocaleString("en-US")}`));
+        });
+      },
       setActiveRoom: (source, roomId) => {
         const room = requiredRoom(get(), roomId);
         set((draft) => {

@@ -1,0 +1,167 @@
+import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+
+/**
+ * Studio chrome end-to-end. The WebMCP polyfill is injected before app code so the registry starts
+ * in exactly the path a flagless browser takes, and the assertions read what an agent would find on
+ * `document.modelContext` — not an internal mirror.
+ */
+
+const POLYFILL = "public/webmcp-polyfill.js";
+
+test.use({ permissions: ["clipboard-read", "clipboard-write"] });
+
+async function openStudio(page: Page): Promise<void> {
+  await page.addInitScript({ path: POLYFILL });
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem("hearth.onboarding.v1", "dismissed");
+    } catch {
+      // A blocked localStorage only means the welcome card shows; the tests do not depend on it.
+    }
+  });
+  await page.goto("/");
+  await expect(page.locator('[data-studio="canvas"]')).toBeVisible();
+  await expect(page.getByRole("button", { name: /Agent tools/ })).toBeVisible();
+}
+
+// `executeTool` ships in Chrome and in the polyfill but is not in `webmcp-types` yet, so each
+// evaluate below describes the surface it calls.
+async function toolNames(page: Page): Promise<string[]> {
+  return page.evaluate(async () => {
+    const runtime = document.modelContext as unknown as {
+      getTools(): Promise<{ name: string }[]>;
+    };
+    const tools = await runtime.getTools();
+    return tools.map((tool) => tool.name).sort();
+  });
+}
+
+async function runTool(page: Page, name: string, input: unknown): Promise<string> {
+  return page.evaluate(async ([toolName, args]) => {
+    const runtime = document.modelContext as unknown as {
+      getTools(): Promise<{ name: string }[]>;
+      executeTool(tool: unknown, args: unknown): Promise<unknown>;
+    };
+    const tools = await runtime.getTools();
+    const tool = tools.find((candidate) => candidate.name === toolName);
+    if (!tool) throw new Error(`Tool ${String(toolName)} is not registered`);
+    const result = await runtime.executeTool(tool, args);
+    return typeof result === "string" ? result : JSON.stringify(result);
+  }, [name, input] as const);
+}
+
+test.describe("studio chrome", () => {
+  test("loads a furnished home with every panel and an honest status chip", async ({ page }) => {
+    await openStudio(page);
+
+    await expect(page.getByText("Hearth", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "CATALOG" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "INSPECTOR" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ACTIVITY" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "CART" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Design" })).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByRole("heading", { name: "Living Room" })).toBeVisible();
+    // The polyfill is in play, so the chip must say so rather than claiming native support.
+    await expect(page.getByRole("button", { name: /Agent tools · polyfill/ })).toBeVisible();
+  });
+
+  test("registers the 26 default tools and lists them with schemas", async ({ page }) => {
+    await openStudio(page);
+
+    await expect.poll(async () => (await toolNames(page)).length).toBe(26);
+    const names = await toolNames(page);
+    expect(names).toContain("get_scene_summary");
+    expect(names).toContain("place_furniture");
+    expect(names).toContain("export_design_board");
+    expect(names).not.toContain("create_room");
+
+    await page.getByRole("button", { name: /Agent tools/ }).click();
+    const panel = page.getByRole("complementary", { name: "Agent tools registered on this page" });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole("button", { name: /^Copy the tool name/ })).toHaveCount(26);
+    await expect(panel.getByRole("heading", { name: "Core" })).toBeVisible();
+    await expect(panel.getByRole("heading", { name: "Design" })).toBeVisible();
+
+    const schema = panel.locator("details").first();
+    await schema.locator("summary").click();
+    await expect(schema.locator("pre")).toContainText('"type": "object"');
+  });
+
+  test("switching to build mode registers the build tools", async ({ page }) => {
+    await openStudio(page);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(26);
+
+    await page.getByRole("radio", { name: "Build" }).click();
+    await expect(page.getByText("editing walls")).toBeVisible();
+    await expect.poll(async () => (await toolNames(page)).length).toBe(32);
+    expect(await toolNames(page)).toContain("create_room");
+
+    await page.getByRole("radio", { name: "Design" }).click();
+    await expect.poll(async () => (await toolNames(page)).length).toBe(26);
+  });
+
+  test("clear_room round-trips through the in-page confirmation dialog", async ({ page }) => {
+    await openStudio(page);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(26);
+
+    // Declined: the dialog closes and the tool reports cancelled.
+    const declined = runTool(page, "clear_room", { room: "living" });
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("Clear Living Room and remove 7 items?");
+    await dialog.getByRole("button", { name: "Keep" }).click();
+    expect(await declined).toContain('"error":"cancelled"');
+    await expect(dialog).toBeHidden();
+
+    // Accepted: the room empties and the receipt log says who did it.
+    const accepted = runTool(page, "clear_room", { room: "living" });
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.getByRole("button", { name: "Yes, clear it" }).click();
+    const result = await accepted;
+    expect(result).toContain('"ok":true');
+    expect(result).toContain('"removed":7');
+    await expect(page.getByText("Cleared Living Room")).toBeVisible();
+  });
+
+  test("Escape closes an overlay and the keyboard drives the camera", async ({ page }) => {
+    await openStudio(page);
+
+    await page.keyboard.press("Shift+Slash");
+    await expect(page.getByRole("dialog")).toContainText("Keyboard");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toBeHidden();
+
+    await page.keyboard.press("1");
+    await expect(page.getByRole("radio", { name: "Plan" })).toHaveAttribute("aria-checked", "true");
+    await page.keyboard.press("2");
+    await expect(page.getByRole("radio", { name: "Dollhouse" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  test("a prompt chip copies its text for pasting into an agent", async ({ page }) => {
+    await openStudio(page);
+
+    const chip = page.locator("[data-prompt-chip]").first();
+    const prompt = (await chip.innerText()).replace(/[“”]/g, "").trim();
+    expect(prompt.length).toBeGreaterThan(10);
+
+    await chip.click();
+    await expect(chip).toContainText("Copied — paste into ChatGPT");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(prompt);
+  });
+
+  test("placing from the catalog writes a receipt and offers undo", async ({ page }) => {
+    await openStudio(page);
+
+    const card = page.getByRole("button", { name: /Endre Sofa/ }).first();
+    await card.click();
+    await page.getByRole("button", { name: "Place in Living Room" }).click();
+
+    await expect(page.getByText("Endre Sofa placed")).toBeVisible();
+    await expect(page.getByText("You placed Endre Sofa")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Endre Sofa" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Undo", exact: true }).first().click();
+    await expect(page.getByRole("heading", { name: "Living Room" })).toBeVisible();
+  });
+});

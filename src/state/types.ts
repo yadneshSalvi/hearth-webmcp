@@ -54,6 +54,17 @@ export interface HearthUiState {
   assistantOpen: boolean;
   toolsPanelOpen: boolean;
   pendingConfirm?: { id: string; message: string };
+  /**
+   * Studio chrome state (src/ui). Optional so existing store and tool fixtures stay valid literals;
+   * every reader defaults it.
+   */
+  catalogCollapsed?: boolean;
+  inspectorCollapsed?: boolean;
+  cartOpen?: boolean;
+  shortcutsOpen?: boolean;
+  enableSheetOpen?: boolean;
+  /** Transient ids the renderer and the interaction layer highlight right after a tool action. */
+  pulseIds?: string[];
 }
 
 /** Rules-engine output the renderer draws as floor diagrams (src/scene/Overlays.tsx). */
@@ -139,6 +150,7 @@ export interface HearthActions {
   setTimeOfDay(source: ActionSource, time: TimeOfDay): void;
   setPalette(source: ActionSource, paletteId: PaletteId, roomIds: string[]): void;
   setAccessibility(source: ActionSource, on: boolean): void;
+  setBudget(source: ActionSource, budgetUsd: number | undefined): void;
   setActiveRoom(source: ActionSource, roomId: string): void;
   setSelection(source: ActionSource, selection: Partial<Selection>): void;
   saveVariant(source: ActionSource, roomId: string, name: string): void;
