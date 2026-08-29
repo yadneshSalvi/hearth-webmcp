@@ -108,7 +108,7 @@ interface Conflict {
 
 ## Templates (`src/engine/templates/`)
 `studio` (2 rooms: open studio + bath) · `1br` (5 rooms) · `2br` (6 rooms) · `3br` (7 rooms) ·
-`4br` (9 rooms) · `5br` (10 rooms) · `loft` (2 rooms: L-shaped open plan + bath). The 1–5 bedroom
+`4br` (10 rooms) · `5br` (11 rooms) · `loft` (2 rooms: L-shaped open plan + bath). The 1–5 bedroom
 homes include living, kitchen/dining, their named bedrooms, bath(s), and a hall. Each template ships
 realistic door swings and exterior windows; every template has an optional deterministic furnished
 layout, and `2br` remains the **pre-furnished golden-hour onboarding scene**.

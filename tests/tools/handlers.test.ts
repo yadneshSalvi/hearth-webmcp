@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createLocalShopify } from "../../src/shopify/local";
 import { hearthStore } from "../../src/state/store";
-import type { ToolResult } from "../../src/tools/define";
+import type { ToolResult, ToolUi } from "../../src/tools/define";
 import { createRegistry } from "../../src/tools/registry";
 import { emptyHome, furnished2br } from "../fixtures/scenes";
 import { resetStore, testUi } from "./helpers";
@@ -20,11 +20,11 @@ interface HappyCase {
   verify(result: ToolResult): void;
 }
 
-function registry() {
+function registry(ui: ToolUi = testUi()) {
   return createRegistry({
     modelContext: new EmptyModelContext(),
     store: hearthStore,
-    ui: testUi(),
+    ui,
     shopify: createLocalShopify(hearthStore.getState().catalog),
   });
 }
@@ -93,8 +93,8 @@ describe("first-round handlers", () => {
 
   it.each([
     ["3br", 7, 30, 3],
-    ["4br", 9, 34, 4],
-    ["5br", 10, 40, 5],
+    ["4br", 10, 34, 4],
+    ["5br", 11, 40, 5],
   ] as const)("applies a furnished %s within the result budget", async (template, rooms, items, bedrooms) => {
     resetStore(emptyHome());
     const result = await registry().execute("apply_template", { template, furnished: true }, "test");
@@ -104,6 +104,24 @@ describe("first-round handlers", () => {
     expect(hearthStore.getState().scene.rooms.filter((room) => room.type === "bedroom")).toHaveLength(bedrooms);
     expect(JSON.stringify(result).length).toBeLessThanOrEqual(1500);
     expect(hearthStore.getState().activity[0]?.summary).toBe(`Applied ${template.toUpperCase()} template (furnished)`);
+  });
+
+  it.each(["home", "Entire home"])("set_view frames the home for %s without changing selection", async (focus) => {
+    resetStore(furnished2br());
+    const ui = testUi();
+    const selection = structuredClone(hearthStore.getState().scene.meta.selection);
+    const result = await registry(ui).execute("set_view", { view: "dollhouse", focus }, "test");
+    expect(result).toMatchObject({
+      ok: true,
+      room: "living",
+      view: "dollhouse",
+      focus: { kind: "home", id: "home" },
+      focus_name: "Entire home",
+      hint: "Framing all 6 rooms; pass a room id to zoom back in.",
+    });
+    expect(ui.focus).toHaveBeenCalledWith({ kind: "home", id: "home" });
+    expect(hearthStore.getState().scene.meta.selection).toEqual(selection);
+    expect(hearthStore.getState().activity[0]?.summary).toBe("View → dollhouse, focus Entire home");
   });
 
   it.each([

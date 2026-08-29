@@ -232,6 +232,54 @@ describe("floor-plan templates", () => {
     }
   });
 
+  it("keeps the 4BR and 5BR compact, double-loaded and correctly en-suited", () => {
+    const expected = {
+      "4br": { width: 1280, depth: 1160, area: 139.68, deadGround: 8.8 / 148.48 },
+      "5br": { width: 1360, depth: 1200, area: 156.16, deadGround: 7.04 / 163.2 },
+    } as const;
+    for (const id of ["4br", "5br"] as const) {
+      const scene = createTemplate(id);
+      const points = scene.rooms.flatMap(worldPoly);
+      const minX = Math.min(...points.map((point) => point.x));
+      const minY = Math.min(...points.map((point) => point.y));
+      const maxX = Math.max(...points.map((point) => point.x));
+      const maxY = Math.max(...points.map((point) => point.y));
+      const width = maxX - minX;
+      const depth = maxY - minY;
+      const area = scene.rooms.reduce((sum, room) => sum + polyArea(room.poly) / 10_000, 0);
+      const deadGround = 1 - area / (width * depth / 10_000);
+      expect({ width, depth }).toEqual({ width: expected[id].width, depth: expected[id].depth });
+      expect(Math.max(width, depth)).toBeLessThanOrEqual(1400);
+      expect(area).toBeCloseTo(expected[id].area, 5);
+      expect(deadGround).toBeCloseTo(expected[id].deadGround, 5);
+      expect(deadGround).toBeLessThanOrEqual(0.15);
+
+      const hall = scene.rooms.find((room) => room.id === "hall")!;
+      const hallLeft = hall.origin.x;
+      const hallRight = hall.origin.x + Math.max(...hall.poly.map((point) => point.x));
+      const loadedRooms = scene.rooms.filter((room) => room.type === "bedroom" || room.type === "bath");
+      expect(loadedRooms.some((room) => room.origin.x + Math.max(...room.poly.map((point) => point.x)) <= hallLeft)).toBe(true);
+      expect(loadedRooms.some((room) => room.origin.x >= hallRight)).toBe(true);
+      for (const corridor of scene.rooms.filter((room) => room.type === "hall")) {
+        const lengths = walls(corridor).map((wall) => wall.length);
+        expect(Math.min(...lengths)).toBeGreaterThanOrEqual(120);
+        expect(Math.min(...lengths)).toBeLessThanOrEqual(160);
+        expect(Math.max(...lengths)).toBeLessThanOrEqual(900);
+      }
+
+      const neighbours = new Map(scene.rooms.map((room) => [room.id, new Set<string>()]));
+      for (const doors of sharedDoors(scene).values()) {
+        const [left, right] = doors;
+        neighbours.get(left!.roomId)!.add(right!.roomId);
+        neighbours.get(right!.roomId)!.add(left!.roomId);
+      }
+      expect([...neighbours.get("bath-2")!]).toEqual(["bed-1"]);
+      expect([...neighbours.get("bath")!]).toEqual(["hall"]);
+      expect(neighbours.get("living")!.has("kitchen")).toBe(true);
+      expect(neighbours.get("kitchen")!.has("hall")).toBe(true);
+    }
+  });
+
   it("keeps larger-template doors off corners with non-overlapping swings", () => {
     for (const id of ["3br", "4br", "5br"] as const) {
       const scene = createTemplate(id);

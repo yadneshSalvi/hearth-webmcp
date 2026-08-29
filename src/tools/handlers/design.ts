@@ -86,46 +86,57 @@ export function setViewTool(): DefinedTool {
   return defineTool({
     name: "set_view",
     title: "Set view",
-    description: "Changes the camera: plan (top-down) or dollhouse (isometric), optionally focused on a room or an item, with the isometric yaw at nw, ne, se or sw. Use it to show the human what you are working on.",
+    description: "Changes the camera: plan (top-down) or dollhouse (isometric), optionally focused on the whole home with focus: \"home\", a room, or an item, with the isometric yaw at nw, ne, se or sw. Use it to show the human what you are working on.",
     group: "design",
     input: z.object({
       view: z.enum(["plan", "dollhouse"]).optional().describe(describeParam("Camera view: plan or dollhouse.")),
-      focus: z.string().min(1).optional().describe(describeParam("Room id/name or item id/name to frame. Defaults to the active room.")),
+      focus: z.string().min(1).optional().describe(describeParam("Use home for the entire home, or give a room/item id or name. Defaults to the active room.")),
       yaw: z.enum(["nw", "ne", "se", "sw"]).optional().describe(describeParam("Dollhouse compass yaw: nw, ne, se or sw.")),
     }).strict(),
     handler(input, context) {
       const state = context.store.getState();
       const focusRef = input.focus ?? state.scene.meta.activeRoomId;
-      const room = resolveRoom(state, focusRef);
-      let focus: { kind: "room" | "item"; id: string; name: string };
-      if (!("ok" in room)) focus = { kind: "room", id: room.id, name: room.name };
+      const isHome = ["home", "entire home", "whole home", "house"].includes(focusRef.trim().toLowerCase());
+      let focus: { kind: "home" | "room" | "item"; id: string; name: string };
+      if (isHome) focus = { kind: "home", id: "home", name: "Entire home" };
       else {
-        const item = resolveItem(state, focusRef);
-        if ("ok" in item) {
-          const candidates = [
-            ...state.scene.rooms.map(({ id, name }) => ({ id, name })),
-            ...state.scene.furniture.map((candidate) => ({ id: candidate.id, name: productName(state, candidate) })),
-          ];
-          return notFound("Focus", focusRef, candidates);
+        const room = resolveRoom(state, focusRef);
+        if (!("ok" in room)) focus = { kind: "room", id: room.id, name: room.name };
+        else {
+          const item = resolveItem(state, focusRef);
+          if ("ok" in item) {
+            const candidates = [
+              ...state.scene.rooms.map(({ id, name }) => ({ id, name })),
+              ...state.scene.furniture.map((candidate) => ({ id: candidate.id, name: productName(state, candidate) })),
+            ];
+            return notFound("Focus", focusRef, candidates);
+          }
+          focus = { kind: "item", id: item.id, name: productName(state, item) };
         }
-        focus = { kind: "item", id: item.id, name: productName(state, item) };
       }
       try {
         context.store.getState().setView(sourceForStore(context.source), {
           view: input.view,
           yaw: input.yaw,
-          ...(focus.kind === "room" ? { focusRoomId: focus.id } : { focusItemId: focus.id }),
+          ...(focus.kind === "room" ? { focusRoomId: focus.id } : {}),
+          ...(focus.kind === "item" ? { focusItemId: focus.id } : {}),
         });
         context.ui.focus({ kind: focus.kind, id: focus.id });
         const current = context.store.getState().scene.meta;
         return {
           ok: true,
-          room: focus.kind === "room" ? focus.id : state.scene.furniture.find((item) => item.id === focus.id)?.roomId,
+          room: focus.kind === "home"
+            ? state.scene.meta.activeRoomId
+            : focus.kind === "room"
+              ? focus.id
+              : state.scene.furniture.find((item) => item.id === focus.id)?.roomId,
           view: current.view,
           focus: { kind: focus.kind, id: focus.id },
           focus_name: focus.name,
           yaw: current.yaw,
-          hint: "The camera is framed for the human.",
+          hint: focus.kind === "home"
+            ? `Framing all ${state.scene.rooms.length} rooms; pass a room id to zoom back in.`
+            : "The camera is framed for the human.",
         };
       } catch (error) {
         return fromCaught(error);
