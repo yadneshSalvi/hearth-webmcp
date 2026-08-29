@@ -171,8 +171,8 @@ export interface Scene {
   meta: SceneMeta;
 }
 
-export type TemplateId = "studio" | "1br" | "2br" | "loft";
-export const TEMPLATE_IDS: readonly TemplateId[] = ["studio", "1br", "2br", "loft"];
+export type TemplateId = "studio" | "1br" | "2br" | "3br" | "4br" | "5br" | "loft";
+export const TEMPLATE_IDS: readonly TemplateId[] = ["studio", "1br", "2br", "3br", "4br", "5br", "loft"];
 
 export type ActionSource = "human" | "agent" | "assistant" | "system";
 

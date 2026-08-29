@@ -18,7 +18,7 @@ export function createLoftTemplate(furnished = false): Scene {
     opening({ id: "window-loft-north-a", roomId: "loft", wallId: "w0", offset: 120, width: 180, kind: "window", sillHeight: 90 }),
     opening({ id: "window-loft-north-b", roomId: "loft", wallId: "w2", offset: 70, width: 160, kind: "window", sillHeight: 90 }),
     opening({ id: "window-loft-west", roomId: "loft", wallId: "w5", offset: 180, width: 180, kind: "window", sillHeight: 90 }),
-    opening({ id: "door-bath-loft", roomId: "bath", wallId: "w3", offset: 70, width: 90, kind: "door", swing: "in", hinge: "left" }),
+    opening({ id: "door-bath-loft", roomId: "bath", wallId: "w3", offset: 100, width: 90, kind: "door", swing: "in", hinge: "left" }),
     opening({ id: "window-bath-north", roomId: "bath", wallId: "w0", offset: 50, width: 120, kind: "window", sillHeight: 90 }),
   ];
   const furniture = furnished ? [

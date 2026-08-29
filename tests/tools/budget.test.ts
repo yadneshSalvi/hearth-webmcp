@@ -4,6 +4,7 @@ import { hearthStore } from "../../src/state/store";
 import { createRegistry } from "../../src/tools/registry";
 import type { ToolError, ToolResult } from "../../src/tools/define";
 import { allToolDefinitions, allTools } from "../../src/tools/handlers";
+import { TEMPLATE_IDS } from "../../src/engine/types";
 import { emptyHome, furnished2br, loftScene, worstCase2br } from "../fixtures/scenes";
 import { resetStore, testUi, toolContext } from "./helpers";
 
@@ -129,6 +130,10 @@ describe("WebMCP budgets", () => {
       expect(tool.inputSchema).toMatchObject({ type: "object", additionalProperties: false });
       expect(records(tool.inputSchema)?.$schema).toBeUndefined();
       assertParamBudgets(tool.inputSchema);
+      if (tool.name === "apply_template") {
+        const properties = records(records(tool.inputSchema)?.properties);
+        expect(records(properties?.template)?.enum).toEqual(TEMPLATE_IDS);
+      }
     }
   });
 
