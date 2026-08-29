@@ -12,6 +12,7 @@ import { hearthStore } from "../state/store";
 import { palette } from "../tokens";
 import { CameraRig } from "./CameraRig";
 import { Furniture } from "./Furniture";
+import { Interaction } from "./Interaction";
 import { LightingRig } from "./LightingRig";
 import { Orb } from "./Orb";
 import { Overlays } from "./Overlays";
@@ -140,6 +141,7 @@ export default function Studio() {
         <Rooms />
         <Furniture />
         <Overlays />
+        <Interaction />
         <Orb />
         <Post />
         <CaptureBridge />

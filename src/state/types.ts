@@ -48,12 +48,35 @@ export interface CartState {
   status: "idle" | "pending" | "offline";
 }
 
+/** One queued toast. The chrome renders and dismisses them; the canvas only pushes. */
+export interface ToastEntry {
+  id: string;
+  t: number;
+  tone: "info" | "success" | "warn" | "error";
+  /** ≤ 90 chars, sentence case, units included (STYLE.md §4). */
+  message: string;
+  detail?: string;
+}
+
+/** Live direct-manipulation state, published so chrome can mirror what the pointer is doing. */
+export interface DraggingState {
+  itemId: string;
+  valid: boolean;
+  /** ≤ 44 chars, why the current position is refused. */
+  reason?: string;
+}
+
 export interface HearthUiState {
   compare?: { left: string; right: string; roomId: string };
   boardOpen: boolean;
   assistantOpen: boolean;
   toolsPanelOpen: boolean;
   pendingConfirm?: { id: string; message: string };
+  /** Newest-last toast queue, capped at 4. */
+  toasts: ToastEntry[];
+  /** Item ids the UI should pulse once (an invalid nudge, a fresh duplicate). */
+  pulseIds: string[];
+  dragging?: DraggingState;
 }
 
 /** Rules-engine output the renderer draws as floor diagrams (src/scene/Overlays.tsx). */
@@ -114,6 +137,14 @@ export interface RoomPatch {
   wall_color?: WallColor;
 }
 
+/**
+ * Opts for actions a pointer gesture repeats many times a second. `quiet` skips the activity row
+ * and pauses undo history, so a drag-over ghost cannot flood the feed or the undo stack.
+ */
+export interface QuietOpts {
+  quiet?: boolean;
+}
+
 export type OpeningInput = Omit<Opening, "id"> & { id?: string };
 export type OpeningPatch = Partial<Omit<Opening, "id" | "roomId">>;
 
@@ -131,8 +162,8 @@ export interface HearthActions {
   removeItem(source: ActionSource, id: string): void;
   setColorway(source: ActionSource, id: string, colorway: string): void;
   setLocked(source: ActionSource, id: string, locked: boolean): void;
-  setGhost(source: ActionSource, furniture: Furniture): void;
-  clearGhost(source: ActionSource): void;
+  setGhost(source: ActionSource, furniture: Furniture, opts?: QuietOpts): void;
+  clearGhost(source: ActionSource, opts?: QuietOpts): void;
   confirmGhost(source: ActionSource): Furniture;
   setMode(source: ActionSource, mode: Mode): void;
   setView(source: ActionSource, patch: { view?: View; yaw?: Yaw; focusRoomId?: string; focusItemId?: string }): void;
@@ -156,6 +187,10 @@ export interface HearthActions {
   setToolsMirror(list: ToolMirror[], status: HearthState["tools"]["status"]): void;
   pushActivity(entry: ActivityEntry): void;
   setUi(patch: Partial<HearthUiState>): void;
+  toast(entry: Omit<ToastEntry, "id" | "t">): string;
+  dismissToast(id: string): void;
+  pulse(itemIds: string[]): void;
+  setDragging(dragging: DraggingState | undefined): void;
   setOverlays(patch: Partial<OverlaysState>): void;
   undo(steps?: number): ActivityEntry[];
   redo(steps?: number): ActivityEntry[];

@@ -12,8 +12,31 @@ import {
   actionActivity as activity, assertRotation, cloneScene, nextOpeningId, notchPoly, placedOrigin, prependActivity,
   productName, recomputeCart, requiredItem, requiredOpening, requiredRoom, storeCatalog as catalog, uniqueRoomId, validateOpening,
 } from "./store-helpers";
+import { uid } from "./ids";
 import { HearthError } from "./types";
 import type { HearthStore, ToolMirror } from "./types";
+
+/** Newest-last toast queue depth; older entries are dropped rather than stacked over the canvas. */
+const TOAST_LIMIT = 4;
+
+/**
+ * Runs a mutation without an undo entry. Pointer gestures repeat `setGhost` many times a second
+ * while the catalog ghost tracks the cursor, and none of those frames is a step a person would
+ * want to undo; the committed drop that follows is.
+ */
+function quietly(opts: { quiet?: boolean } | undefined, mutate: () => void): void {
+  if (!opts?.quiet) {
+    mutate();
+    return;
+  }
+  const history = hearthStore.temporal.getState();
+  history.pause();
+  try {
+    mutate();
+  } finally {
+    history.resume();
+  }
+}
 
 function prepend(
   target: Parameters<typeof prependActivity>[0],
@@ -34,7 +57,7 @@ export const hearthStore = createStore<HearthStore>()(
       cart: { lines: [], subtotalUsd: 0, status: "idle" },
       activity: [],
       tools: { available: [], status: "unknown" },
-      ui: { boardOpen: false, assistantOpen: false, toolsPanelOpen: false },
+      ui: { boardOpen: false, assistantOpen: false, toolsPanelOpen: false, toasts: [], pulseIds: [] },
       overlays: { conflicts: [] },
 
       placeItem: (source, input) => {
@@ -113,26 +136,26 @@ export const hearthStore = createStore<HearthStore>()(
         });
       },
 
-      setGhost: (source, furniture) => {
+      setGhost: (source, furniture, opts) => {
         requiredRoom(get(), furniture.roomId);
         const product = catalog.byId(furniture.catalogId);
         if (!product) throw new HearthError("not_found", `Product ${furniture.catalogId} was not found`);
         assertRotation(furniture.rotation);
         if (!resolveColorway(product, furniture.colorway)) throw new HearthError("invalid", `Colorway ${furniture.colorway} is not available for ${product.name}`);
-        set((draft) => {
+        quietly(opts, () => set((draft) => {
           draft.scene.furniture = draft.scene.furniture.filter((item) => item.status !== "ghost");
           draft.scene.furniture.push({ ...furniture, id: "ghost-1", status: "ghost", pos: { ...furniture.pos } });
-          prepend(draft, activity(source, "Preview furniture", `previewed ${product.name}`, ["ghost-1"]));
-        });
+          if (!opts?.quiet) prepend(draft, activity(source, "Preview furniture", `previewed ${product.name}`, ["ghost-1"]));
+        }));
       },
 
-      clearGhost: (source) => {
+      clearGhost: (source, opts) => {
         const found = get().scene.furniture.find((item) => item.status === "ghost");
         if (!found) throw new HearthError("not_found", "No preview ghost exists");
-        set((draft) => {
+        quietly(opts, () => set((draft) => {
           draft.scene.furniture = draft.scene.furniture.filter((item) => item.status !== "ghost");
-          prepend(draft, activity(source, "Cancel preview", `discarded preview of ${productName(found)}`, [found.id]));
-        });
+          if (!opts?.quiet) prepend(draft, activity(source, "Cancel preview", `discarded preview of ${productName(found)}`, [found.id]));
+        }));
       },
 
       confirmGhost: (source) => {
@@ -328,6 +351,17 @@ export const hearthStore = createStore<HearthStore>()(
       setToolsMirror: (list: ToolMirror[], status) => set((draft) => { draft.tools = { available: structuredClone(list), status }; }),
       pushActivity: (entry) => set((draft) => { prepend(draft, structuredClone(entry)); }),
       setUi: (patch) => set((draft) => { Object.assign(draft.ui, patch); }),
+      toast: (entry) => {
+        const toastEntry = { ...entry, id: uid(), t: Date.now() };
+        set((draft) => {
+          draft.ui.toasts.push(toastEntry);
+          if (draft.ui.toasts.length > TOAST_LIMIT) draft.ui.toasts.splice(0, draft.ui.toasts.length - TOAST_LIMIT);
+        });
+        return toastEntry.id;
+      },
+      dismissToast: (id) => set((draft) => { draft.ui.toasts = draft.ui.toasts.filter((entry) => entry.id !== id); }),
+      pulse: (itemIds) => set((draft) => { draft.ui.pulseIds = [...new Set(itemIds)]; }),
+      setDragging: (dragging) => set((draft) => { draft.ui.dragging = dragging ? { ...dragging } : undefined; }),
       setOverlays: (patch) => set((draft) => {
         draft.overlays = { conflicts: patch.conflicts ? structuredClone(patch.conflicts) : (draft.overlays?.conflicts ?? []) };
       }),
