@@ -36,6 +36,10 @@ function gateKey(state: HearthStore): string {
   return `${state.scene.meta.mode}|${ghost ? 1 : 0}|${variants}|${state.cart.lines.length}`;
 }
 
+function isAbortError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "name" in error && error.name === "AbortError";
+}
+
 export interface Registry {
   start(): void;
   stop(): void;
@@ -116,9 +120,11 @@ export function createRegistry(options: RegistryOptions): Registry {
     try {
       const registration = options.modelContext.registerTool(tool, { signal: controller.signal });
       void registration.catch((error: unknown) => {
+        if (isAbortError(error)) return;
         console.warn(`[Hearth WebMCP] Failed to register ${tool.name}.`, error);
       });
     } catch (error) {
+      if (isAbortError(error)) return;
       console.warn(`[Hearth WebMCP] Failed to register ${tool.name}.`, error);
     }
   };

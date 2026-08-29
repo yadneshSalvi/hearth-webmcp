@@ -1,0 +1,1349 @@
+{
+  "tools": [
+    {
+      "name": "add_opening",
+      "description": "Adds a door, window or arch to a wall of a room at an offset from the wall's start (or start, center, end) with a width in cm; doors take a swing (in or out) and hinge (left or right), windows a sill height. Reports items that now block the door swing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          },
+          "wall": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Wall side (north, east, south, west) or wall id (w0…)."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "door",
+              "window",
+              "arch"
+            ],
+            "description": "Opening kind: door, window or arch."
+          },
+          "offset_cm": {
+            "description": "Distance in cm from the wall's start (clockwise) to the opening, or start, center, end.",
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "start",
+                  "center",
+                  "end"
+                ]
+              }
+            ]
+          },
+          "width_cm": {
+            "description": "Opening width in cm (defaults: door 90, window 120, arch 140).",
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "swing": {
+            "description": "Door swing: in or out.",
+            "type": "string",
+            "enum": [
+              "in",
+              "out"
+            ]
+          },
+          "hinge": {
+            "description": "Door hinge from inside the room: left or right.",
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ]
+          },
+          "sill_height_cm": {
+            "description": "Window sill height in cm.",
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "wall",
+          "kind"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "apply_palette",
+      "description": "Applies a palette preset to a room or the whole home: wall colour, floor material and the textile family used for re-tinted fabrics. Presets: warm-clay, sage-linen, dusk, nordic, terrazzo, ochre-sun.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "palette": {
+            "type": "string",
+            "enum": [
+              "warm-clay",
+              "sage-linen",
+              "dusk",
+              "nordic",
+              "terrazzo",
+              "ochre-sun"
+            ],
+            "description": "Palette preset id."
+          },
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          },
+          "scope": {
+            "default": "room",
+            "description": "Apply to one room or the whole home; default room.",
+            "type": "string",
+            "enum": [
+              "room",
+              "home"
+            ]
+          }
+        },
+        "required": [
+          "palette"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "apply_template",
+      "description": "Replaces the whole home with a floor-plan template: studio, 1br, 2br (living, kitchen and dining, two bedrooms, bath, hall) or loft (L-shaped open plan), each with doors and windows; furnished adds a starter layout. Asks the human to confirm when the current home already has furniture.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "string",
+            "enum": [
+              "studio",
+              "1br",
+              "2br",
+              "loft"
+            ],
+            "description": "Floor-plan template: studio, 1br, 2br or loft."
+          },
+          "furnished": {
+            "default": false,
+            "description": "true adds the template's starter furniture layout.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "template"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "arrange_room",
+      "description": "Re-arranges all unlocked furniture in a room in one animated pass. Styles: conversation (seating faces each other around a focal point), media (seating faces the TV or media wall), open (maximum clear floor and walkways), work (desk by the window, storage on the walls). Keeps door swings and clearances free and reports what moved with the conflict count before and after.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          },
+          "style": {
+            "type": "string",
+            "enum": [
+              "conversation",
+              "media",
+              "open",
+              "work"
+            ],
+            "description": "Arrangement style: conversation, media, open or work."
+          },
+          "keep_locked": {
+            "default": true,
+            "description": "Keep locked furniture in place; default true.",
+            "type": "boolean"
+          },
+          "focus": {
+            "description": "Optional focal point: an item id or name (e.g. the fireplace or TV) or window:<id>.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "style"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "cancel_preview",
+      "description": "Discards the current preview ghost without changing the layout or the cart.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "clear_room",
+      "description": "Removes every item from a room after the human confirms in a dialog on the page. Returns cancelled if the human declines.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "compare_variants",
+      "description": "Shows two saved layout variants of a room side by side with a draggable split slider and returns their differences (items only in one of them, items that moved) and the conflict count of each. Any layout change closes the comparison.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "left": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Saved variant name for the left/right half."
+          },
+          "right": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Saved variant name for the left/right half."
+          },
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          }
+        },
+        "required": [
+          "left",
+          "right"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "confirm_preview",
+      "description": "Keeps the current preview: the ghost becomes a placed item with its colorway and Shopify variant linked. Optionally adds it to the cart in the same step.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "add_to_cart": {
+            "default": false,
+            "description": "true also adds the kept preview to the cart.",
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "create_room",
+      "description": "Adds a room with a name, type and size in cm, rectangular or L-shaped (a notched corner), placed beside an existing room (east_of, south_of, west_of, north_of) or at the home's free edge. Returns the room id and its walls.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Human-readable room name."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "living",
+              "bedroom",
+              "kitchen",
+              "dining",
+              "office",
+              "bath",
+              "hall",
+              "studio"
+            ],
+            "description": "Room type."
+          },
+          "width_cm": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Room width in cm."
+          },
+          "depth_cm": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Room depth in cm."
+          },
+          "notch": {
+            "description": "For an L-shape: which corner to cut away and the cut's width and depth in cm.",
+            "type": "object",
+            "properties": {
+              "corner": {
+                "type": "string",
+                "enum": [
+                  "ne",
+                  "se",
+                  "sw",
+                  "nw"
+                ],
+                "description": "Corner to cut away: ne, se, sw or nw."
+              },
+              "width_cm": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "description": "Notch width in cm."
+              },
+              "depth_cm": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "description": "Notch depth in cm."
+              }
+            },
+            "required": [
+              "corner",
+              "width_cm",
+              "depth_cm"
+            ],
+            "additionalProperties": false
+          },
+          "place": {
+            "description": "Put the new room on this side of relative_to (room id or name).",
+            "type": "string",
+            "enum": [
+              "east_of",
+              "south_of",
+              "west_of",
+              "north_of"
+            ]
+          },
+          "relative_to": {
+            "description": "Put the new room on this side of relative_to (room id or name).",
+            "type": "string",
+            "minLength": 1
+          },
+          "floor": {
+            "description": "Floor material: oak, pale-oak, stone or terrazzo.",
+            "type": "string",
+            "enum": [
+              "oak",
+              "pale-oak",
+              "stone",
+              "terrazzo"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "width_cm",
+          "depth_cm"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "export_design_board",
+      "description": "Creates a design board PNG for a room: dollhouse render, plan view, palette swatches and an itemised list with prices and the total, then starts the download in the page. Use it to present or share a finished layout.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          },
+          "title": {
+            "description": "Board title (default the room name).",
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_cart",
+      "description": "The shopping cart: each line with product, colorway, quantity, unit and line price in USD, the subtotal, the design budget and how much of it remains, and whether checkout is available. Lines note which placed item they belong to.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_checkout_link",
+      "description": "Returns the Shopify checkout URL for the current cart together with the store password. The human opens the link, enters the password once, and completes the purchase themselves (this is a test store: card number 1 succeeds).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_conflicts",
+      "description": "Lists layout problems in a room or the whole home: overlapping items, items outside the room, missing clearance in front of seating, beds and desks, blocked door swings, pinched traffic paths and, when accessibility mode is on, paths under 90 cm and missing 150 cm turning circles. Each conflict names the items involved and a concrete fix in cm.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "description": "Room id or name, or all for the whole home. Defaults to the active room.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_design_report",
+      "description": "Design critique of a room scored 0–10 on balance, focal point, conversation seating, lighting coverage, storage and traffic flow, with an overall score out of 100 and the top three improvements. Use it to review a layout or to explain why a room feels off.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_product",
+      "description": "Full details of one catalog product: dimensions in cm, price in USD, colorways, front clearance needed, seat count, style tags and which walls of a room it fits with the spare cm. Use it to confirm a product before placing, previewing or adding it to the cart.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Catalog product id (e.g. sofa-endre) or product name from search_catalog."
+          },
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          }
+        },
+        "required": [
+          "product"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_room_details",
+      "description": "Details of one room: walls (id, side, length in cm and the free spans where furniture can go), openings (doors, windows, arches with wall, offset, width and swing) and every placed item with id, name, position, rotation, footprint and colorway. Coordinates are room-local in cm: origin at the north-west corner, x east, y south. Use it before placing or moving furniture in that room.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_scene_summary",
+      "description": "Overview of the whole home: every room with id, name, type, size in m², wall sides with lengths in cm, item count and conflict count; plus the current mode, view, time of day, accessibility flag, active room, the human's selection, cart subtotal and design budget in USD. Call it first to learn room and item ids before reading details or placing furniture.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_selection",
+      "description": "What the human is pointing at right now: the selected item, hovered item, last moved item (and whether the human or the agent moved it), the selected room and the camera focus. Use it to resolve words like this, that, here or the one I clicked before acting.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "load_variant",
+      "description": "Restores a previously saved layout variant of a room by name, replacing the room's current furniture. Save the current layout first if you want to keep it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "variant": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Saved variant name (see save_variant)."
+          },
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          }
+        },
+        "required": [
+          "variant"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "measure",
+      "description": "Measures in cm: a wall's length and free spans, an item's footprint, the gap between two items, or the distance from an item to a wall or opening. Subjects are wall sides (north, east, south, west), wall ids (w0…), item ids or names, or opening ids. Use it to check fit before placing or moving.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What to measure: a wall side or id, an item id or name, or an opening id."
+          },
+          "to": {
+            "description": "Optional second thing (wall, item or opening) to measure the gap or distance to.",
+            "type": "string",
+            "minLength": 1
+          },
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          }
+        },
+        "required": [
+          "subject"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "move_furniture",
+      "description": "Moves and/or rotates a placed item. Give an anchor in words (wall + along, facing, next_to, centered, under), a raw pos in cm, a delta in cm, a rotation (0, 90, 180 or 270 clockwise; 0 faces south) or rotate_by, and optionally another room. Snaps and nudges like place_furniture and returns the resolved position and any conflicts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Placed item id (e.g. sofa-1) or its name. Use selected for the human's current selection."
+          },
+          "anchor": {
+            "type": "object",
+            "properties": {
+              "wall": {
+                "description": "Wall the back goes against: north, east, south, west, or a wall id such as w2.",
+                "type": "string",
+                "minLength": 1
+              },
+              "along": {
+                "description": "Position along that wall: start, center, end, or a number of cm from the wall's start (clockwise).",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "start",
+                      "center",
+                      "end"
+                    ]
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "facing": {
+                "description": "What the front faces: an item id or name, room_center, wall:<side>, or window:<id>.",
+                "type": "string",
+                "minLength": 1
+              },
+              "next_to": {
+                "description": "Item id or name to sit beside.",
+                "type": "string",
+                "minLength": 1
+              },
+              "side": {
+                "description": "Side of next_to to use: left, right, front or behind (from that item's point of view).",
+                "type": "string",
+                "enum": [
+                  "left",
+                  "right",
+                  "front",
+                  "behind"
+                ]
+              },
+              "gap_cm": {
+                "description": "Gap in cm between the two items (default 10).",
+                "type": "number",
+                "minimum": 0
+              },
+              "centered": {
+                "description": "true to centre the item in the room.",
+                "type": "boolean"
+              },
+              "under": {
+                "description": "window:<id> to centre the item under that window with its back to the wall.",
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false,
+            "description": "Where to put it, in words: wall + along, facing, next_to + side + gap_cm, centered, or under a window. Preferred over pos."
+          },
+          "pos": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "Footprint centre x in cm; positive points east."
+              },
+              "y": {
+                "type": "number",
+                "description": "Footprint centre y in cm; positive points south."
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false,
+            "description": "Raw footprint centre in cm, room-local (origin north-west corner, x east, y south). Use anchor when possible."
+          },
+          "delta_cm": {
+            "description": "Shift by this many cm: x positive = east, y positive = south.",
+            "type": "object",
+            "properties": {
+              "x": {
+                "description": "East-west shift in cm; positive is east.",
+                "type": "number"
+              },
+              "y": {
+                "description": "North-south shift in cm; positive is south.",
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          "rotation": {
+            "type": "number",
+            "enum": [
+              0,
+              90,
+              180,
+              270
+            ],
+            "description": "0, 90, 180 or 270 degrees clockwise; 0 = front faces south."
+          },
+          "rotate_by": {
+            "description": "Turn by 90 (clockwise), -90 (counter-clockwise) or 180 degrees.",
+            "type": "number",
+            "enum": [
+              90,
+              -90,
+              180
+            ]
+          },
+          "room": {
+            "description": "Move the item into this room (id or name). Defaults to its current room.",
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "item"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "move_opening",
+      "description": "Moves or resizes an existing opening: a new wall, offset in cm, width, swing or hinge. Reports items that block the new door swing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "opening": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opening id, e.g. door-1 or window-2."
+          },
+          "wall": {
+            "description": "New wall side or wall id.",
+            "type": "string",
+            "minLength": 1
+          },
+          "offset_cm": {
+            "description": "New offset in cm from wall start, or start, center, end.",
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "start",
+                  "center",
+                  "end"
+                ]
+              }
+            ]
+          },
+          "width_cm": {
+            "description": "New opening width in cm.",
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "swing": {
+            "description": "New door swing: in or out.",
+            "type": "string",
+            "enum": [
+              "in",
+              "out"
+            ]
+          },
+          "hinge": {
+            "description": "New door hinge: left or right.",
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ]
+          }
+        },
+        "required": [
+          "opening"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "place_furniture",
+      "description": "Places a catalog product in a room as a new item. Position it with an anchor in words (back against a wall at start, center, end or N cm along it; facing an item or the room centre; next to an item with a gap; centred; or under a window) or with a raw pos in cm and a rotation. The engine snaps to the wall, nudges up to 60 cm to avoid collisions and reports conflicts. Returns the new item id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Catalog product id (e.g. sofa-endre) or product name from search_catalog."
+          },
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          },
+          "anchor": {
+            "type": "object",
+            "properties": {
+              "wall": {
+                "description": "Wall the back goes against: north, east, south, west, or a wall id such as w2.",
+                "type": "string",
+                "minLength": 1
+              },
+              "along": {
+                "description": "Position along that wall: start, center, end, or a number of cm from the wall's start (clockwise).",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "start",
+                      "center",
+                      "end"
+                    ]
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "facing": {
+                "description": "What the front faces: an item id or name, room_center, wall:<side>, or window:<id>.",
+                "type": "string",
+                "minLength": 1
+              },
+              "next_to": {
+                "description": "Item id or name to sit beside.",
+                "type": "string",
+                "minLength": 1
+              },
+              "side": {
+                "description": "Side of next_to to use: left, right, front or behind (from that item's point of view).",
+                "type": "string",
+                "enum": [
+                  "left",
+                  "right",
+                  "front",
+                  "behind"
+                ]
+              },
+              "gap_cm": {
+                "description": "Gap in cm between the two items (default 10).",
+                "type": "number",
+                "minimum": 0
+              },
+              "centered": {
+                "description": "true to centre the item in the room.",
+                "type": "boolean"
+              },
+              "under": {
+                "description": "window:<id> to centre the item under that window with its back to the wall.",
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false,
+            "description": "Where to put it, in words: wall + along, facing, next_to + side + gap_cm, centered, or under a window. Preferred over pos."
+          },
+          "pos": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "Footprint centre x in cm; positive points east."
+              },
+              "y": {
+                "type": "number",
+                "description": "Footprint centre y in cm; positive points south."
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false,
+            "description": "Raw footprint centre in cm, room-local (origin north-west corner, x east, y south). Use anchor when possible."
+          },
+          "rotation": {
+            "type": "number",
+            "enum": [
+              0,
+              90,
+              180,
+              270
+            ],
+            "description": "0, 90, 180 or 270 degrees clockwise; 0 = front faces south."
+          },
+          "colorway": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Colorway id or name, e.g. oak, sage, terracotta, dusty-blue."
+          }
+        },
+        "required": [
+          "product"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "preview_in_room",
+      "description": "Try before you buy: shows a translucent ghost of a catalog product at an anchor or position in a room with its price, fit and conflicts, without changing the layout or the cart. One preview at a time; confirm_preview keeps it and cancel_preview discards it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Catalog product id (e.g. sofa-endre) or product name from search_catalog."
+          },
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          },
+          "anchor": {
+            "type": "object",
+            "properties": {
+              "wall": {
+                "description": "Wall the back goes against: north, east, south, west, or a wall id such as w2.",
+                "type": "string",
+                "minLength": 1
+              },
+              "along": {
+                "description": "Position along that wall: start, center, end, or a number of cm from the wall's start (clockwise).",
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "start",
+                      "center",
+                      "end"
+                    ]
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "facing": {
+                "description": "What the front faces: an item id or name, room_center, wall:<side>, or window:<id>.",
+                "type": "string",
+                "minLength": 1
+              },
+              "next_to": {
+                "description": "Item id or name to sit beside.",
+                "type": "string",
+                "minLength": 1
+              },
+              "side": {
+                "description": "Side of next_to to use: left, right, front or behind (from that item's point of view).",
+                "type": "string",
+                "enum": [
+                  "left",
+                  "right",
+                  "front",
+                  "behind"
+                ]
+              },
+              "gap_cm": {
+                "description": "Gap in cm between the two items (default 10).",
+                "type": "number",
+                "minimum": 0
+              },
+              "centered": {
+                "description": "true to centre the item in the room.",
+                "type": "boolean"
+              },
+              "under": {
+                "description": "window:<id> to centre the item under that window with its back to the wall.",
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false,
+            "description": "Where to put it, in words: wall + along, facing, next_to + side + gap_cm, centered, or under a window. Preferred over pos."
+          },
+          "pos": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "description": "Footprint centre x in cm; positive points east."
+              },
+              "y": {
+                "type": "number",
+                "description": "Footprint centre y in cm; positive points south."
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false,
+            "description": "Raw footprint centre in cm, room-local (origin north-west corner, x east, y south). Use anchor when possible."
+          },
+          "rotation": {
+            "type": "number",
+            "enum": [
+              0,
+              90,
+              180,
+              270
+            ],
+            "description": "0, 90, 180 or 270 degrees clockwise; 0 = front faces south."
+          },
+          "colorway": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Colorway id or name, e.g. oak, sage, terracotta, dusty-blue."
+          }
+        },
+        "required": [
+          "product"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "remove_furniture",
+      "description": "Removes one placed item from its room. If the item is linked to a cart line, that line is removed as well and the result says so. Use clear_room to empty a whole room.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Placed item id (e.g. sofa-1) or its name. Use selected for the human's current selection."
+          }
+        },
+        "required": [
+          "item"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "remove_opening",
+      "description": "Removes a door, window or arch by id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "opening": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opening id, e.g. door-1 or window-2."
+          }
+        },
+        "required": [
+          "opening"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "save_variant",
+      "description": "Saves the current furniture layout of a room under a name (for example Cosy or Media wall) so it can be restored with load_variant or, once two or more exist, compared side by side with compare_variants.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Short name for this saved room layout."
+          },
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "search_catalog",
+      "description": "Searches Hearth Studio's furniture catalog (Shopify). Filter by category, maximum price in USD, maximum width and depth in cm, style, colorway, or the wall it must fit (fits_wall) in a room. Returns up to 6 products with id, price, dimensions, colorways and a fit note such as fits north wall · 12 cm spare. Product ids from here are used by place_furniture, preview_in_room and update_cart.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Free-text search, e.g. small oak desk.",
+            "type": "string"
+          },
+          "category": {
+            "description": "Furniture category.",
+            "type": "string",
+            "enum": [
+              "sofa",
+              "armchair",
+              "bed",
+              "wardrobe",
+              "table",
+              "desk",
+              "chair",
+              "shelf",
+              "tv-unit",
+              "rug",
+              "floor-lamp",
+              "table-lamp",
+              "plant",
+              "decor"
+            ]
+          },
+          "max_price_usd": {
+            "description": "Maximum product price in USD.",
+            "type": "number",
+            "minimum": 0
+          },
+          "max_width_cm": {
+            "description": "Maximum product width in cm.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "max_depth_cm": {
+            "description": "Maximum product depth in cm.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "fits_wall": {
+            "description": "Only products whose width fits a free span on this wall (north, east, south, west or wall id) of the room.",
+            "type": "string",
+            "minLength": 1
+          },
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          },
+          "style": {
+            "description": "Style tag such as scandinavian, japandi, mid-century, rustic, modern.",
+            "type": "string",
+            "minLength": 1
+          },
+          "colorway": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Colorway id or name, e.g. oak, sage, terracotta, dusty-blue."
+          },
+          "limit": {
+            "default": 6,
+            "description": "Maximum results, from 1 to 6; default 6.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "set_accessibility_mode",
+      "description": "Turns accessibility mode on or off. On: paths must be at least 90 cm wide, a 150 cm turning circle is required beside the bed, desk and sofa, reach zones are shown, and get_conflicts and the overlays report these rules. Off: standard 60 cm walkways.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "true enables accessibility layout rules; false restores standard rules."
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "set_colorway",
+      "description": "Changes a placed item's colorway (for example oak, sage, terracotta or dusty-blue). If the product is in the cart, the cart line switches to the matching variant. Lists the available colorways when the requested one is unknown.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Placed item id (e.g. sofa-1) or its name. Use selected for the human's current selection."
+          },
+          "colorway": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Colorway id or name, e.g. oak, sage, terracotta, dusty-blue."
+          }
+        },
+        "required": [
+          "item",
+          "colorway"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "set_mode",
+      "description": "Switches the studio mode. build: edit rooms and openings (enables apply_template, create_room, update_room, add_opening, move_opening and remove_opening). design: place and arrange furniture. shop: browse products and manage the cart with prices shown. Design and shop tools stay available in every mode.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "build",
+              "design",
+              "shop"
+            ],
+            "description": "Studio mode: build, design or shop."
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "set_time_of_day",
+      "description": "Sets the lighting time of day: morning (cool soft light), noon (bright with short shadows), golden (warm low sun) or evening (dusk, every lamp glows). Changes the look only; the layout stays the same.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "string",
+            "enum": [
+              "morning",
+              "noon",
+              "golden",
+              "evening"
+            ],
+            "description": "Lighting time: morning, noon, golden or evening."
+          }
+        },
+        "required": [
+          "time"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "set_view",
+      "description": "Changes the camera: plan (top-down) or dollhouse (isometric), optionally focused on a room or an item, with the isometric yaw at nw, ne, se or sw. Use it to show the human what you are working on.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "view": {
+            "description": "Camera view: plan or dollhouse.",
+            "type": "string",
+            "enum": [
+              "plan",
+              "dollhouse"
+            ]
+          },
+          "focus": {
+            "description": "Room id/name or item id/name to frame. Defaults to the active room.",
+            "type": "string",
+            "minLength": 1
+          },
+          "yaw": {
+            "description": "Dollhouse compass yaw: nw, ne, se or sw.",
+            "type": "string",
+            "enum": [
+              "nw",
+              "ne",
+              "se",
+              "sw"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "undo",
+      "description": "Undoes the last change(s) to the scene, whether made by the agent or the human, 1 to 10 steps at a time. Returns what was undone.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "default": 1,
+            "description": "Number of scene changes to undo, from 1 to 10; default 1.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "update_cart",
+      "description": "Changes the Shopify cart. add: adds a product (by product id or a placed item) in a colorway with a quantity; remove: removes that product's line; set_quantity: sets the line's quantity. Returns the new subtotal in USD and the remaining budget. Purchases are completed by the human at checkout.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "add",
+              "remove",
+              "set_quantity"
+            ],
+            "description": "Cart action: add, remove or set_quantity."
+          },
+          "product": {
+            "description": "Catalog product id or name. Give either product or item.",
+            "type": "string",
+            "minLength": 1
+          },
+          "item": {
+            "description": "Placed item id or name; its product and colorway are used and the cart line is linked to it.",
+            "type": "string",
+            "minLength": 1
+          },
+          "colorway": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Colorway id or name, e.g. oak, sage, terracotta, dusty-blue."
+          },
+          "quantity": {
+            "description": "Quantity for add (default 1) or set_quantity.",
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "update_room",
+      "description": "Changes a room's name, type, width and depth in cm, floor material or wall colour. Items that no longer fit are reported so you can move them.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          },
+          "name": {
+            "description": "New room name.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "type": {
+            "description": "New room type.",
+            "type": "string",
+            "enum": [
+              "living",
+              "bedroom",
+              "kitchen",
+              "dining",
+              "office",
+              "bath",
+              "hall",
+              "studio"
+            ]
+          },
+          "width_cm": {
+            "description": "New room width in cm.",
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "depth_cm": {
+            "description": "New room depth in cm.",
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "floor": {
+            "description": "New floor material.",
+            "type": "string",
+            "enum": [
+              "oak",
+              "pale-oak",
+              "stone",
+              "terrazzo"
+            ]
+          },
+          "wall_color": {
+            "description": "New wall colour token.",
+            "type": "string",
+            "enum": [
+              "plaster",
+              "sage-tint",
+              "plum-tint",
+              "ochre-tint",
+              "blue-tint",
+              "terracotta-tint"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  ]
+}

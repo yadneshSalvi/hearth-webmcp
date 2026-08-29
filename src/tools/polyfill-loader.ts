@@ -1,5 +1,14 @@
 const loads = new WeakMap<Document, Promise<"polyfill" | "unavailable">>();
 
+export type WebMCPPolyfillMode = "native-only" | "allow-polyfill";
+
+/** Polyfill loading is opt-in through configuration or the eval/browser query flag. */
+export function webMcpPolyfillRequested(mode: WebMCPPolyfillMode = "native-only"): boolean {
+  if (mode === "allow-polyfill") return true;
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("webmcp") === "polyfill";
+}
+
 /** Synchronous native WebMCP feature detection. */
 export function detectModelContext(): "native" | "missing" {
   if (typeof document === "undefined") return "missing";
