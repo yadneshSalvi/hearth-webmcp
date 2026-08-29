@@ -76,7 +76,7 @@ Parameter descriptions (≤ 150 chars each, used verbatim in the JSON Schema):
 - `rotation` — "0, 90, 180 or 270 degrees clockwise; 0 = front faces south."
 
 Resolution (`src/engine/anchors.ts`): `wall` → back flush to the wall (rotation derived: north wall ⇒ 0, east ⇒ 90,
-south ⇒ 180, west ⇒ 270 — the front faces away from the wall), `along` positions the centre; `facing` overrides rotation; `next_to` computes the
+south ⇒ 180, west ⇒ 270 — the front faces away from the wall), `along` positions the centre; `facing` overrides rotation (exception: when the facing target lies on the anchor wall itself — e.g. a window in that wall — the item keeps its back to the wall and the note says the window is behind it); `next_to` computes the
 neighbour offset from both footprints; `centered`/`under` as named. If the exact spot collides or leaves the room,
 nudge along the wall/axis up to **60 cm** (5 cm steps, nearest first) and report `nudged_cm`; else return
 `{ok:false, error:"blocked", detail, free_spans:[{wall,start,end}], suggestion}`.
