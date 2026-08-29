@@ -314,15 +314,15 @@ describe("neighbourGap", () => {
 });
 
 describe("stacking validity", () => {
-  const table = neighbour("table-1", TABLE, { x: 200, y: 200 }); // x 140–260, y 160–240
+  const table = neighbour("table-1", TABLE, { x: 200, y: 200 }); // table-ake 160×90×75 → x 120–280, y 155–245
 
   it("accepts a lamp whose footprint sits entirely on a surface", () => {
     const foot = poseFootprint(LAMP, { x: 200, y: 200 }, 0);
-    expect(stackSurfaceFor(LAMP, foot, [table])).toEqual({ itemId: "table-1", heightCm: 40 });
+    expect(stackSurfaceFor(LAMP, foot, [table])).toEqual({ itemId: "table-1", heightCm: 75 });
   });
 
   it("refuses a lamp hanging over the edge", () => {
-    const foot = poseFootprint(LAMP, { x: 255, y: 200 }, 0);
+    const foot = poseFootprint(LAMP, { x: 275, y: 200 }, 0);
     expect(stackSurfaceFor(LAMP, foot, [table])).toBeUndefined();
   });
 
