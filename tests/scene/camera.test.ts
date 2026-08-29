@@ -6,9 +6,12 @@ import {
   cameraPosition,
   cameraRight,
   cameraUp,
+  boxCentre,
+  boxCorners,
   cubicBezier,
   fitHalfHeight,
   homeBox,
+  roomBox,
   nearestAngle,
   rotationRadians,
   WALL_FADED,
@@ -16,6 +19,7 @@ import {
   wallOpacity,
   yawAzimuth,
 } from "@/src/scene/math";
+import type { Vec3 } from "@/src/scene/math";
 import { createTemplate } from "@/src/engine/templates";
 
 const DEG = Math.PI / 180;
@@ -115,6 +119,68 @@ describe("orthographic fit", () => {
     expect(home.max[0]).toBeCloseTo(8.8, 6);
     expect(home.max[2]).toBeCloseTo(10, 6);
     expect(home.max[1]).toBeCloseTo(2.6, 6);
+  });
+});
+
+describe("framing never clips the room it frames", () => {
+  const YAWS = ["nw", "ne", "se", "sw"] as const;
+  const ASPECTS = [1440 / 900, 1280 / 800, 1920 / 1080, 1024 / 1366];
+
+  /** Projects a world point into normalised device coordinates for an orthographic fit. */
+  function project(point: Vec3, centre: Vec3, azimuth: number, pitch: number, half: number, aspect: number) {
+    const right = cameraRight(azimuth);
+    const up = cameraUp(azimuth, pitch);
+    const dx = point[0] - centre[0];
+    const dy = point[1] - centre[1];
+    const dz = point[2] - centre[2];
+    return {
+      x: (dx * right[0] + dy * right[1] + dz * right[2]) / (half * aspect),
+      y: (dx * up[0] + dy * up[1] + dz * up[2]) / half,
+    };
+  }
+
+  it("keeps every corner of every 2BR room inside the frame at every yaw and aspect", () => {
+    const scene = createTemplate("2br", { furnished: true });
+    for (const room of scene.rooms) {
+      const box = roomBox(room);
+      const centre = boxCentre(box);
+      for (const yaw of YAWS) {
+        for (const aspect of ASPECTS) {
+          const azimuth = yawAzimuth(yaw);
+          const half = fitHalfHeight(box, azimuth, DOLLHOUSE_PITCH, aspect, 0.12);
+          for (const corner of boxCorners(box)) {
+            const ndc = project(corner, centre, azimuth, DOLLHOUSE_PITCH, half, aspect);
+            expect(Math.abs(ndc.x), `${room.id} ${yaw} ${aspect.toFixed(2)} x`).toBeLessThanOrEqual(1);
+            expect(Math.abs(ndc.y), `${room.id} ${yaw} ${aspect.toFixed(2)} y`).toBeLessThanOrEqual(1);
+          }
+        }
+      }
+    }
+  });
+
+  it("leaves the promised 12 % of padding on the tightest axis", () => {
+    const room = createTemplate("2br").rooms[0];
+    expect(room).toBeDefined();
+    const box = roomBox(room as Parameters<typeof roomBox>[0]);
+    const centre = boxCentre(box);
+    const azimuth = yawAzimuth("sw");
+    const half = fitHalfHeight(box, azimuth, DOLLHOUSE_PITCH, 1440 / 900, 0.12);
+    let tightest = 0;
+    for (const corner of boxCorners(box)) {
+      const ndc = project(corner, centre, azimuth, DOLLHOUSE_PITCH, half, 1440 / 900);
+      tightest = Math.max(tightest, Math.abs(ndc.x), Math.abs(ndc.y));
+    }
+    expect(tightest).toBeCloseTo(1 / 1.12, 4);
+  });
+
+  it("includes the outward wall thickness, so a room's own walls cannot clip", () => {
+    const room = createTemplate("2br").rooms[0];
+    expect(room).toBeDefined();
+    const bare = homeBox([room as Parameters<typeof roomBox>[0]]);
+    const framed = roomBox(room as Parameters<typeof roomBox>[0]);
+    expect(bare.min[0] - framed.min[0]).toBeCloseTo(0.12, 6);
+    expect(framed.max[2] - bare.max[2]).toBeCloseTo(0.12, 6);
+    expect(framed.max[1]).toBeCloseTo(bare.max[1], 6);
   });
 });
 

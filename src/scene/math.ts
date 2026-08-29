@@ -257,9 +257,18 @@ export function homeBox(rooms: Room[]): Box3Like {
   return { min: [minX * M, 0, minZ * M], max: [maxX * M, WALL_H * M, maxZ * M] };
 }
 
-/** World-space bounding box in metres for one room, from floor to wall top. */
+/**
+ * World-space bounding box in metres for one room, from floor to wall top and inflated by the wall
+ * thickness. A room's walls extrude *outward* from its polygon, so framing the bare polygon clips
+ * the very walls that frame the shot — most visibly along the south edge.
+ */
 export function roomBox(room: Room): Box3Like {
-  return homeBox([room]);
+  const box = homeBox([room]);
+  const pad = WALL_T * M;
+  return {
+    min: [box.min[0] - pad, box.min[1], box.min[2] - pad],
+    max: [box.max[0] + pad, box.max[1], box.max[2] + pad],
+  };
 }
 
 /** World-space bounding box in metres around a single placed item, padded by `pad` metres. */
