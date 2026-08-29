@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { resolveWall } from "../../src/engine/geometry";
 import { createTemplate } from "../../src/engine/templates";
 import { hearthStore } from "../../src/state/store";
 import { HearthError } from "../../src/state/types";
@@ -163,14 +164,25 @@ describe("room and opening actions", () => {
 
   it("resizes from the north-west and returns newly outside item ids", () => {
     const item = hearthStore.getState().placeItem("human", { catalogId: "plant-fern", roomId: "living", pos: { x: 480, y: 400 }, rotation: 0 });
-    const outside = hearthStore.getState().updateRoom("agent", "living", { width_cm: 400, depth_cm: 300, name: "Lounge", floor: "stone" });
+    const outside = hearthStore.getState().updateRoom("agent", "living", { width_cm: 500, depth_cm: 300, name: "Lounge", floor: "stone" });
     expect(outside).toEqual([item.id]);
     const room = hearthStore.getState().scene.rooms.find((candidate) => candidate.id === "living")!;
     expect(room.name).toBe("Lounge");
     expect(room.floor).toBe("stone");
     expect(room.origin).toEqual({ x: 0, y: 0 });
     expect(room.poly[0]).toEqual({ x: 0, y: 0 });
-    expect(room.poly[2]).toEqual({ x: 400, y: 300 });
+    expect(room.poly[2]).toEqual({ x: 500, y: 300 });
+  });
+
+  it("rejects a shrink that would leave openings outside their walls", () => {
+    expect(() => hearthStore.getState().updateRoom("agent", "living", { width_cm: 200 })).toThrow(/window-living-north.*340-500.*200 cm north wall/);
+    const state = hearthStore.getState();
+    const living = state.scene.rooms.find((room) => room.id === "living")!;
+    expect(living.poly[1]?.x).toBe(520);
+    for (const opening of state.scene.openings.filter((entry) => entry.roomId === living.id)) {
+      const wall = resolveWall(living, opening.wallId)!;
+      expect(opening.offset + opening.width, opening.id).toBeLessThanOrEqual(wall.length);
+    }
   });
 
   it("adds, moves and removes validated openings", () => {
@@ -200,6 +212,20 @@ describe("temporal and auxiliary state", () => {
     expect(hearthStore.getState().activity).toHaveLength(activityLength);
     hearthStore.getState().redo();
     expect(hearthStore.getState().scene.furniture[0]?.pos).toEqual({ x: 300, y: 200 });
+  });
+
+  it("keeps selection and active-room clicks outside scene history", () => {
+    const item = hearthStore.getState().placeItem("human", { catalogId: "sofa-endre", roomId: "living", pos: { x: 200, y: 100 }, rotation: 0 });
+    hearthStore.getState().moveItem("human", item.id, { pos: { x: 300, y: 200 } });
+    const beforeClicks = hearthStore.temporal.getState().pastStates.length;
+    hearthStore.getState().setSelection("human", { itemId: item.id });
+    hearthStore.getState().setSelection("human", { itemId: undefined, hoverItemId: item.id });
+    hearthStore.getState().setActiveRoom("human", "bed-1");
+    expect(hearthStore.temporal.getState().pastStates).toHaveLength(beforeClicks);
+    expect(hearthStore.getState().undo()[0]).toMatchObject({ title: "Move furniture" });
+    expect(hearthStore.getState().scene.furniture[0]?.pos).toEqual({ x: 200, y: 100 });
+    expect(hearthStore.getState().scene.meta.activeRoomId).toBe("bed-1");
+    expect(hearthStore.getState().scene.meta.selection).toMatchObject({ hoverItemId: item.id });
   });
 
   it("limits scene history to 100 entries", () => {

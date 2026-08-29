@@ -4,7 +4,7 @@ import type { DefinedTool, Err } from "../define";
 import { defineTool } from "../define";
 import { colorwayParam, itemParam } from "../params";
 import {
-  fromCaught, productName, resolveColorway, resolveItem, sourceForStore, syncCart,
+  fromCaught, productName, resolveColorway, resolveItem, sourceForStore, syncCart, variantId,
 } from "./resolve";
 
 function unavailable(detail: string): Err {
@@ -38,7 +38,9 @@ export function removeFurnitureTool(): DefinedTool {
           removed: { id: item.id, name },
           removed_ids: [item.id],
           cart_line_removed: Boolean(lineId),
-          hint: "Use search_catalog or undo to replace it.",
+          hint: lineId
+            ? "Undo restores the item; re-add its removed Shopify line with update_cart."
+            : "Use search_catalog or undo to replace it.",
         };
       } catch (error) {
         return fromCaught(error);
@@ -69,22 +71,25 @@ export function setColorwayTool(): DefinedTool {
       if ("ok" in colorway) return colorway;
       const linkedLine = state.cart.lines.find((line) => line.itemId === item.id || line.id === item.cartLineId);
       let cartLineUpdated = false;
+      let targetVariant: string | undefined;
+      let targetLineId: string | undefined;
       if (linkedLine) {
-        const removed = await context.shopify.cartRemove([linkedLine.id]);
-        if (!removed.ok && removed.error === "unavailable") return unavailable(removed.detail);
-        const variantId = product.shopify?.variantIds[colorway.id]
-          ?? `gid://shopify/ProductVariant/local-${product.id}-${colorway.id}`;
-        const added = await context.shopify.cartAdd([{
-          variantId,
-          quantity: linkedLine.quantity,
-          itemId: item.id,
-        }]);
-        if (!added.ok) return unavailable(added.detail);
-        syncCart(context, added.value);
+        const remote = await context.shopify.product(product.id);
+        if (!remote.ok) return unavailable(remote.detail);
+        targetVariant = variantId(remote.value, colorway.id);
+        if (!targetVariant) return unavailable(`No Shopify variant exists for ${product.name} in ${colorway.id}.`);
+        const updated = await context.shopify.cartUpdateLine(linkedLine.id, targetVariant, linkedLine.quantity);
+        if (!updated.ok) return unavailable(updated.detail);
+        targetLineId = updated.value.lines.find((line) => line.itemId === item.id || line.variantId === targetVariant)?.id
+          ?? linkedLine.id;
+        syncCart(context, updated.value);
         cartLineUpdated = true;
       }
       try {
         context.store.getState().setColorway(sourceForStore(context.source), item.id, colorway.id);
+        if (targetVariant && targetLineId) {
+          context.store.getState().linkCartLine(sourceForStore(context.source), item.id, targetVariant, targetLineId);
+        }
         context.ui.pulse([item.id]);
         return {
           ok: true,

@@ -3,24 +3,68 @@ import { immer } from "zustand/middleware/immer";
 import { temporal } from "zundo";
 import { catalogSource } from "../../data/catalog.source";
 import { nextItemId, resolveColorway } from "../engine/catalog";
-import { footprint, polyBBox, polyInside } from "../engine/geometry";
+import { footprint, polyBBox, polyInside, resolveWall } from "../engine/geometry";
 import { createTemplate } from "../engine/templates";
 import type { Furniture, Opening, Room } from "../engine/types";
 import { palettePresets } from "../tokens";
-import { toolActivityIsActive } from "../tools/activity-scope";
 import {
   actionActivity as activity, assertRotation, cloneScene, nextOpeningId, notchPoly, placedOrigin, prependActivity,
   productName, recomputeCart, requiredItem, requiredOpening, requiredRoom, storeCatalog as catalog, uniqueRoomId, validateOpening,
 } from "./store-helpers";
 import { HearthError } from "./types";
-import type { HearthStore, ToolMirror } from "./types";
+import type { ActivityEntry, HearthStore, ToolMirror } from "./types";
+import { toolBatchIsActive } from "./tool-batch";
+
+const historyLabels: ActivityEntry[] = [];
+const futureLabels: ActivityEntry[] = [];
+let pendingHistoryLabel: ActivityEntry | undefined;
 
 function prepend(
   target: Parameters<typeof prependActivity>[0],
   entry: Parameters<typeof prependActivity>[1],
 ): void {
-  if (toolActivityIsActive() && entry.source !== "human" && !entry.tool) return;
+  if (!entry.tool) pendingHistoryLabel = structuredClone(entry);
+  if (toolBatchIsActive() && entry.source !== "human" && !entry.tool) return;
   prependActivity(target, entry);
+}
+
+function withoutHistory(action: () => void): void {
+  const temporalState = hearthStore.temporal.getState();
+  const wasTracking = temporalState.isTracking;
+  if (wasTracking) temporalState.pause();
+  try {
+    action();
+  } finally {
+    pendingHistoryLabel = undefined;
+    if (wasTracking) temporalState.resume();
+  }
+}
+
+function restoreTransientSceneState(selection: HearthStore["scene"]["meta"]["selection"], activeRoomId: string): void {
+  withoutHistory(() => {
+    const state = hearthStore.getState();
+    const scene = cloneScene(state.scene);
+    const roomIds = new Set(scene.rooms.map((room) => room.id));
+    const itemIds = new Set(scene.furniture.map((item) => item.id));
+    if (roomIds.has(activeRoomId)) scene.meta.activeRoomId = activeRoomId;
+    scene.meta.selection = {
+      ...selection,
+      ...(selection.roomId && !roomIds.has(selection.roomId) ? { roomId: undefined } : {}),
+      ...(selection.itemId && !itemIds.has(selection.itemId) ? { itemId: undefined } : {}),
+      ...(selection.hoverItemId && !itemIds.has(selection.hoverItemId) ? { hoverItemId: undefined } : {}),
+      ...(selection.lastMovedItemId && !itemIds.has(selection.lastMovedItemId) ? { lastMovedItemId: undefined } : {}),
+    };
+    for (const item of scene.furniture) {
+      const line = state.cart.lines.find((candidate) => candidate.itemId === item.id);
+      if (line) {
+        item.cartLineId = line.id;
+        item.shopifyVariantId = line.variantId;
+      } else {
+        delete item.cartLineId;
+      }
+    }
+    hearthStore.setState({ scene });
+  });
 }
 
 const initialScene = createTemplate("2br", { furnished: true });
@@ -188,18 +232,18 @@ export const hearthStore = createStore<HearthStore>()(
       }),
       setActiveRoom: (source, roomId) => {
         const room = requiredRoom(get(), roomId);
-        set((draft) => {
+        withoutHistory(() => set((draft) => {
           draft.scene.meta.activeRoomId = roomId;
           prepend(draft, activity(source, "Select room", `selected ${room.name}`));
-        });
+        }));
       },
       setSelection: (source, selection) => {
         if (selection.roomId) requiredRoom(get(), selection.roomId);
         if (selection.itemId) requiredItem(get(), selection.itemId);
-        set((draft) => {
+        withoutHistory(() => set((draft) => {
           Object.assign(draft.scene.meta.selection, selection);
           prepend(draft, activity(source, "Set selection", "changed the selection", selection.itemId ? [selection.itemId] : []));
-        });
+        }));
       },
 
       saveVariant: (source, roomId, name) => {
@@ -246,6 +290,18 @@ export const hearthStore = createStore<HearthStore>()(
           prepend(draft, activity(source, "Clear room", `cleared ${room.name}`, ids));
         });
       },
+      applyArrangement: (source, roomId, furniture) => {
+        const room = requiredRoom(get(), roomId);
+        const ids = new Set(get().scene.furniture.map((item) => item.id));
+        if (furniture.length !== ids.size || furniture.some((item) => !ids.has(item.id))) {
+          throw new HearthError("invalid", "An arrangement must preserve every furniture id");
+        }
+        set((draft) => {
+          draft.scene.furniture = furniture.map((item) => ({ ...item, pos: { ...item.pos } }));
+          draft.ui.compare = undefined;
+          prepend(draft, activity(source, "Arrange room", `arranged ${room.name}`, furniture.filter((item) => item.roomId === roomId).map((item) => item.id)));
+        });
+      },
       applyTemplate: (source, id, furnished) => set((draft) => {
         draft.scene = createTemplate(id, { furnished });
         draft.ui.compare = undefined;
@@ -279,6 +335,15 @@ export const hearthStore = createStore<HearthStore>()(
         const depth = patch.depth ?? patch.depth_cm ?? oldBox.d;
         if (width <= 0 || depth <= 0) throw new HearthError("invalid", "Room width and depth must be positive");
         const poly = current.poly.map((point) => ({ x: oldBox.minX + (point.x - oldBox.minX) * width / oldBox.w, y: oldBox.minY + (point.y - oldBox.minY) * depth / oldBox.d }));
+        const resized = { ...current, poly };
+        const invalidOpenings = get().scene.openings.flatMap((opening) => {
+          if (opening.roomId !== id) return [];
+          const wall = resolveWall(resized, opening.wallId);
+          if (wall && opening.offset >= 0 && opening.width > 0 && opening.offset + opening.width <= wall.length) return [];
+          const end = opening.offset + opening.width;
+          return [`${opening.id} (${opening.offset}-${end} cm) no longer fits the ${Math.round(wall?.length ?? 0)} cm ${wall?.side ?? opening.wallId} wall`];
+        });
+        if (invalidOpenings.length > 0) throw new HearthError("invalid", invalidOpenings.join("; "));
         const outside = get().scene.furniture.filter((item) => item.roomId === id).filter((item) => {
           const product = catalog.byId(item.catalogId);
           return product ? !polyInside(poly, footprint(item, product)) : true;
@@ -323,6 +388,16 @@ export const hearthStore = createStore<HearthStore>()(
         });
       },
 
+      linkCartLine: (_source, itemId, variantId, lineId) => {
+        requiredItem(get(), itemId);
+        withoutHistory(() => set((draft) => {
+          const item = draft.scene.furniture.find((candidate) => candidate.id === itemId) as typeof draft.scene.furniture[number];
+          item.shopifyVariantId = variantId;
+          if (lineId) item.cartLineId = lineId;
+          else delete item.cartLineId;
+        }));
+      },
+
       setCart: (cartState) => set((draft) => { draft.cart = structuredClone(cartState); }),
       setCartStatus: (status) => set((draft) => { draft.cart.status = status; }),
       setToolsMirror: (list: ToolMirror[], status) => set((draft) => { draft.tools = { available: structuredClone(list), status }; }),
@@ -335,22 +410,32 @@ export const hearthStore = createStore<HearthStore>()(
         if (!Number.isInteger(steps) || steps < 1) throw new HearthError("invalid", "Undo steps must be a positive integer");
         const temporalState = hearthStore.temporal.getState();
         const count = Math.min(steps, temporalState.pastStates.length);
-        const undone = get().activity.slice(0, count).map((entry) => structuredClone(entry));
+        const { activeRoomId, selection } = get().scene.meta;
+        const undone = historyLabels.splice(-count, count).reverse().map((entry) => structuredClone(entry));
+        futureLabels.push(...undone.map((entry) => structuredClone(entry)));
         temporalState.undo(count);
+        restoreTransientSceneState(structuredClone(selection), activeRoomId);
         return undone;
       },
       redo: (steps = 1) => {
         if (!Number.isInteger(steps) || steps < 1) throw new HearthError("invalid", "Redo steps must be a positive integer");
         const temporalState = hearthStore.temporal.getState();
         const count = Math.min(steps, temporalState.futureStates.length);
+        const { activeRoomId, selection } = get().scene.meta;
+        const redone = futureLabels.splice(-count, count).reverse().map((entry) => structuredClone(entry));
         temporalState.redo(count);
-        return get().activity.slice(0, count).map((entry) => structuredClone(entry));
+        restoreTransientSceneState(structuredClone(selection), activeRoomId);
+        historyLabels.push(...redone.map((entry) => structuredClone(entry)));
+        return redone;
       },
       resetScene: (scene) => {
         const history = hearthStore.temporal.getState();
         history.pause();
         set((draft) => { draft.scene = cloneScene(scene); });
         history.clear();
+        historyLabels.length = 0;
+        futureLabels.length = 0;
+        pendingHistoryLabel = undefined;
         history.resume();
       },
     })),
@@ -358,7 +443,13 @@ export const hearthStore = createStore<HearthStore>()(
       partialize: (state) => ({ scene: state.scene }),
       limit: 100,
       equality: (past, current) => past.scene === current.scene || JSON.stringify(past.scene) === JSON.stringify(current.scene),
-      handleSet: (handleSet) => (past, replace) => handleSet(past, replace),
+      handleSet: (handleSet) => (past, replace) => {
+        handleSet(past, replace);
+        if (historyLabels.length >= 100) historyLabels.shift();
+        historyLabels.push(pendingHistoryLabel ?? activity("system", "Scene change", "changed the scene"));
+        futureLabels.length = 0;
+        pendingHistoryLabel = undefined;
+      },
     },
   ),
 );

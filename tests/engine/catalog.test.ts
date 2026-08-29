@@ -28,6 +28,7 @@ describe("built-in catalog", () => {
       expect(item.dims.w).toBeGreaterThan(0);
       expect(item.dims.d).toBeGreaterThan(0);
       expect(item.dims.h).toBeGreaterThan(0);
+      expect(Number.isInteger(item.dims.w) && Number.isInteger(item.dims.d) && Number.isInteger(item.dims.h), item.id).toBe(true);
       expect(item.price).toBeGreaterThan(0);
       expect(item.glb).toBe(`/assets/glb/${item.id}.glb`);
       expect(item.description?.length).toBeGreaterThan(20);

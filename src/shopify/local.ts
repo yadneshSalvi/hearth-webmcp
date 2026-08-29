@@ -128,6 +128,23 @@ export function createLocalShopify(catalogItems: CatalogItem[]): ShopifyClient {
       }
       return { ok: true, value: recompute() };
     },
+    async cartUpdateLine(lineId, variantId, quantity) {
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        return { ok: false, error: "invalid", detail: "Cart quantity must be a positive integer" };
+      }
+      const line = cart.lines.find((candidate) => candidate.id === lineId);
+      if (!line) return { ok: false, error: "not_found", detail: `Cart line ${lineId} was not found` };
+      const found = variants.get(variantId);
+      if (!found) return { ok: false, error: "not_found", detail: `Variant ${variantId} was not found` };
+      line.variantId = found.variant.id;
+      line.handle = found.product.handle;
+      line.title = found.product.name;
+      line.colorway = found.variant.colorway;
+      line.quantity = quantity;
+      line.unitUsd = found.variant.price;
+      line.lineUsd = found.variant.price * quantity;
+      return { ok: true, value: recompute() };
+    },
     async checkoutLink() {
       return { ok: true, value: { checkoutUrl: LOCAL_CHECKOUT_URL, storePassword: "" } };
     },

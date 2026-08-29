@@ -91,7 +91,7 @@ const specs: Spec[] = [
   { id: "tv-unit-linje", name: "Linje TV Unit", category: "tv-unit", dims: [180, 40, 36], price: 590, colors: ["oak", "charcoal", "plaster"], styles: ["scandinavian", "modern"] },
   { id: "tv-unit-form", name: "Form TV Unit", category: "tv-unit", dims: [140, 40, 48], price: 430, colors: ["plaster", "oak"], styles: ["japandi"] },
   { id: "tv-unit-nova", name: "Nova TV Unit", category: "tv-unit", dims: [200, 42, 133], price: 720, colors: ["charcoal", "plum", "oak"], styles: ["mid-century"] },
-  { id: "tv-unit-sund", name: "Sund TV Unit", category: "tv-unit", dims: [160, 41.8, 48], price: 510, colors: ["dusty-blue", "plaster", "oak"], styles: ["coastal"] },
+  { id: "tv-unit-sund", name: "Sund TV Unit", category: "tv-unit", dims: [160, 42, 48], price: 510, colors: ["dusty-blue", "plaster", "oak"], styles: ["coastal"] },
   { id: "tv-unit-ved", name: "Ved TV Unit", category: "tv-unit", dims: [170, 44, 50], price: 560, colors: ["terracotta", "oak", "charcoal"], styles: ["rustic", "modern"] },
 
   { id: "rug-loop", name: "Loop Rug", category: "rug", dims: [200, 300, 2], price: 390, colors: ["sage", "terracotta", "plaster"], styles: ["scandinavian", "japandi"] },
@@ -120,7 +120,7 @@ const specs: Spec[] = [
 
   { id: "decor-bowl", name: "Kyst Bowl Decor", category: "decor", dims: [28, 28, 12], price: 45, colors: ["oak", "plaster", "sage"], styles: ["scandinavian", "coastal"] },
   { id: "decor-vase", name: "Mira Vase Decor", category: "decor", dims: [22, 22, 34], price: 55, colors: ["terracotta", "plum", "plaster"], styles: ["modern"] },
-  { id: "decor-tray", name: "Lin Tray Decor", category: "decor", dims: [36, 22, 0.8], price: 35, colors: ["oak", "charcoal"], styles: ["japandi"] },
+  { id: "decor-tray", name: "Lin Tray Decor", category: "decor", dims: [36, 22, 1], price: 35, colors: ["oak", "charcoal"], styles: ["japandi"] },
   { id: "decor-sculpture", name: "Ro Sculpture Decor", category: "decor", dims: [25, 20, 42], price: 120, colors: ["plaster", "ochre", "charcoal"], styles: ["mid-century"] },
   { id: "decor-basket", name: "Ull Basket Decor", category: "decor", dims: [40, 40, 30], price: 65, colors: ["oak", "terracotta", "sage"], styles: ["rustic", "scandinavian"] },
 ];

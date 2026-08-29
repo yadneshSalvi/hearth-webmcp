@@ -5,15 +5,15 @@ import { conflictsForItem, evaluateRoom } from "../../engine/conflicts";
 import { fitNote, wallFits } from "../../engine/fit";
 import { resolveWall, walls } from "../../engine/geometry";
 import { dimsStr, posArr } from "../../engine/describe";
-import type { CatalogItem, Conflict, Furniture } from "../../engine/types";
-import type { CatalogProduct, ShopifyCart, ShopifyCartLine } from "../../shopify/types";
+import type { Conflict, Furniture } from "../../engine/types";
+import type { ShopifyCart, ShopifyCartLine } from "../../shopify/types";
 import type { DefinedTool, Err, ToolContext } from "../define";
 import { defineTool } from "../define";
 import {
   anchorParam, colorwayParam, describeParam, posParam, productParam, roomParam, rotationParam,
 } from "../params";
 import {
-  alternatives, fromCaught, notFound, productName, resolveItem, resolveProduct, resolveRoom, sourceForStore, syncCart,
+  alternatives, fromCaught, notFound, productName, resolveItem, resolveProduct, resolveRoom, sourceForStore, syncCart, variantId,
 } from "./resolve";
 
 function conflictRow(conflict: Conflict) {
@@ -52,37 +52,12 @@ function placementError(
         wall: entry.side,
         start: Math.round(span.start),
         end: Math.round(span.end),
+        fits: span.fits,
       }))).slice(0, 6),
     } : {}),
     ...(result.suggestion ? { suggestion: result.suggestion } : {}),
     ...(result.error === "not_found" ? { alternatives: alternatives(result.detail, candidates) } : {}),
   };
-}
-
-function variantId(product: CatalogProduct | CatalogItem, colorway: string): string | undefined {
-  if ("variants" in product) return product.variants.find((variant) => variant.colorway === colorway)?.id;
-  return product.shopify?.variantIds[colorway] ?? `gid://shopify/ProductVariant/local-${product.id}-${colorway}`;
-}
-
-function linkItem(context: ToolContext, itemId: string, variant: string, lineId?: string): void {
-  const state = context.store.getState();
-  const furniture = state.scene.furniture.map((item) => item.id === itemId ? {
-    ...item,
-    shopifyVariantId: variant,
-    ...(lineId ? { cartLineId: lineId } : {}),
-  } : item);
-  context.store.setState({ scene: { ...state.scene, furniture } });
-}
-
-function unlinkItem(context: ToolContext, itemId: string): void {
-  const state = context.store.getState();
-  const furniture = state.scene.furniture.map((item) => {
-    if (item.id !== itemId) return item;
-    const copy = { ...item };
-    delete copy.cartLineId;
-    return copy;
-  });
-  context.store.setState({ scene: { ...state.scene, furniture } });
 }
 
 function cartLine(line: ShopifyCartLine) {
@@ -243,7 +218,9 @@ export function updateCartTool(): DefinedTool {
         const addedLine = [...cart.lines].reverse().find((line) => line.variantId === variant);
         if (addedLine && item && !("ok" in item)) addedLine.itemId = item.id;
         syncCart(context, cart);
-        if (addedLine && item && !("ok" in item)) linkItem(context, item.id, variant, addedLine.id);
+        if (addedLine && item && !("ok" in item)) {
+          context.store.getState().linkCartLine(sourceForStore(context.source), item.id, variant, addedLine.id);
+        }
         beforeLine = addedLine;
       } else {
         const current = await context.shopify.cartGet();
@@ -264,7 +241,11 @@ export function updateCartTool(): DefinedTool {
           : unavailable(changed.detail);
         cart = changed.value;
         syncCart(context, cart);
-        if (beforeLine.itemId && (input.action === "remove" || input.quantity === 0)) unlinkItem(context, beforeLine.itemId);
+        if (beforeLine.itemId && (input.action === "remove" || input.quantity === 0)) {
+          const linkedItemId = beforeLine.itemId;
+          const linked = context.store.getState().scene.furniture.find((candidate) => candidate.id === linkedItemId);
+          if (linked) context.store.getState().linkCartLine(sourceForStore(context.source), linked.id, linked.shopifyVariantId ?? beforeLine.variantId);
+        }
       }
 
       const line = input.action === "remove" || input.quantity === 0
@@ -327,7 +308,7 @@ export function confirmPreviewTool(): DefinedTool {
       }
       try {
         const item = context.store.getState().confirmGhost(sourceForStore(context.source));
-        if (variant) linkItem(context, item.id, variant, lineId);
+        if (variant) context.store.getState().linkCartLine(sourceForStore(context.source), item.id, variant, lineId);
         context.ui.pulse([item.id]);
         return {
           ok: true,

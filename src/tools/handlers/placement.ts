@@ -63,6 +63,7 @@ function anchorFailure(
         wall: entry.side,
         start: Math.round(span.start),
         end: Math.round(span.end),
+        fits: span.fits,
       }))).slice(0, 6),
     } : {}),
     ...(result.suggestion ? { suggestion: result.suggestion } : {}),
@@ -157,7 +158,7 @@ const moveInput = z.object({
     y: z.number().optional().describe(describeParam("North-south shift in cm; positive is south.")),
   }).strict().optional().describe(describeParam("Shift by this many cm: x positive = east, y positive = south.")),
   rotation: rotationParam.optional(),
-  rotate_by: z.union([z.literal(90), z.literal(-90), z.literal(180)]).optional().describe(describeParam("Turn by 90 (clockwise), -90 (counter-clockwise) or 180 degrees.")),
+  rotate_by: z.literal([90, -90, 180]).optional().describe(describeParam("Turn by 90 (clockwise), -90 (counter-clockwise) or 180 degrees.")),
   room: z.string().min(1).optional().describe(describeParam("Move the item into this room (id or name). Defaults to its current room.")),
 }).strict().refine((input) => Boolean(
   input.anchor || input.pos || input.delta_cm || input.rotation !== undefined || input.rotate_by !== undefined || input.room,
@@ -263,8 +264,18 @@ export function arrangeRoomTool(): DefinedTool {
         keepLocked: input.keep_locked,
         focus: input.focus,
       });
+      if (arranged.moved.length === 0 && arranged.note.includes("no complete")) {
+        return {
+          ok: false,
+          error: "blocked",
+          detail: arranged.note,
+          note: arranged.note,
+          suggestion: "Remove or lock fewer items, resolve conflicts, or try another arrangement style.",
+          hint: "Try another style after clearing space or reducing the unlocked set.",
+        };
+      }
       const nextScene = { ...state.scene, furniture: arranged.furniture.map((item) => ({ ...item, pos: { ...item.pos } })) };
-      context.store.setState({ scene: nextScene, ui: { ...state.ui, compare: undefined } });
+      context.store.getState().applyArrangement(sourceForStore(context.source), room.id, arranged.furniture);
       const after = evaluateRoom(nextScene, room.id, catalog).length;
       const listed = truncateList(arranged.moved, 10);
       const names = new Map(state.catalog.map((product) => [product.id, product.name]));
@@ -287,6 +298,7 @@ export function arrangeRoomTool(): DefinedTool {
         item_ids: arranged.moved.map((move) => move.id),
         conflicts_before: before,
         conflicts_after: after,
+        note: arranged.note,
         ...(listed.more > 0 ? { more: listed.more } : {}),
         hint: after > 0 ? "Call get_conflicts to inspect the remaining issues." : "Save this layout as a variant if the human likes it.",
       };

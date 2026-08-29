@@ -3,8 +3,8 @@ import type { StoreApi } from "zustand";
 import type { ConflictKind, Scene } from "../engine/types";
 import type { ShopifyClient } from "../shopify/types";
 import type { ActionSource, HearthStore, ToolGroup } from "../state/types";
-import { beginToolActivity, endToolActivity } from "./activity-scope";
-import { takeConfirmReason } from "./confirm";
+import { beginToolBatch, endToolBatch } from "../state/tool-batch";
+import type { ConfirmResult } from "./confirm";
 
 export type ToolSource = "agent" | "assistant" | "test";
 
@@ -45,7 +45,7 @@ export interface ExportBoardResult {
 }
 
 export interface ToolUi {
-  confirm(message: string): Promise<boolean>;
+  confirm(message: string): Promise<ConfirmResult>;
   focus(target: ToolFocus): void;
   pulse(ids: string[]): void;
   exportBoard?(input: { roomId: string; title: string }): Promise<ExportBoardResult> | ExportBoardResult;
@@ -135,6 +135,17 @@ function assertSchemaBudgets(value: unknown, path = "inputSchema"): void {
   }
 }
 
+function cleanSchema(value: unknown): void {
+  if (Array.isArray(value)) {
+    value.forEach(cleanSchema);
+    return;
+  }
+  const schema = asRecord(value);
+  if (!schema) return;
+  if (schema.maximum === Number.MAX_SAFE_INTEGER) delete schema.maximum;
+  Object.values(schema).forEach(cleanSchema);
+}
+
 function jsonSchema(input: z.ZodObject): Record<string, unknown> {
   const generated = z.toJSONSchema(input, {
     target: "draft-07",
@@ -145,6 +156,7 @@ function jsonSchema(input: z.ZodObject): Record<string, unknown> {
   }) as Record<string, unknown>;
   const { $schema: _schema, ...withoutDialect } = generated;
   void _schema;
+  cleanSchema(withoutDialect);
   assertSchemaBudgets(withoutDialect);
   return withoutDialect;
 }
@@ -294,65 +306,67 @@ export async function executeDefinedTool(
   }
   receiptInput = parsed.data;
   const context = runtime.context(source, signal);
-  let confirmation: string | null;
+  runtime.before();
   try {
-    confirmation = tool.spec.confirm?.(parsed.data, context.store.getState().scene) ?? null;
-  } catch (error) {
-    result = { ok: false, error: "unavailable", detail: error instanceof Error ? error.message.slice(0, 500) : "Confirmation is unavailable." };
-    safeRecordReceipt(tool, runtime, source, receiptInput, result);
-    return result;
-  }
-  if (confirmation) {
-    let accepted: boolean;
+    let confirmation: string | null;
     try {
-      accepted = await context.ui.confirm(confirmation);
+      confirmation = tool.spec.confirm?.(parsed.data, context.store.getState().scene) ?? null;
     } catch (error) {
       result = { ok: false, error: "unavailable", detail: error instanceof Error ? error.message.slice(0, 500) : "Confirmation is unavailable." };
       safeRecordReceipt(tool, runtime, source, receiptInput, result);
       return result;
     }
-    if (!accepted) {
-      const reason = takeConfirmReason(context.ui.confirm);
-      let detail = `The human declined ${confirmation.toLowerCase().replace(/[?.!]$/, "")}.`;
-      if (reason === "timeout") detail = "No confirmation within 45 s";
-      else if (tool.spec.cancelledDetail) {
-        try {
-          detail = tool.spec.cancelledDetail(parsed.data, context.store.getState().scene);
-        } catch {
-          // The generic decline message remains actionable.
-        }
+    if (confirmation) {
+      let decision: ConfirmResult;
+      try {
+        decision = await context.ui.confirm(confirmation);
+      } catch (error) {
+        result = { ok: false, error: "unavailable", detail: error instanceof Error ? error.message.slice(0, 500) : "Confirmation is unavailable." };
+        safeRecordReceipt(tool, runtime, source, receiptInput, result);
+        return result;
       }
-      result = { ok: false, error: "cancelled", detail };
+      if (!decision.accepted) {
+        let detail = `The human declined ${confirmation.toLowerCase().replace(/[?.!]$/, "")}.`;
+        if (decision.reason === "timeout") detail = "No confirmation within 45 s";
+        else if (tool.spec.cancelledDetail) {
+          try {
+            detail = tool.spec.cancelledDetail(parsed.data, context.store.getState().scene);
+          } catch {
+            // The generic decline message remains actionable.
+          }
+        }
+        result = { ok: false, error: "cancelled", detail };
+        safeRecordReceipt(tool, runtime, source, receiptInput, result);
+        return result;
+      }
+    }
+
+    beginToolBatch();
+    try {
+      try {
+        result = await tool.spec.handler(parsed.data, context);
+      } catch (error) {
+        result = {
+          ok: false,
+          error: "unavailable",
+          detail: error instanceof Error ? error.message : "The tool is temporarily unavailable.",
+        };
+      }
+      const resultRecord = asRecord(result);
+      if (!resultRecord || typeof resultRecord.ok !== "boolean") {
+        result = { ok: false, error: "unavailable", detail: "The tool returned an invalid result." };
+      }
+      try {
+        result = fitBudget(result, tool.spec);
+      } catch (error) {
+        result = { ok: false, error: "unavailable", detail: error instanceof Error ? error.message.slice(0, 500) : "The tool returned an invalid result." };
+      }
       safeRecordReceipt(tool, runtime, source, receiptInput, result);
       return result;
+    } finally {
+      endToolBatch();
     }
-  }
-
-  runtime.before();
-  beginToolActivity();
-  try {
-    try {
-      result = await tool.spec.handler(parsed.data, context);
-    } catch (error) {
-      result = {
-        ok: false,
-        error: "unavailable",
-        detail: error instanceof Error ? error.message : "The tool is temporarily unavailable.",
-      };
-    }
-    const resultRecord = asRecord(result);
-    if (!resultRecord || typeof resultRecord.ok !== "boolean") {
-      result = { ok: false, error: "unavailable", detail: "The tool returned an invalid result." };
-    }
-    try {
-      result = fitBudget(result, tool.spec);
-    } catch (error) {
-      result = { ok: false, error: "unavailable", detail: error instanceof Error ? error.message.slice(0, 500) : "The tool returned an invalid result." };
-    }
-    safeRecordReceipt(tool, runtime, source, receiptInput, result);
-    return result;
   } finally {
-    endToolActivity();
     runtime.after();
   }
 }

@@ -1,4 +1,6 @@
 import * as z from "zod";
+import { createCatalog } from "../../engine/catalog";
+import { evaluateRoom } from "../../engine/conflicts";
 import { palettePresets } from "../../tokens";
 import type { DefinedTool } from "../define";
 import { defineTool } from "../define";
@@ -147,11 +149,13 @@ export function setAccessibilityModeTool(): DefinedTool {
     }).strict(),
     handler(input, context) {
       context.store.getState().setAccessibility(sourceForStore(context.source), input.enabled);
+      const next = context.store.getState();
+      const conflicts = evaluateRoom(next.scene, next.scene.meta.activeRoomId, createCatalog(next.catalog)).length;
       return {
         ok: true,
         accessibility_mode: input.enabled,
-        conflicts: 0,
-        hint: "get_conflicts lists accessibility issues in the active room.",
+        conflicts,
+        hint: `get_conflicts lists the ${conflicts} accessibility issue${conflicts === 1 ? "" : "s"}.`,
       };
     },
     summarize(input, result) {
@@ -190,7 +194,7 @@ export function undoTool(): DefinedTool {
             by: entry.source,
           })),
           remaining: temporal?.getState().pastStates.length ?? 0,
-          hint: "Use redo in the human UI if you change your mind.",
+          hint: "Scene undo does not recreate removed Shopify lines; use update_cart to re-add them.",
         };
       } catch (error) {
         return fromCaught(error);

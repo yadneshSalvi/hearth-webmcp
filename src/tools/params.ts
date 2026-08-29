@@ -26,9 +26,7 @@ export const openingParam = z.string().min(1).describe(describeParam(
   "Opening id, e.g. door-1 or window-2.",
 ));
 
-export const rotationParam = z.union([
-  z.literal(0), z.literal(90), z.literal(180), z.literal(270),
-]).describe(describeParam(
+export const rotationParam = z.literal([0, 90, 180, 270]).describe(describeParam(
   "0, 90, 180 or 270 degrees clockwise; 0 = front faces south.",
 ));
 

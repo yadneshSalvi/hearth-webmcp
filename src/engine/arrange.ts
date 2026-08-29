@@ -2,9 +2,8 @@ import { resolveAnchor } from "./anchors";
 import type { PlacementRequest } from "./anchors";
 import type { Catalog } from "./catalog";
 import { clearanceZone } from "./clearance";
-import { fitsOnWall } from "./fit";
 import { footprint, freeSpans, polysOverlap, walls } from "./geometry";
-import type { CatalogItem, Category, Furniture, Opening, Room, Rotation, Scene, Side, Vec2, Wall } from "./types";
+import type { CatalogItem, Category, Furniture, Opening, Room, Rotation, Scene, Side, Span, Vec2, Wall } from "./types";
 
 /** Choreographed layout modes exposed by arrange_room. */
 export type ArrangeStyle = "conversation" | "media" | "open" | "work";
@@ -20,6 +19,7 @@ export interface ArrangeResult {
 type CatalogSource = Catalog | CatalogItem[];
 type Role = "anchor" | "media" | "surface" | "storage" | "seating" | "soft" | "lighting" | "greenery" | "decor";
 type MediaPlan = { sofaWall?: Wall; tvWall?: Wall; sofaId?: string; tvId?: string };
+type SpanCache = Map<string, Span[]>;
 
 const OPPOSITE: Record<Side, Side> = { north: "south", east: "west", south: "north", west: "east" };
 const STACKABLE = new Set<Category>(["table-lamp", "decor"]);
@@ -76,37 +76,57 @@ function resolveFocusItem(items: Furniture[], ref: string, catalog: CatalogSourc
   return prefix.length === 1 ? prefix[0] : undefined;
 }
 
-function wallCapacity(scene: Scene, room: Room, wall: Wall, cat: CatalogItem, catalog: CatalogSource): number {
-  const fit = fitsOnWall(scene, room, wall, cat, catalog);
-  if (!fit.fits) return Number.NEGATIVE_INFINITY;
-  return Math.max(...freeSpans(room, wall, scene, catalog, { minLength: cat.dims.w }).map((span) => span.end - span.start));
+function cachedSpans(
+  scene: Scene,
+  room: Room,
+  wall: Wall,
+  cat: CatalogItem,
+  catalog: CatalogSource,
+  cache: SpanCache,
+  minLength: number,
+): Span[] {
+  const key = `${scene.furniture.length}:${wall.id}:${cat.dims.h}:${minLength}`;
+  const cached = cache.get(key);
+  if (cached) return cached.map((span) => ({ ...span }));
+  const spans = freeSpans(room, wall, scene, catalog, { minLength, itemHeight: cat.dims.h });
+  cache.set(key, spans.map((span) => ({ ...span })));
+  return spans;
 }
 
-function rankedWalls(scene: Scene, room: Room, cat: CatalogItem, catalog: CatalogSource, seed: number, itemId: string, preferred?: Side): Wall[] {
+function wallCapacity(scene: Scene, room: Room, wall: Wall, cat: CatalogItem, catalog: CatalogSource, cache: SpanCache): number {
+  const spans = cachedSpans(scene, room, wall, cat, catalog, cache, cat.dims.w);
+  return spans.length > 0 ? Math.max(...spans.map((span) => span.end - span.start)) : Number.NEGATIVE_INFINITY;
+}
+
+function rankedWalls(
+  scene: Scene, room: Room, cat: CatalogItem, catalog: CatalogSource, seed: number, itemId: string, cache: SpanCache, preferred?: Side,
+): Wall[] {
   return walls(room).sort((a, b) => {
     const preferredA = a.side === preferred ? 1 : 0; const preferredB = b.side === preferred ? 1 : 0;
-    const capacityA = wallCapacity(scene, room, a, cat, catalog); const capacityB = wallCapacity(scene, room, b, cat, catalog);
+    const capacityA = wallCapacity(scene, room, a, cat, catalog, cache); const capacityB = wallCapacity(scene, room, b, cat, catalog, cache);
     return preferredB - preferredA || capacityB - capacityA
       || hash(`${seed}:${itemId}:${a.id}`) - hash(`${seed}:${itemId}:${b.id}`) || a.id.localeCompare(b.id);
   });
 }
 
-function wallRequests(scene: Scene, room: Room, wall: Wall, cat: CatalogItem, catalog: CatalogSource, facing?: string): PlacementRequest[] {
-  const spans = freeSpans(room, wall, scene, catalog, { minLength: cat.dims.w })
+function wallRequests(
+  scene: Scene, room: Room, wall: Wall, cat: CatalogItem, catalog: CatalogSource, cache: SpanCache, facing?: string,
+): PlacementRequest[] {
+  const spans = cachedSpans(scene, room, wall, cat, catalog, cache, cat.dims.w)
     .sort((a, b) => (b.end - b.start) - (a.end - a.start) || a.start - b.start);
-  const along = spans.flatMap((span) => [(span.start + span.end) / 2, span.start + cat.dims.w / 2, span.end - cat.dims.w / 2]);
-  const unique = [...new Set(along)];
-  return unique.map((value) => ({ anchor: { wall: wall.id, along: value, ...(facing ? { facing } : {}) } }));
+  return spans.map((span) => ({
+    anchor: { wall: wall.id, along: (span.start + span.end) / 2, ...(facing ? { facing } : {}) },
+  }));
 }
 
-function mediaPlan(scene: Scene, room: Room, items: Furniture[], catalog: CatalogSource, seed: number): MediaPlan {
+function mediaPlan(scene: Scene, room: Room, items: Furniture[], catalog: CatalogSource, seed: number, cache: SpanCache): MediaPlan {
   const sofa = items.find((item) => lookup(catalog, item.catalogId)?.category === "sofa");
   const tv = items.find((item) => lookup(catalog, item.catalogId)?.category === "tv-unit");
   const sofaCat = sofa && lookup(catalog, sofa.catalogId); const tvCat = tv && lookup(catalog, tv.catalogId);
   if (!sofa || !tv || !sofaCat || !tvCat) return { sofaId: sofa?.id, tvId: tv?.id };
   const pairs = walls(room).flatMap((sofaWall) => walls(room)
     .filter((tvWall) => tvWall.side === OPPOSITE[sofaWall.side])
-    .map((tvWall) => ({ sofaWall, tvWall, score: Math.min(wallCapacity(scene, room, sofaWall, sofaCat, catalog), wallCapacity(scene, room, tvWall, tvCat, catalog)) })));
+    .map((tvWall) => ({ sofaWall, tvWall, score: Math.min(wallCapacity(scene, room, sofaWall, sofaCat, catalog, cache), wallCapacity(scene, room, tvWall, tvCat, catalog, cache)) })));
   const best = pairs.sort((a, b) => b.score - a.score
     || hash(`${seed}:media:${a.sofaWall.id}`) - hash(`${seed}:media:${b.sofaWall.id}`) || a.sofaWall.id.localeCompare(b.sofaWall.id))[0];
   return { sofaWall: best?.sofaWall, tvWall: best?.tvWall, sofaId: sofa.id, tvId: tv.id };
@@ -151,17 +171,17 @@ function nearestSeating(working: Scene, roomId: string, catalog: CatalogSource):
 
 function requestsFor(
   item: Furniture, cat: CatalogItem, style: ArrangeStyle, working: Scene, room: Room, catalog: CatalogSource,
-  seed: number, focal: { ref: string; side?: Side }, media: MediaPlan,
+  seed: number, focal: { ref: string; side?: Side }, media: MediaPlan, cache: SpanCache,
 ): PlacementRequest[] {
   const preferred: PlacementRequest[] = [];
   const window = largestWindow(working, room.id);
-  if (style === "media" && item.id === media.tvId && media.tvWall) preferred.push(...wallRequests(working, room, media.tvWall, cat, catalog));
-  if (style === "media" && item.id === media.sofaId && media.sofaWall) preferred.push(...wallRequests(working, room, media.sofaWall, cat, catalog, media.tvId));
+  if (style === "media" && item.id === media.tvId && media.tvWall) preferred.push(...wallRequests(working, room, media.tvWall, cat, catalog, cache));
+  if (style === "media" && item.id === media.sofaId && media.sofaWall) preferred.push(...wallRequests(working, room, media.sofaWall, cat, catalog, cache, media.tvId));
   if (style === "conversation" && (cat.category === "sofa" || cat.category === "armchair")) {
     const desired = cat.category === "sofa" && focal.side ? OPPOSITE[focal.side] : undefined;
-    for (const wall of rankedWalls(working, room, cat, catalog, seed, item.id, desired)) {
+    for (const wall of rankedWalls(working, room, cat, catalog, seed, item.id, cache, desired)) {
       if (cat.category !== "sofa" && focal.side && [focal.side, OPPOSITE[focal.side]].includes(wall.side)) continue;
-      preferred.push(...wallRequests(working, room, wall, cat, catalog, focal.ref));
+      preferred.push(...wallRequests(working, room, wall, cat, catalog, cache, focal.ref));
     }
   }
   if (style === "work" && cat.category === "desk" && window) preferred.push({ anchor: { under: `window:${window.id}` } });
@@ -185,14 +205,18 @@ function requestsFor(
   if (cat.category === "plant") preferred.push(...cornerRequests(room, cat));
   if ((style === "conversation" || style === "media") && cat.category === "table") preferred.push({ anchor: { centered: true } });
   const wallFirst = style === "open" || cat.againstWall || ["wardrobe", "shelf", "tv-unit", "bed"].includes(cat.category);
-  if (wallFirst) for (const wall of rankedWalls(working, room, cat, catalog, seed, item.id)) preferred.push(...wallRequests(working, room, wall, cat, catalog));
+  if (wallFirst) for (const wall of rankedWalls(working, room, cat, catalog, seed, item.id, cache)) preferred.push(...wallRequests(working, room, wall, cat, catalog, cache));
   if (!wallFirst && cat.category !== "rug") preferred.push({ anchor: { centered: true } });
   preferred.push({ pos: { ...item.pos }, rotation: item.rotation });
   if (cat.category !== "rug") {
     preferred.push({ anchor: { centered: true }, rotation: 0 }, { anchor: { centered: true }, rotation: 90 });
-    for (const wall of rankedWalls(working, room, cat, catalog, seed, item.id)) preferred.push(...wallRequests(working, room, wall, cat, catalog));
+    if (!wallFirst) {
+      for (const wall of rankedWalls(working, room, cat, catalog, seed, item.id, cache)) {
+        preferred.push(...wallRequests(working, room, wall, cat, catalog, cache));
+      }
+    }
   }
-  return preferred;
+  return preferred.map((request) => ({ ...request, maxNudgeCm: 45 }));
 }
 
 function clearancePenalty(working: Scene, placed: Furniture, cat: CatalogItem, catalog: CatalogSource): number {
@@ -234,7 +258,7 @@ export function arrangeRoom(
   const room = scene.rooms.find((entry) => entry.id === roomId);
   const original = scene.furniture.map(clone);
   if (!room) return { furniture: original, moved: [], kept: [], note: `Room ${roomId} was not found` };
-  const roomItems = original.filter((item) => item.roomId === roomId);
+  const roomItems = original.filter((item) => item.roomId === roomId && item.status === "placed");
   if (roomItems.length === 0) return { furniture: original, moved: [], kept: [], note: `${room.name} is empty; nothing to arrange` };
   if (roomItems.every((item) => lookup(catalog, item.catalogId)?.category === "rug")) {
     return { furniture: original, moved: [], kept: roomItems.map((item) => item.id), note: `${room.name} only has a rug; layout kept` };
@@ -245,9 +269,10 @@ export function arrangeRoom(
   const focal = focalReference(scene, room, roomItems, catalog, opts.focus);
   if (focal.item && !fixed.some((item) => item.id === focal.item?.id)) fixed.push(focal.item);
   const fixedIds = new Set(fixed.map((item) => item.id));
-  const outside = original.filter((item) => item.roomId !== roomId);
+  const outside = original.filter((item) => item.roomId !== roomId || item.status === "ghost");
   const working: Scene = { ...scene, furniture: [...outside.map(clone), ...fixed.map(clone)] };
-  const media = mediaPlan(working, room, roomItems, catalog, seed);
+  const spanCache: SpanCache = new Map();
+  const media = mediaPlan(working, room, roomItems, catalog, seed, spanCache);
   const arrangeable = roomItems
     .filter((item) => !fixedIds.has(item.id))
     .sort((a, b) => {
@@ -258,7 +283,7 @@ export function arrangeRoom(
 
   for (const item of arrangeable) {
     const cat = lookup(catalog, item.catalogId) as CatalogItem;
-    const requests = requestsFor(item, cat, style, working, room, catalog, seed, focal, media);
+    const requests = requestsFor(item, cat, style, working, room, catalog, seed, focal, media, spanCache);
     const placed = placeOne(working, room, item, cat, requests, catalog, style === "work" && cat.category === "chair");
     if (!placed) return { furniture: original, moved: [], kept: roomItems.map((entry) => entry.id), note: `${room.name} kept its existing valid layout; no complete ${style} fit` };
     working.furniture.push(placed);

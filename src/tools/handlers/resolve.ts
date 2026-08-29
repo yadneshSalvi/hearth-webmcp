@@ -1,7 +1,7 @@
 import { createCatalog } from "../../engine/catalog";
 import { resolveWall } from "../../engine/geometry";
 import type { CatalogItem, Colorway, Furniture, Opening, Room, Scene, Variant, Wall } from "../../engine/types";
-import type { ShopifyCart } from "../../shopify/types";
+import type { CatalogProduct, ShopifyCart } from "../../shopify/types";
 import type { HearthState } from "../../state/types";
 import { HearthError } from "../../state/types";
 import type { Err, ToolContext, ToolSource } from "../define";
@@ -121,6 +121,12 @@ export function resolveRoomWall(room: Room, ref: string): Wall | Err {
 
 export function productName(state: HearthState, item: Furniture): string {
   return state.catalog.find((product) => product.id === item.catalogId)?.name ?? item.catalogId;
+}
+
+/** Resolves one colorway to the Storefront variant id returned by Shopify. */
+export function variantId(product: CatalogProduct | CatalogItem, colorway: string): string | undefined {
+  if ("variants" in product) return product.variants.find((variant) => variant.colorway === colorway)?.id;
+  return product.shopify?.variantIds[colorway] ?? `gid://shopify/ProductVariant/local-${product.id}-${colorway}`;
 }
 
 export function sourceForStore(source: ToolSource): "agent" | "assistant" {

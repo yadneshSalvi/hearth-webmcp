@@ -153,6 +153,9 @@ export function createLiveShopify(): ShopifyClient {
     async cartSetQuantity(lineId: string, qty: number) {
       return mutateCart({ op: "set", lines: [{ id: lineId, quantity: qty }] }, "new-cart");
     },
+    async cartUpdateLine(lineId: string, variantId: string, quantity: number) {
+      return mutateCart({ op: "set", lines: [{ id: lineId, merchandiseId: variantId, quantity }] }, "new-cart");
+    },
     async checkoutLink() {
       let current = await ensureCart();
       if (!current.ok) return current;

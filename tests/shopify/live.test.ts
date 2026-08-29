@@ -56,4 +56,19 @@ describe("live Shopify browser client", () => {
     expect(result).toEqual({ ok: false, error: "unavailable", detail: "Shopify is offline — retry" });
     expect(client.unavailable).toBe(true);
   });
+
+  it("sends merchandiseId when updating a cart line variant", async () => {
+    window.localStorage.setItem("hearth.cartId", emptyCart.id);
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ cart: emptyCart }))
+      .mockResolvedValueOnce(jsonResponse({ cart: emptyCart }));
+    vi.stubGlobal("fetch", fetchMock);
+    await createLiveShopify().cartUpdateLine("line-1", "gid://shopify/ProductVariant/2", 2);
+    const request = fetchMock.mock.calls[1]?.[1] as RequestInit;
+    expect(JSON.parse(String(request.body))).toEqual({
+      op: "set",
+      cartId: emptyCart.id,
+      lines: [{ id: "line-1", merchandiseId: "gid://shopify/ProductVariant/2", quantity: 2 }],
+    });
+  });
 });

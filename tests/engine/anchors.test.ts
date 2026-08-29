@@ -216,6 +216,36 @@ describe("validity, nudging and failures", () => {
     }
   });
 
+  it("blocks tall furniture across a window but permits a sofa below its sill", () => {
+    const opening: Opening = { id: "window-main", roomId: "room", wallId: "w0", offset: 200, width: 200, kind: "window", sillHeight: 90 };
+    const current = scene({ openings: [opening] });
+    const wardrobe = resolveAnchor(current, "room", catalog.byId("wardrobe-hald")!, { anchor: { wall: "north", along: 300 } }, catalog);
+    expect(wardrobe).toMatchObject({ ok: false, error: "blocked", detail: expect.stringContaining("window-main") });
+    if (!wardrobe.ok) {
+      expect(wardrobe.freeSpans?.[0]?.spans).toEqual([
+        { start: 0, end: 200, fits: true },
+        { start: 400, end: 600, fits: true },
+      ]);
+      expect(wardrobe.suggestion).toContain("fits; try along");
+    }
+    const sofa = ok(resolveAnchor(current, "room", catalog.byId("sofa-endre")!, { anchor: { wall: "north", along: 300 } }, catalog));
+    expect(sofa.nudgedCm).toBe(0);
+  });
+
+  it("returns unfiltered requested-wall spans with fits flags when none fit", () => {
+    const target = room(420, 300);
+    const blocker = item("sofa-blocker", "sofa-liva", { x: 210, y: 44 });
+    const result = resolveAnchor(scene({ room: target, furniture: [blocker] }), "room", catalog.byId("sofa-endre")!, { anchor: { wall: "north", along: 210 } }, catalog);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.freeSpans?.[0]?.spans).toEqual([
+        { start: 0, end: 120, fits: false },
+        { start: 300, end: 420, fits: false },
+      ]);
+      expect(result.suggestion).toContain("try a narrower item");
+    }
+  });
+
   it("permits rugs beneath items and small decor on a surface", () => {
     const table = item("table-1", "table-ake", { x: 300, y: 250 });
     const sofa = item("sofa-1", "sofa-liva", { x: 300, y: 100 });

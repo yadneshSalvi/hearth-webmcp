@@ -16,7 +16,7 @@ export function resetStore(scene: Scene): void {
   });
 }
 
-export function testUi(confirm: ToolUi["confirm"] = async () => true): ToolUi {
+export function testUi(confirm: ToolUi["confirm"] = async () => ({ accepted: true, reason: "accepted" })): ToolUi {
   return {
     confirm,
     focus: vi.fn(),

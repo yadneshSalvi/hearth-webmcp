@@ -32,6 +32,7 @@ interface AddLine {
 interface UpdateLine {
   id: string;
   quantity: number;
+  merchandiseId?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -60,7 +61,12 @@ function parseUpdateLines(value: unknown): UpdateLine[] | undefined {
     if (!isRecord(entry)) return undefined;
     const id = entry.id ?? entry.lineId;
     if (!validId(id) || !Number.isInteger(entry.quantity) || (entry.quantity as number) < 0) return undefined;
-    lines.push({ id, quantity: entry.quantity as number });
+    if (entry.merchandiseId !== undefined && !validId(entry.merchandiseId)) return undefined;
+    lines.push({
+      id,
+      quantity: entry.quantity as number,
+      ...(entry.merchandiseId ? { merchandiseId: entry.merchandiseId as string } : {}),
+    });
   }
   return lines;
 }
@@ -147,6 +153,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (!validId(body.cartId)) return Response.json({ error: "invalid", detail: "cartId is required" }, { status: 400 });
     const lines = parseUpdateLines(body.lines);
     if (!lines) return Response.json({ error: "invalid", detail: "lines must contain line ids and non-negative quantities" }, { status: 400 });
+    const invalidVariant = lines.find(({ merchandiseId }) => merchandiseId && !variantIds.has(merchandiseId));
+    if (invalidVariant?.merchandiseId) {
+      return Response.json({ error: "invalid", detail: `Variant ${invalidVariant.merchandiseId} is not in the Hearth snapshot` }, { status: 400 });
+    }
     const result = await storefrontFetch<{
       cartLinesUpdate: CartMutationPayload;
     }, { cartId: string; lines: UpdateLine[] }>(CART_UPDATE_MUTATION, { cartId: body.cartId, lines }, request);
