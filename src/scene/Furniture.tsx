@@ -191,14 +191,14 @@ function ItemBody({ product, colorway, ghost, recede }: { product: CatalogItem; 
   return (
     <GlbBoundary fallback={fallback}>
       <Suspense fallback={fallback}>
-        <GlbBody product={product} hex={hex} ghost={ghost} />
+        <GlbBody product={product} hex={hex} ghost={ghost} recede={recede} />
       </Suspense>
     </GlbBoundary>
   );
 }
 
-function GlbBody({ product, hex, ghost }: { product: CatalogItem; hex: string; ghost: boolean }) {
-  const model = useNormalizedGlb(product, hex, ghost);
+function GlbBody({ product, hex, ghost, recede }: { product: CatalogItem; hex: string; ghost: boolean; recede: number }) {
+  const model = useNormalizedGlb(product, hex, ghost, recede);
   return <primitive object={model} />;
 }
 

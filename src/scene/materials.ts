@@ -5,6 +5,7 @@
  * registered here so LightingRig can drive them all from one time-of-day tween.
  */
 import { MeshStandardMaterial } from "three";
+import type { Texture } from "three";
 import { mix, palette } from "../tokens";
 
 /** Material roles used by the procedural placeholders and the GLB re-tint. */
@@ -41,6 +42,8 @@ export function toneSpec(tone: Tone, colorwayHex: string): ToneSpec {
 }
 
 export interface MaterialRequest extends ToneSpec {
+  /** Neutralised source atlas used as a pure shading multiplier (see assets.ts neutralTexture). */
+  map?: Texture;
   /** Ghost previews render at 0.45 with a dusty-blue tint and cast no shadow (STYLE.md §2). */
   opacity?: number;
   /** 0..1 blend toward plaster for rooms the camera is not framing, so the hero room reads first. */
@@ -67,7 +70,7 @@ export function getMaterial(request: MaterialRequest): MeshStandardMaterial {
   const opacity = request.opacity ?? 1;
   const recede = request.recede ?? 0;
   const hex = recede > 0 ? mix(request.hex, palette.plaster, recede) : request.hex;
-  const key = `${hex}|${request.roughness}|${request.emissive ?? ""}|${opacity}`;
+  const key = `${hex}|${request.roughness}|${request.emissive ?? ""}|${opacity}|${request.map?.uuid ?? ""}`;
   const existing = cache.get(key);
   if (existing) return existing;
   const material = new MeshStandardMaterial({
@@ -77,6 +80,7 @@ export function getMaterial(request: MaterialRequest): MeshStandardMaterial {
     transparent: opacity < 1,
     opacity,
     depthWrite: opacity >= 1,
+    ...(request.map ? { map: request.map } : {}),
   });
   if (request.emissive) {
     material.emissive.set(request.emissive);

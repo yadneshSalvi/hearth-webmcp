@@ -15,7 +15,7 @@ import { Furniture } from "./Furniture";
 import { LightingRig } from "./LightingRig";
 import { Orb } from "./Orb";
 import { Overlays } from "./Overlays";
-import { Post } from "./Post";
+import { Post, pinQualityTier } from "./Post";
 import { Rooms } from "./Rooms";
 import { preloadGlbs, probeGlbs } from "./assets";
 import { setFocusTarget } from "./focus";
@@ -92,10 +92,12 @@ function DebugBridge() {
   const store = useThree((state) => state.get);
   useEffect(() => {
     if (process.env.NODE_ENV === "production") return;
-    const target = window as unknown as { __hearthStudio?: unknown };
+    const target = window as unknown as { __hearthStudio?: unknown; __hearthPinQuality?: unknown };
     target.__hearthStudio = store;
+    target.__hearthPinQuality = pinQualityTier;
     return () => {
       delete target.__hearthStudio;
+      delete target.__hearthPinQuality;
     };
   }, [store]);
   return null;

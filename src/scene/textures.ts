@@ -51,20 +51,30 @@ function drawPlanks(context: CanvasRenderingContext2D, base: string): void {
 
 function drawStone(context: CanvasRenderingContext2D, base: string): void {
   const random = rng(0x51ed);
-  for (let i = 0; i < 9000; i += 1) {
-    const light = random() > 0.5;
-    context.fillStyle = light ? "rgba(244,239,230,0.14)" : "rgba(62,58,54,0.07)";
-    context.fillRect(random() * SIZE, random() * SIZE, 2, 2);
+  // Large slabs first, so the floor reads as stone at studio distance and not as flat paper.
+  const slab = SIZE / 4;
+  for (let row = 0; row < 4; row += 1) {
+    for (let column = 0; column < 4; column += 1) {
+      context.fillStyle = shade(base, (random() - 0.5) * 0.1);
+      context.fillRect(column * slab, row * slab, slab, slab);
+    }
   }
-  context.fillStyle = shade(base, -0.02);
-  for (let i = 0; i < 60; i += 1) {
-    const x = random() * SIZE;
-    const y = random() * SIZE;
-    context.globalAlpha = 0.18;
+  context.fillStyle = "rgba(62,58,54,0.13)";
+  for (let i = 0; i <= 4; i += 1) {
+    context.fillRect(0, i * slab, SIZE, 3);
+    context.fillRect(i * slab, 0, 3, SIZE);
+  }
+  context.fillStyle = shade(base, -0.05);
+  for (let i = 0; i < 90; i += 1) {
+    context.globalAlpha = 0.2;
     context.beginPath();
-    context.ellipse(x, y, 40 + random() * 90, 30 + random() * 70, random() * Math.PI, 0, Math.PI * 2);
+    context.ellipse(random() * SIZE, random() * SIZE, 20 + random() * 60, 14 + random() * 44, random() * Math.PI, 0, Math.PI * 2);
     context.fill();
-    context.globalAlpha = 1;
+  }
+  context.globalAlpha = 1;
+  for (let i = 0; i < 14000; i += 1) {
+    context.fillStyle = random() > 0.5 ? "rgba(244,239,230,0.16)" : "rgba(62,58,54,0.09)";
+    context.fillRect(random() * SIZE, random() * SIZE, 2, 2);
   }
 }
 
