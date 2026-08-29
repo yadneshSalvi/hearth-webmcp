@@ -13,8 +13,9 @@ const TONES = {
 
 export function Toasts({ className = "" }: { className?: string }) {
   const toasts = useToasts();
-  if (toasts.length === 0) return null;
 
+  // The live region is always in the tree: a screen reader only announces changes inside a region
+  // it was already watching, so creating it together with the first toast would swallow that toast.
   return (
     <div
       aria-live="polite"

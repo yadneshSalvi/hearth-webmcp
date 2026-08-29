@@ -19,10 +19,13 @@ export interface PanelProps {
   fade?: boolean;
 }
 
-/** A floating glass card: 16 px radius, 1 px hairline, warm shadow, small-caps header. */
+/**
+ * A floating glass card: 16 px radius, 1 px hairline, warm shadow, small-caps header.
+ * `data-studio-inset` tells the camera rig this box covers part of the canvas (src/scene/insets.ts).
+ */
 export function Panel({ label, actions, children, className = "", bodyClassName = "", footer, flush = false, fade = false }: PanelProps) {
   return (
-    <section className={`glass rise-in pointer-events-auto flex min-h-0 flex-col overflow-hidden ${className}`}>
+    <section data-studio-inset="" className={`glass rise-in pointer-events-auto flex min-h-0 flex-col overflow-hidden ${className}`}>
       {label || actions ? (
         <header className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-hairline px-4">
           {label ? <h2 className="label-caps truncate">{label}</h2> : <span />}

@@ -17,6 +17,9 @@ import { roomAtWorldCm, worldToRoomCm } from "./interactionMath";
 /** The MIME type the catalog panel puts on its drag payload (`{ catalogId, colorway }`). */
 export const DROP_MIME = "application/x-hearth-catalog";
 
+/** The store's id for the single preview ghost (`setGhost` forces it). */
+const GHOST_ID = "ghost-1";
+
 interface DropPayload {
   catalogId: string;
   colorway?: string;
@@ -60,16 +63,30 @@ export interface CatalogDropOptions {
   onPreview: (preview: DropPreview | undefined) => void;
 }
 
+/** True while the pointer is outside the window entirely, which is the only real `dragleave`. */
+function leftTheViewport(event: DragEvent): boolean {
+  return event.clientX <= 0 || event.clientY <= 0
+    || event.clientX >= window.innerWidth || event.clientY >= window.innerHeight;
+}
+
 /** Wires window-level drag-and-drop for the studio canvas. */
 export function useCatalogDrop({ catalog, floorAt, poseRequest, onPreview }: CatalogDropOptions): void {
   useEffect(() => {
-    const held: { payload?: DropPayload; pose?: Pose } = {};
+    // `ghostId` is the ghost *this hook* placed. The agent's `preview_in_room` puts a ghost in the
+    // same slot, and clearing that one would take its confirm/cancel tools down with it — so a
+    // stray native drag anywhere on the page must never reach into the store.
+    const held: { payload?: DropPayload; pose?: Pose; ghostId?: string } = {};
 
     const dropGhost = () => {
       held.pose = undefined;
       onPreview(undefined);
+      const ghostId = held.ghostId;
+      held.ghostId = undefined;
+      if (!ghostId) return;
       const state = hearthStore.getState();
-      if (state.scene.furniture.some((item) => item.status === "ghost")) state.clearGhost("human", { quiet: true });
+      if (state.scene.furniture.some((item) => item.id === ghostId && item.status === "ghost")) {
+        state.clearGhost("human", { quiet: true });
+      }
     };
 
     const resolveAt = (clientX: number, clientY: number): Pose | undefined => {
@@ -88,10 +105,11 @@ export function useCatalogDrop({ catalog, floorAt, poseRequest, onPreview }: Cat
       const pose = judgePose(request, snap);
       held.pose = pose;
       onPreview({ pose, product });
+      held.ghostId = GHOST_ID;
       hearthStore.getState().setGhost(
         "human",
         {
-          id: "ghost-1",
+          id: GHOST_ID,
           catalogId: product.id,
           roomId: room.id,
           pos: pose.pos,
@@ -133,6 +151,7 @@ export function useCatalogDrop({ catalog, floorAt, poseRequest, onPreview }: Cat
       }
       const product = held.payload ? catalog.byId(held.payload.catalogId) : undefined;
       const colorway = held.payload?.colorway;
+      held.payload = undefined;
       dropGhost();
       const state = hearthStore.getState();
       if (!pose || !product) {
@@ -157,13 +176,18 @@ export function useCatalogDrop({ catalog, floorAt, poseRequest, onPreview }: Cat
       }
     };
 
+    // Chromium fires `dragend` for every native drag on the page — a text selection, an image, a
+    // file — so it only means "our catalog drag is over" when a catalog drag was in progress.
     const onDragEnd = () => {
+      if (!held.payload) return;
       held.payload = undefined;
       dropGhost();
     };
 
+    // `relatedTarget` is null on every element boundary in Chromium, which cleared and re-created
+    // the ghost dozens of times across one drag. The pointer coordinates are the honest signal.
     const onDragLeave = (event: DragEvent) => {
-      if (event.relatedTarget) return;
+      if (!held.payload || !leftTheViewport(event)) return;
       dropGhost();
     };
 

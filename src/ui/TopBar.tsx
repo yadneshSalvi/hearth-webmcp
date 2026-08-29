@@ -72,7 +72,7 @@ export function TopBar({ tier }: { tier: ViewportTier }) {
   const compact = tier === "compact";
 
   return (
-    <header className="glass pointer-events-auto flex h-14 shrink-0 items-center gap-3 px-3">
+    <header data-studio-inset="" className="glass pointer-events-auto flex h-14 shrink-0 items-center gap-3 px-3">
       <div className="flex items-center gap-2 pl-1 pr-1">
         <HearthMark size={19} className="text-terracotta" />
         <span className="font-display text-[19px] leading-none tracking-[-0.01em] text-ink">Hearth</span>

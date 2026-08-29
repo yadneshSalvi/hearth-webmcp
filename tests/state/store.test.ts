@@ -10,7 +10,7 @@ function reset(): void {
     activity: [],
     cart: { lines: [], subtotalUsd: 0, status: "idle" },
     tools: { available: [], status: "unknown" },
-    ui: { boardOpen: false, assistantOpen: false, toolsPanelOpen: false, toasts: [], pulseIds: [] },
+    ui: { boardOpen: false, assistantOpen: false, toolsPanelOpen: false, pulseIds: [] },
   });
   hearthStore.temporal.getState().clear();
 }
@@ -98,8 +98,14 @@ describe("scene and presentation actions", () => {
     expect(scene.meta.accessibilityMode).toBe(true);
     expect(scene.meta.activeRoomId).toBe("bed-1");
     expect(scene.meta.selection).toMatchObject({ itemId: item.id, roomId: "living", hoverItemId: item.id });
-    expect(hearthStore.getState().activity).toHaveLength(7);
-    expect(hearthStore.getState().activity.every((entry) => entry.source === "human" || entry.source === "agent")).toBe(true);
+    // Five design changes, five receipts. Focusing a room and changing the selection are not
+    // changes to the design — they live in `meta.selection` and never reach `activity[]`, which the
+    // 200-row cap otherwise filled with invisible rows (one per click).
+    const activity = hearthStore.getState().activity;
+    expect(activity.map((entry) => entry.title)).toEqual([
+      "Accessibility", "Set lighting", "Set view", "Switch mode", "Place furniture",
+    ]);
+    expect(activity.every((entry) => entry.source === "human" || entry.source === "agent")).toBe(true);
   });
 
   it("applies palette tokens to room and home scopes", () => {

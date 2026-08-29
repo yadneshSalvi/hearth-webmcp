@@ -23,6 +23,7 @@ import { setFocusTarget } from "./focus";
 import type { FocusTarget } from "./focus";
 import { useWakeOnActivity, wakeStudio } from "./idle";
 import { flyOrbTo } from "./orbCommand";
+import { useMeta } from "./useSceneStore";
 
 export interface StudioApi {
   /** Frames a room or item; pass undefined to return to the active room. */
@@ -104,14 +105,65 @@ function DebugBridge() {
   return null;
 }
 
-/** Probes the scene's GLBs once so missing assets fall straight through to the placeholders. */
+/** Latest a deferred asset wave may wait for an idle moment before it goes anyway. */
+const ASSET_WAVE_DEADLINE_MS = 4_000;
+
+/**
+ * Probes the scene's GLBs so a missing asset falls straight through to the designed placeholder, in
+ * waves: the framed room immediately, then the rest of the home, then the remaining catalog — a
+ * first paint never queues 71 files for rooms nobody is looking at. The deferred waves wait for an
+ * idle moment, because decoding a DRACO mesh on the main thread during someone's drag is exactly
+ * the stall this split exists to avoid. Probing is a HEAD request and `preloadGlbs` only warms what
+ * the probe found, hence the gap between the two.
+ */
 function AssetProbe() {
+  const activeRoomId = useMeta().activeRoomId;
   useEffect(() => {
-    const urls = [...new Set(hearthStore.getState().catalog.map((product) => product.glb))];
-    probeGlbs(urls);
-    const timer = setTimeout(() => preloadGlbs(urls), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const idle = new Set<number>();
+    const whenIdle = (run: () => void, immediate: boolean): void => {
+      if (immediate || typeof requestIdleCallback !== "function") {
+        const timer = setTimeout(() => {
+          timers.delete(timer);
+          run();
+        }, 0);
+        timers.add(timer);
+        return;
+      }
+      const handle = requestIdleCallback(() => {
+        idle.delete(handle);
+        run();
+      }, { timeout: ASSET_WAVE_DEADLINE_MS });
+      idle.add(handle);
+    };
+    const wave = (urls: string[], immediate: boolean): void => {
+      if (urls.length === 0) return;
+      whenIdle(() => {
+        probeGlbs(urls);
+        whenIdle(() => preloadGlbs(urls), false);
+      }, immediate);
+    };
+
+    const state = hearthStore.getState();
+    const glbFor = new Map(state.catalog.map((product) => [product.id, product.glb]));
+    const placed = state.scene.furniture.filter((item) => item.status !== "ghost");
+    const urlsOf = (items: typeof placed): string[] =>
+      [...new Set(items.map((item) => glbFor.get(item.catalogId)).filter((url): url is string => url !== undefined))];
+
+    const framed = urlsOf(placed.filter((item) => item.roomId === activeRoomId));
+    const seen = new Set(framed);
+    const rest = urlsOf(placed.filter((item) => item.roomId !== activeRoomId)).filter((url) => !seen.has(url));
+    for (const url of rest) seen.add(url);
+    const catalog = [...new Set(state.catalog.map((product) => product.glb))].filter((url) => !seen.has(url));
+
+    wave(framed, true);
+    wave(rest, false);
+    wave(catalog, false);
+    return () => {
+      for (const timer of timers) clearTimeout(timer);
+      for (const handle of idle) cancelIdleCallback(handle);
+    };
+  }, [activeRoomId]);
   return null;
 }
 
@@ -136,7 +188,8 @@ export default function Studio() {
           outputColorSpace: SRGBColorSpace,
           powerPreference: "high-performance",
         }}
-        style={{ background: "transparent" }}
+        // Drags and two-finger pans belong to the studio, not to the page's scroller.
+        style={{ background: "transparent", touchAction: "none" }}
       >
         <CameraRig />
         <LightingRig />

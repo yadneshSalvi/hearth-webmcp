@@ -3,6 +3,9 @@
  * Orthographic camera rig. Two views only (STYLE.md §2): dollhouse at an isometric 35.264° pitch
  * with yaw snapped to 45° corners, and plan top-down with north up. View, yaw and focus changes
  * tween over 600 ms; the wheel zooms and a right-drag (or two-finger drag) pans. No free orbit.
+ *
+ * Framing measures the *visible* canvas — the window minus the floating panels (src/scene/insets.ts)
+ * — so a room is never composed under the catalog or the inspector.
  */
 import { useEffect, useMemo, useRef } from "react";
 import { OrthographicCamera } from "@react-three/drei";
@@ -13,6 +16,7 @@ import { motion as motionTokens } from "../tokens";
 import { setFocusTarget, useFocusTarget } from "./focus";
 import type { FocusTarget } from "./focus";
 import { useFramedBox } from "./framing";
+import { insetCentreOffsetPx, insetHalfScale, useCanvasInsets, visibleAspect } from "./insets";
 import {
   DOLLHOUSE_PITCH,
   PLAN_PITCH,
@@ -52,12 +56,18 @@ export function CameraRig() {
   const zoom = useRef(1);
   const pan = useRef({ x: 0, y: 0 });
 
+  const insets = useCanvasInsets();
   const aspect = size.height > 0 ? size.width / size.height : 1;
   const plan = meta.view === "plan";
   const pitchTarget = plan ? PLAN_PITCH : DOLLHOUSE_PITCH;
   const rawAzimuth = plan ? 0 : yawAzimuth(meta.yaw);
   const centre = boxCentre(framed.box);
-  const halfTarget = fitHalfHeight(framed.box, rawAzimuth, pitchTarget, aspect, PADDING);
+  // Fit the box to the rect the human can actually see, then grow the frustum back to the full
+  // canvas and slide the target so that rect's centre — not the window's — holds the room.
+  const viewport = { width: size.width, height: size.height };
+  const halfTarget = fitHalfHeight(framed.box, rawAzimuth, pitchTarget, visibleAspect(viewport, insets), PADDING)
+    * insetHalfScale(viewport, insets);
+  const offsetPx = insetCentreOffsetPx(insets);
   const panLimit = useMemo(() => {
     const box = homeBox(rooms);
     return Math.max(box.max[0] - box.min[0], box.max[2] - box.min[2]) * PAN_FRACTION;
@@ -71,6 +81,8 @@ export function CameraRig() {
       cy: centre[1],
       cz: centre[2],
       half: halfTarget,
+      insetX: offsetPx.x,
+      insetY: offsetPx.y,
       config: { duration: motionTokens.cameraTweenMs, easing: easeOut },
     }),
     [],
@@ -86,9 +98,11 @@ export function CameraRig() {
       cy: centre[1],
       cz: centre[2],
       half: halfTarget,
+      insetX: offsetPx.x,
+      insetY: offsetPx.y,
       config: { duration: motionTokens.cameraTweenMs, easing: easeOut },
     });
-  }, [springApi, spring, rawAzimuth, pitchTarget, centre, halfTarget]);
+  }, [springApi, spring, rawAzimuth, pitchTarget, centre, halfTarget, offsetPx.x, offsetPx.y]);
 
   // A new focus or view resets the manual zoom/pan so every framed shot is reproducible.
   useEffect(() => {
@@ -155,10 +169,15 @@ export function CameraRig() {
     const cx = spring.cx.get();
     const cy = spring.cy.get();
     const cz = spring.cz.get();
+    // Panels shift the frame, not the scene: moving the target left makes the room sit right of
+    // centre, into the gap between the catalog and the inspector.
+    const perPixel = (half * 2) / Math.max(1, size.height);
+    const shiftX = pan.current.x - spring.insetX.get() * perPixel;
+    const shiftY = pan.current.y + spring.insetY.get() * perPixel;
     camera.position.set(
-      cx + offset[0] * DISTANCE + right[0] * pan.current.x + up[0] * pan.current.y,
-      cy + offset[1] * DISTANCE + right[1] * pan.current.x + up[1] * pan.current.y,
-      cz + offset[2] * DISTANCE + right[2] * pan.current.x + up[2] * pan.current.y,
+      cx + offset[0] * DISTANCE + right[0] * shiftX + up[0] * shiftY,
+      cy + offset[1] * DISTANCE + right[1] * shiftX + up[1] * shiftY,
+      cz + offset[2] * DISTANCE + right[2] * shiftX + up[2] * shiftY,
     );
     camera.rotation.order = "YXZ";
     camera.rotation.set(-pitch, azimuth, 0);
