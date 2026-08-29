@@ -3,7 +3,7 @@ import { createLocalShopify } from "../../src/shopify/local";
 import { hearthStore } from "../../src/state/store";
 import type { ToolResult } from "../../src/tools/define";
 import { createRegistry } from "../../src/tools/registry";
-import { furnished2br } from "../fixtures/scenes";
+import { emptyHome, furnished2br } from "../fixtures/scenes";
 import { resetStore, testUi } from "./helpers";
 
 class EmptyModelContext extends EventTarget implements WebMCP.ModelContext {
@@ -89,6 +89,21 @@ describe("first-round handlers", () => {
     expect(!result.ok && result.detail.length).toBeGreaterThan(0);
     expect(hearthStore.getState().activity).toHaveLength(1);
     expect(hearthStore.getState().activity[0]?.tool).toBe(testCase.name);
+  });
+
+  it.each([
+    ["3br", 7, 30, 3],
+    ["4br", 9, 34, 4],
+    ["5br", 10, 40, 5],
+  ] as const)("applies a furnished %s within the result budget", async (template, rooms, items, bedrooms) => {
+    resetStore(emptyHome());
+    const result = await registry().execute("apply_template", { template, furnished: true }, "test");
+    expect(result).toMatchObject({ ok: true, template, items });
+    expect(result.ok && Array.isArray(result.rooms) ? result.rooms : []).toHaveLength(rooms);
+    expect(result.ok && Array.isArray(result.item_ids) ? result.item_ids : []).toHaveLength(items);
+    expect(hearthStore.getState().scene.rooms.filter((room) => room.type === "bedroom")).toHaveLength(bedrooms);
+    expect(JSON.stringify(result).length).toBeLessThanOrEqual(1500);
+    expect(hearthStore.getState().activity[0]?.summary).toBe(`Applied ${template.toUpperCase()} template (furnished)`);
   });
 
   it.each([

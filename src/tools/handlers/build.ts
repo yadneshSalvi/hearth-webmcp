@@ -2,7 +2,7 @@ import * as z from "zod";
 import { createCatalog } from "../../engine/catalog";
 import { conflictsForItem, evaluateRoom } from "../../engine/conflicts";
 import { roomAreaM2, roomSize, walls } from "../../engine/geometry";
-import { ROOM_TYPES } from "../../engine/types";
+import { ROOM_TYPES, TEMPLATE_IDS } from "../../engine/types";
 import type { Conflict } from "../../engine/types";
 import { floors, wallColors } from "../../tokens";
 import type { DefinedTool } from "../define";
@@ -26,10 +26,10 @@ export function applyTemplateTool(): DefinedTool {
   return defineTool({
     name: "apply_template",
     title: "Apply floor-plan template",
-    description: "Replaces the whole home with a floor-plan template: studio, 1br, 2br (living, kitchen and dining, two bedrooms, bath, hall) or loft (L-shaped open plan), each with doors and windows; furnished adds a starter layout. Asks the human to confirm when the current home already has furniture.",
+    description: "Replaces the whole home with one of seven floor plans: studio, 1br, 2br, 3br, 4br, 5br, or loft. The 3br/4br/5br homes contain living, kitchen and dining, N bedrooms, one or two baths, and a hall. Every template has doors and windows; furnished adds a starter layout. Asks for confirmation if the current home has furniture.",
     group: "build",
     input: z.object({
-      template: z.enum(["studio", "1br", "2br", "loft"]).describe(describeParam("Floor-plan template: studio, 1br, 2br or loft.")),
+      template: z.enum(TEMPLATE_IDS).describe(describeParam("Template id: studio, 1br, 2br, 3br, 4br, 5br or loft.")),
       furnished: z.boolean().default(false).describe(describeParam("true adds the template's starter furniture layout.")),
     }).strict(),
     confirm(input, scene) {
@@ -58,7 +58,7 @@ export function applyTemplateTool(): DefinedTool {
       }
     },
     summarize(input) {
-      const label = input.template === "1br" || input.template === "2br"
+      const label = input.template.endsWith("br")
         ? input.template.toUpperCase()
         : `${input.template[0]?.toUpperCase()}${input.template.slice(1)}`;
       return `Applied ${label} template${input.furnished ? " (furnished)" : ""}`;

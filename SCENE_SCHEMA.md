@@ -107,9 +107,11 @@ interface Conflict {
 ```
 
 ## Templates (`src/engine/templates/`)
-`studio` (1 room 5.2×4.4 m + bath) · `1br` · `2br` (living 5.2×4.4, kitchen/dining 3.6×4.4,
-bed-1 4.0×3.6, bed-2 3.4×3.2, bath, hall) · `loft` (L-shaped open plan). Each ships openings with
-realistic door swings and windows; `2br` also ships the **pre-furnished golden-hour onboarding scene**.
+`studio` (2 rooms: open studio + bath) · `1br` (5 rooms) · `2br` (6 rooms) · `3br` (7 rooms) ·
+`4br` (9 rooms) · `5br` (10 rooms) · `loft` (2 rooms: L-shaped open plan + bath). The 1–5 bedroom
+homes include living, kitchen/dining, their named bedrooms, bath(s), and a hall. Each template ships
+realistic door swings and exterior windows; every template has an optional deterministic furnished
+layout, and `2br` remains the **pre-furnished golden-hour onboarding scene**.
 
 ## Invariants (tested)
 - Furniture footprint lies inside its room; no two placed items overlap (ghosts may).

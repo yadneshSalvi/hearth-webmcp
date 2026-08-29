@@ -90,3 +90,18 @@ export function studioScene(): Scene {
 export function loftScene(): Scene {
   return createTemplate("loft", { furnished: true });
 }
+
+/** Returns the furnished canonical 3BR fixture. */
+export function furnished3br(): Scene {
+  return createTemplate("3br", { furnished: true });
+}
+
+/** Returns the furnished canonical 4BR fixture. */
+export function furnished4br(): Scene {
+  return createTemplate("4br", { furnished: true });
+}
+
+/** Returns the furnished canonical 5BR fixture. */
+export function furnished5br(): Scene {
+  return createTemplate("5br", { furnished: true });
+}

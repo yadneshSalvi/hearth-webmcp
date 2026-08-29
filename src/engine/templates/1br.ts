@@ -19,6 +19,7 @@ export function createOneBedroomTemplate(furnished = false): Scene {
     opening({ id: "door-bedroom-hall", roomId: "bed-1", wallId: "w1", offset: 250, width: 90, kind: "door", swing: "in", hinge: "right" }),
     opening({ id: "window-bedroom-south", roomId: "bed-1", wallId: "w2", offset: 220, width: 140, kind: "window", sillHeight: 90 }),
     opening({ id: "door-hall-living", roomId: "hall", wallId: "w0", offset: 10, width: 90, kind: "door", swing: "in", hinge: "left" }),
+    opening({ id: "door-hall-bedroom", roomId: "hall", wallId: "w3", offset: 20, width: 90, kind: "door", swing: "in", hinge: "right" }),
     opening({ id: "door-hall-bath", roomId: "hall", wallId: "w2", offset: 15, width: 90, kind: "door", swing: "in", hinge: "right" }),
     opening({ id: "door-bath-hall", roomId: "bath", wallId: "w0", offset: 15, width: 90, kind: "door", swing: "in", hinge: "left" }),
     opening({ id: "window-bath-east", roomId: "bath", wallId: "w1", offset: 40, width: 120, kind: "window", sillHeight: 90 }),
