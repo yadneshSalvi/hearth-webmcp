@@ -11,6 +11,7 @@ export * from "./geometry";
 export * from "./measure";
 export * from "./report";
 export * from "./templates";
+export { templateLabel, templateShortLabel } from "./templates/labels";
 export * from "./traffic";
 export * from "./types";
 export * from "./variants";

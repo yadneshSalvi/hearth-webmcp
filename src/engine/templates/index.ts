@@ -24,6 +24,7 @@ export function createTemplate(id: TemplateId, opts: { furnished?: boolean } = {
 export { createFiveBedroomTemplate } from "./5br";
 export { createFourBedroomTemplate } from "./4br";
 export { createLoftTemplate } from "./loft";
+export { templateLabel, templateShortLabel } from "./labels";
 export { createOneBedroomTemplate } from "./1br";
 export { createStudioTemplate } from "./studio";
 export { createThreeBedroomTemplate } from "./3br";

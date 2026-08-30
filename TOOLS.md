@@ -378,8 +378,10 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 **Title:** Apply floor-plan template
 **Description:** Replaces the whole home with one of seven floor plans: studio, 1br, 2br, 3br, 4br, 5br, or loft. The 3br/4br/5br homes contain living, kitchen and dining, N bedrooms, one or two baths, and a hall. Every template has doors and windows; furnished adds a starter layout. Asks for confirmation if the current home has furniture.
 **Input:** `{ template: "studio"|"1br"|"2br"|"3br"|"4br"|"5br"|"loft", furnished?: boolean }`
+**Confirm:** "Replace this home and its 23 placed items with the 1 bedroom layout?"
 **Result:** `{"ok":true,"room":"living","template":"5br","rooms":["living","kitchen","bed-2","hall","bath","bed-3","bath-2","bed-1","hall-2","bed-4","bed-5"],"openings":27,"items":40,"item_ids":["…"],"hint":"The studio now shows the whole home; call set_view with a room id to zoom in, or set mode to design to furnish."}`
-**Receipt:** "Applied 5BR template (furnished)"
+**Cancelled:** `{"ok":false,"error":"cancelled","detail":"The human declined the 1 bedroom layout."}`
+**Receipt:** "Applied 5BR layout (furnished)"
 
 ### 32. `create_room` · build
 **Title:** Create room

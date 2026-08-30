@@ -14,6 +14,8 @@ import {
   polysOverlap,
   resolveWall,
   swingZone,
+  templateLabel,
+  templateShortLabel,
   walls,
 } from "../../src/engine";
 import type { Opening, Room, Scene, TemplateId, Vec2 } from "../../src/engine/types";
@@ -52,6 +54,21 @@ function sharedDoors(scene: Scene): Map<string, Opening[]> {
 }
 
 describe("floor-plan templates", () => {
+  it("provides long and short labels for every template", () => {
+    const expected: Record<TemplateId, readonly [string, string]> = {
+      studio: ["Studio", "Studio"],
+      "1br": ["1 bedroom", "1BR"],
+      "2br": ["2 bedrooms", "2BR"],
+      "3br": ["3 bedrooms", "3BR"],
+      "4br": ["4 bedrooms", "4BR"],
+      "5br": ["5 bedrooms", "5BR"],
+      loft: ["Loft", "Loft"],
+    };
+    for (const id of TEMPLATE_IDS) {
+      expect([templateLabel(id), templateShortLabel(id)]).toEqual(expected[id]);
+    }
+  });
+
   it("is deterministic and emits independent object graphs", () => {
     for (const id of TEMPLATE_IDS) {
       const first = createTemplate(id, { furnished: true });

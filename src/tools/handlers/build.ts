@@ -2,6 +2,7 @@ import * as z from "zod";
 import { createCatalog } from "../../engine/catalog";
 import { conflictsForItem, evaluateRoom } from "../../engine/conflicts";
 import { roomAreaM2, roomSize, walls } from "../../engine/geometry";
+import { templateLabel, templateShortLabel } from "../../engine/templates";
 import { ROOM_TYPES, TEMPLATE_IDS } from "../../engine/types";
 import type { Conflict } from "../../engine/types";
 import { floors, wallColors } from "../../tokens";
@@ -34,10 +35,10 @@ export function applyTemplateTool(): DefinedTool {
     }).strict(),
     confirm(input, scene) {
       const count = scene.furniture.filter((item) => item.status === "placed").length;
-      return count > 0 ? `Replace this home and its ${count} placed items with the ${input.template} template?` : null;
+      return count > 0 ? `Replace this home and its ${count} placed items with the ${templateLabel(input.template)} layout?` : null;
     },
     cancelledDetail(input) {
-      return `The human declined to apply the ${input.template} template.`;
+      return `The human declined the ${templateLabel(input.template)} layout.`;
     },
     handler(input, context) {
       try {
@@ -58,10 +59,7 @@ export function applyTemplateTool(): DefinedTool {
       }
     },
     summarize(input) {
-      const label = input.template.endsWith("br")
-        ? input.template.toUpperCase()
-        : `${input.template[0]?.toUpperCase()}${input.template.slice(1)}`;
-      return `Applied ${label} template${input.furnished ? " (furnished)" : ""}`;
+      return `Applied ${templateShortLabel(input.template)} layout${input.furnished ? " (furnished)" : ""}`;
     },
   });
 }

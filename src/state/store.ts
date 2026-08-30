@@ -39,6 +39,9 @@ function quietly(opts: { quiet?: boolean } | undefined, mutate: () => void): voi
   }
 }
 
+// src/scene/homeFocus.ts consumes the surviving receipt and matches the "Apply template" title
+// or tool === "apply_template". If this suppression rule or tool name changes, update that
+// camera-framing rule in the same change.
 function prepend(
   target: Parameters<typeof prependActivity>[0],
   entry: Parameters<typeof prependActivity>[1],

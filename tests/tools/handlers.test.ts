@@ -59,7 +59,7 @@ const happyCases: HappyCase[] = [
     },
     verify: (result) => expect(result).toMatchObject({ ok: true, room: "living", discarded: { product: "sofa-endre" } }),
   },
-  { name: "apply_template", input: () => ({ template: "studio", furnished: false }), summary: "Applied Studio template", verify: (result) => expect(result).toMatchObject({ ok: true, template: "studio", rooms: ["studio", "bath"] }) },
+  { name: "apply_template", input: () => ({ template: "studio", furnished: false }), summary: "Applied Studio layout", verify: (result) => expect(result).toMatchObject({ ok: true, template: "studio", rooms: ["studio", "bath"] }) },
   { name: "create_room", input: () => ({ name: "Office", type: "office", width_cm: 360, depth_cm: 320 }), summary: "Created Office · 360×320 cm", verify: (result) => expect(result).toMatchObject({ ok: true, room: { id: "office", size_cm: "360x320" } }) },
   { name: "update_room", input: () => ({ room: "living", width_cm: 530 }), summary: "Updated Living Room · 530x440 cm", verify: (result) => expect(result).toMatchObject({ ok: true, room: { id: "living", size_cm: "530x440" } }) },
   { name: "add_opening", input: () => ({ room: "living", wall: "north", kind: "window", offset_cm: 0, width_cm: 40 }), summary: "Added window on the north wall", verify: (result) => expect(result).toMatchObject({ ok: true, room: "living", opening: { kind: "window", wall: "w0", width_cm: 40 } }) },
@@ -103,7 +103,19 @@ describe("first-round handlers", () => {
     expect(result.ok && Array.isArray(result.item_ids) ? result.item_ids : []).toHaveLength(items);
     expect(hearthStore.getState().scene.rooms.filter((room) => room.type === "bedroom")).toHaveLength(bedrooms);
     expect(JSON.stringify(result).length).toBeLessThanOrEqual(1500);
-    expect(hearthStore.getState().activity[0]?.summary).toBe(`Applied ${template.toUpperCase()} template (furnished)`);
+    expect(hearthStore.getState().activity[0]?.summary).toBe(`Applied ${template.toUpperCase()} layout (furnished)`);
+  });
+
+  it("uses engine-owned template labels in confirmation and cancellation copy", async () => {
+    resetStore(furnished2br());
+    const messages: string[] = [];
+    const ui = testUi(async (message) => {
+      messages.push(message);
+      return { accepted: false, reason: "declined" as const };
+    });
+    const result = await registry(ui).execute("apply_template", { template: "1br", furnished: false }, "test");
+    expect(messages).toEqual(["Replace this home and its 23 placed items with the 1 bedroom layout?"]);
+    expect(result).toEqual({ ok: false, error: "cancelled", detail: "The human declined the 1 bedroom layout." });
   });
 
   it.each(["home", "Entire home"])("set_view frames the home for %s without changing selection", async (focus) => {
