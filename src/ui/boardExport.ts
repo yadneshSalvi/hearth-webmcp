@@ -6,13 +6,15 @@
  */
 import type { StoreApi } from "zustand";
 import { createCatalog } from "../engine/catalog";
-import type { View } from "../engine/types";
+import { polyBBox } from "../engine/geometry";
+import { WALL_T } from "../scene/math";
+import type { Room, View } from "../engine/types";
 import type { StudioApi } from "../scene/Studio";
 import type { HearthStore } from "../state/types";
 import { motion } from "../tokens";
 import { boardModel } from "./boardCompose";
 import { captureFrame, fromFramedShot } from "./capture";
-import type { BoardModel } from "./boardCompose";
+import type { BoardCrop, BoardModel } from "./boardCompose";
 import { renderBoard } from "./boardRender";
 import type { BoardImages } from "./boardRender";
 
@@ -29,6 +31,48 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+/** A little air around the room so its walls are not flush with the tile's edge. */
+const CROP_MARGIN = 0.03;
+
+/**
+ * Where the room sits in the plan capture, 0–1 of the frame — its polygon plus the wall thickness
+ * the walls extrude outward by, projected through the camera that is about to be photographed.
+ *
+ * Without this the board cropped the *window*, and a wide room lost its southern wall to a tile that
+ * is a different shape from the viewport. Undefined when the camera cannot answer (a capture taken
+ * before the first frame), in which case the whole frame is used as before.
+ */
+function planCrop(studio: StudioApi, room: Room): BoardCrop | undefined {
+  const box = polyBBox(room.poly);
+  const corners = [
+    { x: room.origin.x + box.minX - WALL_T, y: room.origin.y + box.minY - WALL_T },
+    { x: room.origin.x + box.maxX + WALL_T, y: room.origin.y + box.minY - WALL_T },
+    { x: room.origin.x + box.maxX + WALL_T, y: room.origin.y + box.maxY + WALL_T },
+    { x: room.origin.x + box.minX - WALL_T, y: room.origin.y + box.maxY + WALL_T },
+  ];
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const corner of corners) {
+    const point = studio.projectNormalized(corner);
+    if (!point) return undefined;
+    minX = Math.min(minX, point.x);
+    maxX = Math.max(maxX, point.x);
+    minY = Math.min(minY, point.y);
+    maxY = Math.max(maxY, point.y);
+  }
+  const margin = Math.max(maxX - minX, maxY - minY) * CROP_MARGIN;
+  const clamp = (value: number): number => Math.min(1, Math.max(0, value));
+  const crop = {
+    x: clamp(minX - margin),
+    y: clamp(minY - margin),
+    w: clamp(maxX + margin) - clamp(minX - margin),
+    h: clamp(maxY + margin) - clamp(minY - margin),
+  };
+  return crop.w > 0.02 && crop.h > 0.02 ? crop : undefined;
 }
 
 type BoardImage = BoardImages["dollhouse"];
@@ -69,6 +113,7 @@ export async function composeBoard(
 
   const startView = state.scene.meta.view;
   const shots: Partial<Record<View, Blob>> = {};
+  let crop: BoardCrop | undefined;
   // Both shots from the framed shot, and the human's orbit, zoom and pan handed back once the view
   // is home again — the plan half of the board resets the orbit on its way in (`setCameraPlanView`),
   // so restoring per capture would lose it (see `fromFramedShot`).
@@ -81,6 +126,8 @@ export async function composeBoard(
           current = view;
           await wait(SETTLE_MS);
         }
+        // Measured from the same camera the shutter is about to use, one line before it fires.
+        if (view === "plan") crop = planCrop(studio, room);
         shots[view] = await captureFrame(studio);
       }
     } finally {
@@ -95,6 +142,7 @@ export async function composeBoard(
   const images: BoardImages = {
     dollhouse: await toImage(dollhouseBlob),
     plan: await toImage(planBlob),
+    ...(crop ? { planCrop: crop } : {}),
   };
   try {
     const latest = store.getState();

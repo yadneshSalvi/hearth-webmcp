@@ -6,7 +6,7 @@
  */
 import { useEffect } from "react";
 import { Canvas, addAfterEffect, invalidate, useThree } from "@react-three/fiber";
-import { ACESFilmicToneMapping, SRGBColorSpace } from "three";
+import { ACESFilmicToneMapping, SRGBColorSpace, Vector3 } from "three";
 import type { Vec2 } from "../engine/types";
 import { hearthStore } from "../state/store";
 import { palette } from "../tokens";
@@ -28,6 +28,7 @@ import { watchHomeFraming } from "./homeFocus";
 import { useWakeOnActivity, wakeStudio } from "./idle";
 import { markStudioPainted, studioPaintedAt, whenStudioPainted } from "./intro";
 import { flyOrbTo } from "./orbCommand";
+import { M } from "./math";
 import { silenceClockDeprecation } from "./threeConsole";
 import { useMeta } from "./useSceneStore";
 
@@ -38,6 +39,12 @@ silenceClockDeprecation();
 export interface StudioApi {
   /** Frames a room or item; pass undefined to return to the active room. */
   focus(target: FocusTarget | undefined): void;
+  /**
+   * World centimetres → the captured frame, in 0–1 of its width and height. Resolution-independent
+   * on purpose: `capture()` hands back a device-pixel image, and the design board only needs to know
+   * *where in the frame* the room it is describing actually sits (src/ui/boardExport.ts).
+   */
+  projectNormalized(world: Vec2): { x: number; y: number } | undefined;
   /** Sends the agent orb to a room-local point with a label chip. */
   flyOrb(point: { roomId: string; pos: Vec2 }, label: string): void;
   /** Grabs the next rendered frame, composited over the studio background gradient. */
@@ -55,6 +62,8 @@ let pendingCaptures: Resolver[] = [];
  */
 let requestFrame: (() => void) | undefined;
 let setLoop: ((mode: "always" | "demand") => void) | undefined;
+/** The live camera projection, published by CaptureBridge for `studioApi.projectNormalized`. */
+let projectFrame: ((world: Vec2) => { x: number; y: number } | undefined) | undefined;
 
 /** Frames to keep asking for while a capture is pending; the pump stops the moment one is drained. */
 const CAPTURE_FRAME_BUDGET = 180;
@@ -83,6 +92,9 @@ export const studioApi: StudioApi = {
   focus(target) {
     setFocusTarget(target);
     wakeStudio();
+  },
+  projectNormalized(world) {
+    return projectFrame?.(world);
   },
   flyOrb(point, label) {
     flyOrbTo(point, label);
@@ -126,6 +138,7 @@ function drainCaptures(canvas: HTMLCanvasElement): void {
 /** Reads the freshly rendered frame for `studioApi.capture()` before the buffer is cleared. */
 function CaptureBridge() {
   const gl = useThree((state) => state.gl);
+  const camera = useThree((state) => state.camera);
   const invalidateRoot = useThree((state) => state.invalidate);
   const setFrameloop = useThree((state) => state.setFrameloop);
   useEffect(() => {
@@ -136,6 +149,18 @@ function CaptureBridge() {
       if (setLoop === setFrameloop) setLoop = undefined;
     };
   }, [invalidateRoot, setFrameloop]);
+  useEffect(() => {
+    const point = new Vector3();
+    const project = (world: Vec2): { x: number; y: number } | undefined => {
+      const projected = point.set(world.x * M, 0, world.y * M).project(camera);
+      if (!Number.isFinite(projected.x) || !Number.isFinite(projected.y)) return undefined;
+      return { x: (projected.x + 1) / 2, y: (1 - projected.y) / 2 };
+    };
+    projectFrame = project;
+    return () => {
+      if (projectFrame === project) projectFrame = undefined;
+    };
+  }, [camera]);
   useEffect(() => addAfterEffect(() => {
     // Marked here rather than in the camera rig: `addAfterEffect` runs after `gl.render`, so the
     // curtain lifts on a frame that exists instead of on the frame that is about to be drawn.

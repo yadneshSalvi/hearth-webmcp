@@ -85,8 +85,8 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 function HomeStat({ label, value, tone = "ink" }: { label: string; value: string; tone?: "ink" | "muted" }) {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-hairline/70 py-1.5 last:border-0">
-      <span className="label-caps">{label}</span>
-      <span className={`numerals text-[13px] ${tone === "muted" ? "text-ink-muted" : "text-ink"}`}>{value}</span>
+      <dt className="label-caps">{label}</dt>
+      <dd className={`numerals text-[13px] ${tone === "muted" ? "text-ink-muted" : "text-ink"}`}>{value}</dd>
     </div>
   );
 }

@@ -57,9 +57,10 @@ export function boardLayout(): BoardLayout {
   const contentWidth = BOARD_WIDTH - pad * 2;
   const gap = 40;
   const listWidth = 448;
-  // The plan tile stays near the capture's own aspect, so `fitImage` fills it instead of
-  // letterboxing it (see cropFraction).
-  const planWidth = 420;
+  // Shaped like a room rather than like the window: the plan shot is cropped to the room's own
+  // footprint before it lands here (`planCrop` in src/ui/boardExport.ts), so a tile near 3:2 holds
+  // an ordinary room with barely any letterbox — and a wide room keeps its southern wall.
+  const planWidth = 300;
   const contentTop = 196;
   const footRuleY = BOARD_HEIGHT - pad - 48;
   const contentBottom = footRuleY - 14;
@@ -153,6 +154,26 @@ export function cropFraction(source: { w: number; h: number }, box: BoardRect): 
  */
 export function fitImage(source: { w: number; h: number }, box: BoardRect, maxCrop = 0.3): BoardFit {
   return cropFraction(source, box) > maxCrop ? fitContain(source, box) : fitCover(source, box);
+}
+
+/** A rectangle of a captured frame, in 0–1 of its width and height. */
+export interface BoardCrop {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Contains `crop` — a sub-rectangle of the source, in normalised coordinates — inside the box.
+ * Nothing inside the crop is ever cut: the board says "Living Room · 22.9 m²", so the picture under
+ * that heading has to be the whole of it, southern wall included.
+ */
+export function fitCropped(source: { w: number; h: number }, crop: BoardCrop, box: BoardRect): BoardFit {
+  const sw = Math.max(1, crop.w * source.w);
+  const sh = Math.max(1, crop.h * source.h);
+  const contained = fitContain({ w: sw, h: sh }, box);
+  return { ...contained, sx: crop.x * source.w, sy: crop.y * source.h, sw, sh };
 }
 
 export interface BoardRow {

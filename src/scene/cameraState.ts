@@ -94,6 +94,14 @@ export function setCameraPixelScale(scale: number): void {
   if (scale > 0) metresPerPixel = scale;
 }
 
+/**
+ * How far one screen pixel travels in world metres, as of the last drawn frame. Read imperatively
+ * from `useFrame` — the plan-view room labels size themselves against it (src/scene/Rooms.tsx).
+ */
+export function cameraMetresPerPixel(): number {
+  return metresPerPixel;
+}
+
 /** The rig reports how far the pan may travel from the framed centre, in metres. */
 export function setCameraPanLimit(limit: number): void {
   if (limit > 0) panLimit = limit;
