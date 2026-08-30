@@ -155,6 +155,7 @@ export function setAccessibilityModeTool(): DefinedTool {
     title: "Accessibility mode",
     description: "Turns accessibility mode on or off. On: paths must be at least 90 cm wide, a 150 cm turning circle is required beside the bed, desk and sofa, reach zones are shown, and get_conflicts and the overlays report these rules. Off: standard 60 cm walkways.",
     group: "design",
+    waitForTools: true,
     input: z.object({
       enabled: z.boolean().describe(describeParam("true enables accessibility layout rules; false restores standard rules.")),
     }).strict(),

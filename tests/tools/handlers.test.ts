@@ -1,11 +1,13 @@
-import { describe, expect, it } from "vitest";
+// @vitest-environment jsdom
+
+import { afterEach, describe, expect, it } from "vitest";
 import { createLocalShopify } from "../../src/shopify/local";
 import { humanizeConfirmMessage, templateConfirmMessage } from "../../src/ui/templates";
 import { hearthStore } from "../../src/state/store";
 import type { ToolResult, ToolUi } from "../../src/tools/define";
 import { createRegistry } from "../../src/tools/registry";
 import { emptyHome, furnished2br } from "../fixtures/scenes";
-import { resetStore, testUi } from "./helpers";
+import { clearRealPolyfill, loadRealPolyfill, resetStore, testUi } from "./helpers";
 
 class EmptyModelContext extends EventTarget implements WebMCP.ModelContext {
   ontoolchange: ((this: WebMCP.ModelContext, ev: Event) => unknown) | null = null;
@@ -30,14 +32,16 @@ function registry(ui: ToolUi = testUi()) {
   });
 }
 
+afterEach(() => clearRealPolyfill());
+
 const happyCases: HappyCase[] = [
-  { name: "set_mode", input: () => ({ mode: "build" }), summary: "Switched to Build mode", verify: (result) => expect(result).toMatchObject({ ok: true, mode: "build" }) },
+  { name: "set_mode", input: () => ({ mode: "build" }), summary: "Switched to Build mode", verify: (result) => expect(result).toMatchObject({ ok: true, mode: "build", tools_ready: true }) },
   { name: "remove_furniture", input: () => ({ item: "armchair-1" }), summary: "Removed Nook Armchair", verify: (result) => expect(result).toMatchObject({ ok: true, room: "living", removed: { id: "armchair-1" } }) },
   { name: "set_colorway", input: () => ({ item: "sofa-1", colorway: "terracotta" }), summary: "Endre Sofa → terracotta", verify: (result) => expect(result).toMatchObject({ ok: true, room: "living", item: { id: "sofa-1", colorway: "terracotta" } }) },
   { name: "apply_palette", input: () => ({ palette: "sage-linen", room: "living" }), summary: "Applied Sage linen to Living Room", verify: (result) => expect(result).toMatchObject({ ok: true, rooms: ["living"], palette: { id: "sage-linen" } }) },
   { name: "set_time_of_day", input: () => ({ time: "evening" }), summary: "Time of day → evening", verify: (result) => expect(result).toMatchObject({ ok: true, time_of_day: "evening", lamps_on: true }) },
   { name: "set_view", input: () => ({ view: "plan", focus: "sofa-1", yaw: "ne" }), summary: "View → plan, focus Endre Sofa", verify: (result) => expect(result).toMatchObject({ ok: true, view: "plan", focus: { kind: "item", id: "sofa-1" } }) },
-  { name: "set_accessibility_mode", input: () => ({ enabled: true }), summary: /Accessibility mode on \(\d+ conflicts\)/, verify: (result) => expect(result).toMatchObject({ ok: true, accessibility_mode: true }) },
+  { name: "set_accessibility_mode", input: () => ({ enabled: true }), summary: /Accessibility mode on \(\d+ conflicts\)/, verify: (result) => expect(result).toMatchObject({ ok: true, accessibility_mode: true, tools_ready: true }) },
   {
     name: "undo", input: () => ({ steps: 1 }), summary: "Undid 1 change",
     prepare: () => { hearthStore.getState().setMode("human", "shop"); },
@@ -90,6 +94,39 @@ describe("first-round handlers", () => {
     expect(!result.ok && result.detail.length).toBeGreaterThan(0);
     expect(hearthStore.getState().activity).toHaveLength(1);
     expect(hearthStore.getState().activity[0]?.tool).toBe(testCase.name);
+  });
+
+  it("keeps build tools registered across set_mode → apply_template → add_opening", async () => {
+    resetStore(emptyHome());
+    const modelContext = loadRealPolyfill();
+    const tools = createRegistry({
+      modelContext,
+      store: hearthStore,
+      ui: testUi(),
+      shopify: createLocalShopify(hearthStore.getState().catalog),
+    });
+    tools.start();
+
+    expect(await tools.execute("set_mode", { mode: "build" }, "agent")).toMatchObject({
+      ok: true,
+      mode: "build",
+      tools_ready: true,
+    });
+    expect((await modelContext.getTools()).map(({ name }) => name)).toContain("apply_template");
+    expect(await tools.execute("apply_template", { template: "4br", furnished: false }, "agent")).toMatchObject({
+      ok: true,
+      template: "4br",
+    });
+    expect(hearthStore.getState().scene.meta.mode).toBe("build");
+    expect(await tools.execute("add_opening", {
+      room: "bed-4",
+      wall: "north",
+      kind: "window",
+      offset_cm: 0,
+      width_cm: 40,
+    }, "agent")).toMatchObject({ ok: true, room: "bed-4" });
+
+    tools.stop();
   });
 
   it.each([

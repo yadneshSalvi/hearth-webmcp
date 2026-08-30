@@ -381,7 +381,12 @@ export const hearthStore = createStore<HearthStore>()(
         });
       },
       applyTemplate: (source, id, furnished) => set((draft) => {
+        const { mode, timeOfDay, accessibilityMode, paletteId } = draft.scene.meta;
         const scene = createTemplate(id, { furnished });
+        scene.meta.mode = mode;
+        scene.meta.timeOfDay = timeOfDay;
+        scene.meta.accessibilityMode = accessibilityMode;
+        scene.meta.paletteId = paletteId;
         for (const item of scene.furniture) delete item.cartLineId;
         draft.scene = scene;
         for (const line of draft.cart.lines) delete line.itemId;

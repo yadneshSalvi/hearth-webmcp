@@ -26,14 +26,12 @@ afterEach(() => clearRealPolyfill());
 
 describe("native WebMCP evaluation flows", () => {
   it("runs search → place → conflicts → move → cart → checkout through the polyfill", async () => {
-    const queued: Array<() => void> = [];
     const modelContext = loadRealPolyfill();
     const registry = createRegistry({
       modelContext,
       store: hearthStore,
       ui: testUi(),
       shopify: createLocalShopify(hearthStore.getState().catalog),
-      schedule: (fn) => queued.push(fn),
     });
     registry.start();
 
@@ -68,7 +66,6 @@ describe("native WebMCP evaluation flows", () => {
     expect(hearthStore.getState().cart.lines).toHaveLength(1);
     expect(hearthStore.getState().scene.furniture[0]?.cartLineId).toBe(hearthStore.getState().cart.lines[0]?.id);
 
-    queued.splice(0).forEach((fn) => fn());
     expect((await modelContext.getTools()).map((tool) => tool.name)).toContain("get_checkout_link");
     const checkout = await execute(modelContext, "get_checkout_link", {});
     expect(checkout).toMatchObject({
@@ -86,14 +83,12 @@ describe("native WebMCP evaluation flows", () => {
   });
 
   it("runs preview → confirm with cart linkage and flips both dynamic gates", async () => {
-    const queued: Array<() => void> = [];
     const modelContext = loadRealPolyfill();
     const registry = createRegistry({
       modelContext,
       store: hearthStore,
       ui: testUi(),
       shopify: createLocalShopify(hearthStore.getState().catalog),
-      schedule: (fn) => queued.push(fn),
     });
     registry.start();
     expect((await modelContext.getTools()).map((tool) => tool.name)).not.toContain("confirm_preview");
@@ -106,14 +101,12 @@ describe("native WebMCP evaluation flows", () => {
     });
     expect(preview).toMatchObject({ ok: true, preview: { id: "ghost-1", product: "sofa-liva" } });
     expect(hearthStore.getState().scene.furniture[0]?.status).toBe("ghost");
-    queued.splice(0).forEach((fn) => fn());
     expect((await modelContext.getTools()).map((tool) => tool.name)).toEqual(expect.arrayContaining(["confirm_preview", "cancel_preview"]));
 
     const confirmed = await execute(modelContext, "confirm_preview", { add_to_cart: true });
     expect(confirmed).toMatchObject({ ok: true, item: { id: "sofa-1" }, cart: { added: true, subtotal_usd: 690 } });
     expect(hearthStore.getState().scene.furniture[0]).toMatchObject({ id: "sofa-1", status: "placed", cartLineId: "local-line-1" });
     expect(hearthStore.getState().cart.lines[0]).toMatchObject({ id: "local-line-1", itemId: "sofa-1" });
-    queued.splice(0).forEach((fn) => fn());
     const names = (await modelContext.getTools()).map((tool) => tool.name);
     expect(names).not.toContain("confirm_preview");
     expect(names).toContain("get_checkout_link");
@@ -122,23 +115,19 @@ describe("native WebMCP evaluation flows", () => {
 
   it("registers compare_variants only after two tool-created variants", async () => {
     resetStore(furnished2br());
-    const queued: Array<() => void> = [];
     const modelContext = loadRealPolyfill();
     const registry = createRegistry({
       modelContext,
       store: hearthStore,
       ui: testUi(),
       shopify: createLocalShopify(hearthStore.getState().catalog),
-      schedule: (fn) => queued.push(fn),
     });
     registry.start();
     expect((await modelContext.getTools()).map((tool) => tool.name)).not.toContain("compare_variants");
     expect(await execute(modelContext, "save_variant", { name: "Cosy", room: "living" })).toMatchObject({ ok: true });
-    queued.splice(0).forEach((fn) => fn());
     expect((await modelContext.getTools()).map((tool) => tool.name)).not.toContain("compare_variants");
     expect(await execute(modelContext, "move_furniture", { item: "sofa-1", delta_cm: { y: 10 } })).toMatchObject({ ok: true });
     expect(await execute(modelContext, "save_variant", { name: "Media wall", room: "living" })).toMatchObject({ ok: true });
-    queued.splice(0).forEach((fn) => fn());
     expect((await modelContext.getTools()).map((tool) => tool.name)).toContain("compare_variants");
     const compared = await execute(modelContext, "compare_variants", { left: "Cosy", right: "Media", room: "living" });
     expect(compared).toMatchObject({ ok: true, diff: { moved: ["Endre Sofa"] } });

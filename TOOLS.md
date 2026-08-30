@@ -211,7 +211,7 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 **Title:** Switch mode
 **Description:** Switches the studio mode. build: edit rooms and openings (enables apply_template, create_room, update_room, add_opening, move_opening and remove_opening). design: place and arrange furniture. shop: browse products and manage the cart with prices shown; enables get_checkout_link. Design and shop tools stay available in every mode.
 **Input:** `{ mode: "build"|"design"|"shop" }`
-**Result:** `{"ok":true,"mode":"build","hint":"Build tools are now available: create_room, add_opening…"}`
+**Result:** `{"ok":true,"mode":"build","tools_ready":true,"hint":"Build tools are now available: create_room, add_opening…"}`
 **Receipt:** "Switched to Build mode"
 
 ---
@@ -284,7 +284,7 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 **Title:** Accessibility mode
 **Description:** Turns accessibility mode on or off. On: paths must be at least 90 cm wide, a 150 cm turning circle is required beside the bed, desk and sofa, reach zones are shown, and get_conflicts and the overlays report these rules. Off: standard 60 cm walkways.
 **Input:** `{ enabled: boolean }`
-**Result:** `{"ok":true,"accessibility_mode":true,"conflicts":4,"hint":"get_conflicts lists the 4 accessibility issues."}`
+**Result:** `{"ok":true,"accessibility_mode":true,"conflicts":4,"tools_ready":true,"hint":"get_conflicts lists the 4 accessibility issues."}`
 **Receipt:** "Accessibility mode on (4 conflicts)"
 
 ### 20. `undo` · design
@@ -377,7 +377,7 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 
 ### 31. `apply_template` · build · **confirm if the home has furniture**
 **Title:** Apply floor-plan template
-**Description:** Replaces the whole home with one of seven floor plans: studio, 1br, 2br, 3br, 4br, 5br, or loft. The 3br/4br/5br homes contain living, kitchen and dining, N bedrooms, one or two baths, and a hall. Every template has doors and windows; furnished adds a starter layout. Asks for confirmation if the current home has furniture.
+**Description:** Replaces the whole home with one of seven floor plans: studio, 1br, 2br, 3br, 4br, 5br, or loft. The 3br/4br/5br homes contain living, kitchen and dining, N bedrooms, one or two baths, and a hall. Every template has doors and windows; furnished adds a starter layout. Keeps the current mode, time of day, accessibility and palette. Asks for confirmation if the current home has furniture.
 **Input:** `{ template: "studio"|"1br"|"2br"|"3br"|"4br"|"5br"|"loft", furnished?: boolean }`
 **Confirm:** "Replace this home and its 23 placed items with the 1 bedroom layout?"
 **Result:** `{"ok":true,"room":"living","template":"5br","rooms":["living","kitchen","bed-2","hall","bath","bed-3","bath-2","bed-1","hall-2","bed-4","bed-5"],"openings":27,"items":40,"item_ids":["…"],"hint":"The studio now shows the whole home; call set_view with a room id to zoom in, or set mode to design to furnish."}`
@@ -437,7 +437,7 @@ type ToolGroup = "core"|"design"|"shop"|"present"|"preview"|"variants"|"checkout
 interface ToolSpec<I extends z.ZodObject> {
   name: string; title: string; description: string; group: ToolGroup;
   input: I;                                   // zod → JSON Schema via z.toJSONSchema(input, { target: "draft-7" }) — no $refs, no unions in top-level params except anyOf for along/offset
-  readOnly?: boolean; untrusted?: boolean;
+  readOnly?: boolean; untrusted?: boolean; waitForTools?: boolean;
   confirm?: (input: z.infer<I>, s: Scene) => string | null;   // message → await ui.confirm(message); null = no dialog
   handler: (input: z.infer<I>, ctx: ToolContext) => Promise<ToolResult> | ToolResult;
   summarize: (input: z.infer<I>, result: ToolResult) => string; // receipt line ≤ 80 chars
@@ -448,15 +448,19 @@ interface ToolContext { store: HearthStore; ui: { confirm(msg: string): Promise<
 - `defineTool(spec)` validates budgets at definition time (throws in dev/test) and produces the WebMCP tool
   object `{ name, title, description, inputSchema, annotations, execute }`. `execute` = parse with zod
   (`safeParse`; failure → `{ok:false,error:"invalid",detail}`) → `executing++` → optional confirm → handler →
-  write receipt → `executing--` → return the plain object. Confirmation returns its reason directly.
+  `executing--` → optional registry settlement → write receipt → return the plain object. Confirmation returns its
+  reason directly.
 - **Groups:** one `AbortController` per group. `sync(scene)` computes the desired set:
   `core|design|shop|present` always; `build` iff `meta.mode==="build"`; `preview` iff a `status:"ghost"` item exists;
   `variants` iff any room has ≥ 2 variants; `checkout` iff cart lines ≥ 1. Diff → `registerTool` for new
   groups, `abort()` for stale ones.
 - **Deferral rule (Chrome < 153 cancels in-flight executions on abort):** never abort while `executing > 0`;
-  queue the sync and flush on a macrotask (`setTimeout(…, 50)`) after the last executing tool resolved. Registration
-  (no abort) may happen immediately. `set_mode`, `confirm_preview`, `cancel_preview`, `update_cart remove` therefore
-  return first and the group flips right after.
+  queue the sync and flush on a macrotask (`setTimeout(…, 50)`) after the last executing tool finished its handler.
+  Registration (no abort) may happen immediately. `registry.settled()` resolves only when internal groups match
+  `desiredToolGroups(state)`, pending `registerTool()` calls have completed, and `getTools()` exposes exactly those
+  Hearth groups. A tool whose handler changed the desired groups releases its own `executing` count before awaiting
+  settlement, avoiding deadlock; `set_mode` and `set_accessibility_mode` also make the check explicitly. These calls
+  wait up to 5 s before returning `tools_ready:true|false`; a false result includes a retry hint.
 - **Static descriptions.** Nothing in a description depends on scene state (no re-registration churn). Live
   context is returned by `get_scene_summary`; every mutating result carries `room`.
 - **Feature detection:** `typeof document.modelContext?.registerTool === "function"`. Registration happens

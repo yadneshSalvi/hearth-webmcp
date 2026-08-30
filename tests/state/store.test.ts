@@ -170,6 +170,30 @@ describe("scene and presentation actions", () => {
     expect(hearthStore.getState().activity[0]?.summary).toBe("You applied the studio template furnished");
   });
 
+  it("keeps human settings while resetting template-owned view state", () => {
+    const roomIds = hearthStore.getState().scene.rooms.map(({ id }) => id);
+    hearthStore.getState().setMode("human", "build");
+    hearthStore.getState().setTimeOfDay("human", "evening");
+    hearthStore.getState().setAccessibility("human", true);
+    hearthStore.getState().setPalette("human", "nordic", roomIds);
+    hearthStore.getState().setView("human", { view: "plan", yaw: "ne", focusRoomId: "bed-1" });
+    hearthStore.getState().setBudget("human", 7_500);
+
+    hearthStore.getState().applyTemplate("human", "4br", false);
+
+    expect(hearthStore.getState().scene.meta).toMatchObject({
+      mode: "build",
+      timeOfDay: "evening",
+      accessibilityMode: true,
+      paletteId: "nordic",
+      view: "dollhouse",
+      yaw: "sw",
+      activeRoomId: "living",
+      budgetUsd: 3_000,
+      selection: {},
+    });
+  });
+
   it("keeps cart lines but removes item links when applying a template", () => {
     const item = hearthStore.getState().placeItem("human", { catalogId: "sofa-endre", roomId: "living", pos: { x: 200, y: 100 }, rotation: 0 });
     hearthStore.getState().setCart({

@@ -2,9 +2,11 @@ import * as z from "zod";
 import type { StoreApi } from "zustand";
 import type { ConflictKind, Scene } from "../engine/types";
 import type { ShopifyClient } from "../shopify/types";
+import { desiredToolGroups } from "../state/selectors";
 import type { ActionSource, HearthStore, ToolGroup } from "../state/types";
 import { beginToolBatch, endToolBatch } from "../state/tool-batch";
 import { normalizeToolInput } from "./params";
+import { waitForToolsReady } from "./readiness";
 import type { ConfirmResult } from "./confirm";
 
 export type ToolSource = "agent" | "assistant" | "test";
@@ -70,6 +72,7 @@ export interface ToolSpec<InputSchema extends z.ZodObject = z.ZodObject> {
   input: InputSchema;
   readOnly?: boolean;
   untrusted?: boolean;
+  waitForTools?: boolean;
   confirm?(input: ToolInput<InputSchema>, scene: Scene): string | null;
   cancelledDetail?(input: ToolInput<InputSchema>, scene: Scene): string;
   handler(input: ToolInput<InputSchema>, context: ToolContext): Promise<ToolResult> | ToolResult;
@@ -86,6 +89,7 @@ interface ToolRuntime {
   context(source: ToolSource, signal?: AbortSignal): ToolContext;
   before(): void;
   after(): void;
+  settled?(): Promise<void>;
   now(): number;
 }
 
@@ -307,7 +311,14 @@ export async function executeDefinedTool(
   }
   receiptInput = parsed.data;
   const context = runtime.context(source, signal);
+  const groupsBefore = desiredToolGroups(context.store.getState()).join("|");
   runtime.before();
+  let executing = true;
+  const finishExecution = (): void => {
+    if (!executing) return;
+    executing = false;
+    runtime.after();
+  };
   try {
     let confirmation: string | null;
     try {
@@ -357,18 +368,28 @@ export async function executeDefinedTool(
       if (!resultRecord || typeof resultRecord.ok !== "boolean") {
         result = { ok: false, error: "unavailable", detail: "The tool returned an invalid result." };
       }
-      try {
-        result = fitBudget(result, tool.spec);
-      } catch (error) {
-        result = { ok: false, error: "unavailable", detail: error instanceof Error ? error.message.slice(0, 500) : "The tool returned an invalid result." };
-      }
-      safeRecordReceipt(tool, runtime, source, receiptInput, result);
-      return result;
     } finally {
       endToolBatch();
     }
+    const groupsChanged = groupsBefore !== desiredToolGroups(context.store.getState()).join("|");
+    if (result.ok && (tool.spec.waitForTools || groupsChanged)) {
+      finishExecution();
+      const toolsReady = await waitForToolsReady(runtime.settled?.bind(runtime));
+      result = {
+        ...result,
+        tools_ready: toolsReady,
+        ...(!toolsReady ? { hint: "Tool registration is still finishing; refresh the tool list before calling a gated tool." } : {}),
+      };
+    }
+    try {
+      result = fitBudget(result, tool.spec);
+    } catch (error) {
+      result = { ok: false, error: "unavailable", detail: error instanceof Error ? error.message.slice(0, 500) : "The tool returned an invalid result." };
+    }
+    safeRecordReceipt(tool, runtime, source, receiptInput, result);
+    return result;
   } finally {
-    runtime.after();
+    finishExecution();
   }
 }
 
