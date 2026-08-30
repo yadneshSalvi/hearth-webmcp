@@ -212,7 +212,7 @@ test.describe("layouts", () => {
     await expect(page.locator('[aria-current="true"]').first()).toContainText(templateLabel("2br"));
 
     // Furnished off means empty rooms, and the apply lands on the living room and the whole home.
-    await page.getByRole("button", { name: "Furnished" }).click();
+    await page.getByRole("button", { name: "Furnished", exact: true }).click();
     await expect(page.getByRole("dialog")).toContainText("Arrives as empty rooms");
     await page.getByRole("button", { name: `Apply the ${templateLabel("5br")} layout` }).click();
     await page.getByRole("button", { name: /replace it/i }).click();
@@ -280,6 +280,42 @@ test.describe("layouts", () => {
     expect(after.zoom).toBeCloseTo(orbited.zoom, 2);
   });
 
+  test("all seven cards are on screen without scrolling, and say which home they build", async ({ page }) => {
+    for (const size of [{ width: 1440, height: 900 }, { width: 1280, height: 800 }]) {
+      await page.setViewportSize(size);
+      await openStudio(page, { furnished: true, asShipped: true });
+      await page.getByRole("button", { name: "Layouts", exact: true }).click();
+      await page.waitForTimeout(400);
+
+      const report = await page.evaluate(() => {
+        const dialog = document.querySelector('[role="dialog"]') as HTMLElement;
+        const body = dialog.querySelector(".panel-scroll") as HTMLElement;
+        const cards = [...dialog.querySelectorAll('[aria-label^="Apply the"]')] as HTMLElement[];
+        const bounds = dialog.getBoundingClientRect();
+        return {
+          cards: cards.length,
+          columns: new Set(cards.map((card) => Math.round(card.getBoundingClientRect().x))).size,
+          scrolls: body.scrollHeight > body.clientHeight + 1,
+          clipped: cards
+            .filter((card) => card.getBoundingClientRect().bottom > bounds.bottom + 1)
+            .map((card) => card.getAttribute("aria-label")),
+          firstSpec: cards[0]?.innerText.replace(/\n/g, " · ") ?? "",
+        };
+      });
+      expect(report.cards, `${size.width}: every layout`).toBe(7);
+      expect(report.columns, `${size.width}: three columns`).toBe(3);
+      expect(report.scrolls, `${size.width}: nothing to scroll to`).toBe(false);
+      expect(report.clipped).toEqual([]);
+      // The Furnished choice applies to every card, so every card says which home it would build.
+      expect(report.firstSpec).toContain("furnished");
+
+      await page.getByRole("button", { name: "Furnished", exact: true }).click();
+      await expect(page.locator('[aria-label^="Apply the"]').first()).toContainText("empty");
+      await page.keyboard.press("Escape");
+    }
+    await page.setViewportSize({ width: 1440, height: 900 });
+  });
+
   test("the inspector names the whole home while the camera frames it", async ({ page }) => {
     await openStudio(page, { template: "5br", furnished: true });
     expect((await camera(page)).focus).toBe("home");
@@ -299,6 +335,28 @@ test.describe("layouts", () => {
     await page.getByRole("radio", { name: "Plan", exact: true }).click();
     await settle(page);
     expect(await roomsOffScreen(page)).toEqual([]);
+
+    // Each label sizes itself to the room it names, never below 9 px, and the area never breaks.
+    const labels = await page.evaluate(() => {
+      const names = new Set((window as unknown as HearthWin).__hearth.state().scene.rooms.map((room) => room.name));
+      return [...document.querySelectorAll("span.label-caps")]
+        .filter((node) => names.has((node.textContent ?? "").trim()))
+        .map((node) => {
+          const area = node.parentElement?.querySelector(".numerals") as HTMLElement | null;
+          const areaStyle = area ? getComputedStyle(area) : undefined;
+          return {
+            text: (node.textContent ?? "").trim(),
+            px: Number.parseFloat(getComputedStyle(node).fontSize),
+            areaLines: area && areaStyle
+              ? Math.round(area.getBoundingClientRect().height / Number.parseFloat(areaStyle.lineHeight || "18"))
+              : 0,
+          };
+        });
+    });
+    expect(labels.length, "one label per room").toBe(11);
+    expect(labels.filter((label) => label.px < 9), "never below the legible floor").toEqual([]);
+    expect(labels.filter((label) => label.px > 11), "never above the resting size").toEqual([]);
+    expect(labels.filter((label) => label.areaLines > 1), "the area never wraps").toEqual([]);
 
     const overlaps = await page.evaluate(() => {
       const labels = [...document.querySelectorAll("span.label-caps")].filter((node) => (node.textContent ?? "").trim().length > 0);

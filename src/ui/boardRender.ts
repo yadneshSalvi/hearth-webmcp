@@ -7,13 +7,15 @@
  */
 import { ink, palette, radius } from "../tokens";
 import {
-  BOARD_HEIGHT, BOARD_WIDTH, boardLayout, fitImage, listRowHeight, truncateToWidth,
+  BOARD_HEIGHT, BOARD_WIDTH, boardLayout, fitCropped, fitImage, listRowHeight, truncateToWidth,
 } from "./boardCompose";
-import type { BoardModel, BoardRect } from "./boardCompose";
+import type { BoardCrop, BoardModel, BoardRect } from "./boardCompose";
 
 export interface BoardImages {
   dollhouse: CanvasImageSource & { width: number; height: number };
   plan: CanvasImageSource & { width: number; height: number };
+  /** Where the room actually sits in the plan capture, 0–1; without it the whole frame is used. */
+  planCrop?: BoardCrop;
 }
 
 interface Fonts {
@@ -92,9 +94,15 @@ function stroke(ctx: CanvasRenderingContext2D, box: BoardRect): void {
   ctx.restore();
 }
 
-function drawImageIn(ctx: CanvasRenderingContext2D, image: BoardImages["dollhouse"], box: BoardRect): void {
+function drawImageIn(
+  ctx: CanvasRenderingContext2D,
+  image: BoardImages["dollhouse"],
+  box: BoardRect,
+  crop?: BoardCrop,
+): void {
   frame(ctx, box);
-  const fit = fitImage({ w: image.width, h: image.height }, box);
+  const source = { w: image.width, h: image.height };
+  const fit = crop ? fitCropped(source, crop, box) : fitImage(source, box);
   ctx.save();
   roundRect(ctx, box);
   ctx.clip();
@@ -252,7 +260,7 @@ export function paintBoard(ctx: CanvasRenderingContext2D, model: BoardModel, ima
   ctx.textBaseline = "alphabetic";
   drawHead(ctx, model, fonts);
   drawImageIn(ctx, images.dollhouse, layout.dollhouse);
-  drawImageIn(ctx, images.plan, layout.plan);
+  drawImageIn(ctx, images.plan, layout.plan, images.planCrop);
   drawPalette(ctx, model, fonts);
   drawList(ctx, model, fonts);
   drawFoot(ctx, model, fonts);

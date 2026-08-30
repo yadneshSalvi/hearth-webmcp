@@ -18,7 +18,9 @@ import { rotateBy } from "../engine/anchors";
 import { createCatalog } from "../engine/catalog";
 import type { CatalogItem, Room, Rotation, Vec2 } from "../engine/types";
 import { hearthStore, useHearthStore } from "../state/store";
-import { beginCameraDrag, cameraGestureActive, cameraGestureMoved, useCameraGestures } from "./cameraGestures";
+import {
+  beginCameraDrag, cameraGestureActive, cameraGestureMoved, panModifierHeld, useCameraGestures,
+} from "./cameraGestures";
 import { setPointerHover } from "./hover";
 import { useReducedMotion } from "./idle";
 import { DebugHandle, deleteItem, duplicateItem } from "./interactionCommands";
@@ -209,7 +211,7 @@ export function Interaction() {
     setDraggingItemId(undefined);
     hearthStore.getState().setDragging(undefined);
     setGesture(undefined);
-    gl.domElement.style.cursor = "";
+    gl.domElement.style.cursor = "grab";
   }, [gl]);
 
   useEffect(() => {
@@ -244,9 +246,10 @@ export function Interaction() {
       altRef.current = event.altKey;
       if (event.button !== 0 || event.ctrlKey) return;
       const state = hearthStore.getState();
-      // Shift is the orbit gesture, wherever it lands: a person holding it is turning the house,
-      // not moving the sofa they happen to have started on.
-      const found = event.shiftKey ? undefined : itemAt(event.clientX, event.clientY);
+      // Shift is the orbit gesture and Space is the hand tool, wherever they land: a person holding
+      // either is moving the *view*, not the sofa they happen to have started on.
+      const camera = event.shiftKey || panModifierHeld();
+      const found = camera ? undefined : itemAt(event.clientX, event.clientY);
       const room = found ? state.scene.rooms.find((entry) => entry.id === found.roomId) : undefined;
       const product = found ? catalog.byId(found.catalogId) : undefined;
       let grab: Vec2 = { x: 0, y: 0 };
@@ -261,7 +264,8 @@ export function Interaction() {
       // Shift held (src/scene/cameraGestures.ts). The click that activates the room is still
       // recorded below; a camera gesture only takes the press over once it actually moves.
       const toCamera = !found && !event.altKey;
-      if (toCamera) beginCameraDrag(event, event.shiftKey ? "orbit" : "pan");
+      // Space says "pan" even with Shift down: the hand tool is the more specific intent.
+      if (toCamera) beginCameraDrag(event, event.shiftKey && !panModifierHeld() ? "orbit" : "pan");
       pressRef.current = {
         pointerId: event.pointerId,
         itemId: found?.id,
@@ -295,7 +299,9 @@ export function Interaction() {
       setPointerHover(found?.id);
       const point = floorAt(event.clientX, event.clientY);
       setHoveredRoomId(point ? roomAtWorldCm(hearthStore.getState().scene.rooms, point)?.id : undefined);
-      element.style.cursor = found ? "grab" : "";
+      // `grab` over the whole canvas, not only over furniture: the floor and the void are draggable
+      // too (they pan the view), and a default arrow over them said the opposite.
+      element.style.cursor = "grab";
     };
 
     const onUp = (event: PointerEvent) => {
@@ -303,7 +309,7 @@ export function Interaction() {
       if (!press || press.pointerId !== event.pointerId) return;
       pressRef.current = undefined;
       if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId);
-      element.style.cursor = "";
+      element.style.cursor = "grab";
       if (press.dragging) {
         release();
         return;

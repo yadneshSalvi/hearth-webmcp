@@ -12,16 +12,17 @@ import { Html, Line } from "@react-three/drei";
 import { animated, useSpring } from "@react-spring/three";
 import { useFrame } from "@react-three/fiber";
 import { DoubleSide, ShapeGeometry } from "three";
-import { roomAreaM2 } from "../engine/geometry";
+import { polyBBox, roomAreaM2 } from "../engine/geometry";
 import { swingZone } from "../engine/doors";
 import type { Opening, Room, Vec2 } from "../engine/types";
 import { mix, palette, wallColorHex } from "../tokens";
 import { DOLLHOUSE_PITCH, DOOR_H, DOOR_LEAF_T, M, PLAN_PITCH, WALL_H, easeOut, wallOpacity, yawAzimuth } from "./math";
-import { useOrbitQuantized } from "./cameraState";
+import { cameraMetresPerPixel, useOrbitQuantized } from "./cameraState";
 import { WALL_HEIGHT_M, WALL_THICKNESS_M, buildRoomWalls, disposeWalls, polygonShape, primaryDoorIds } from "./walls";
 import type { Group, Mesh } from "three";
 import type { WallBuild } from "./walls";
 import { useHoveredRoomId } from "./interactionDrag";
+import { LABEL_PX, fitRoomLabel } from "./roomLabel";
 import { useFloorTexture } from "./textures";
 import { useFramedBox } from "./framing";
 import { useIntroView } from "./intro";
@@ -305,13 +306,37 @@ function SwingArcs({ room, openings }: { room: Room; openings: Opening[] }) {
   );
 }
 
-/** Plan-view room label: small-caps name plus the Fraunces area in m², lifting on pointer hover. */
+/**
+ * Plan-view room label: small-caps name plus the Fraunces area in m², lifting on pointer hover.
+ *
+ * The name sizes itself to the room it names (src/scene/roomLabel.ts), measured every frame against
+ * the live camera scale rather than through a re-render, so a 1.2 m hall gets a smaller label
+ * instead of a broken one.
+ */
 function RoomLabel({ room }: { room: Room }) {
   const hovered = useHoveredRoomId() === room.id;
   const centre = useMemo(() => {
     const sum = room.poly.reduce((acc, point) => ({ x: acc.x + point.x, y: acc.y + point.y }), { x: 0, y: 0 });
     return { x: sum.x / room.poly.length, y: sum.y / room.poly.length };
   }, [room.poly]);
+  // The room's shorter side: the label is horizontal, but a long thin room read the other way round
+  // is exactly where a full-size label spills over its neighbour.
+  const shorterM = useMemo(() => {
+    const box = polyBBox(room.poly);
+    return Math.min(box.maxX - box.minX, box.maxY - box.minY) * M;
+  }, [room.poly]);
+  const nameRef = useRef<HTMLSpanElement>(null);
+  useFrame(() => {
+    const node = nameRef.current;
+    if (!node) return;
+    const fitted = fitRoomLabel(room.name, shorterM / cameraMetresPerPixel());
+    const size = `${fitted.fontPx}px`;
+    if (node.style.fontSize !== size) node.style.fontSize = size;
+    const wrap = fitted.wraps ? "normal" : "nowrap";
+    if (node.style.whiteSpace !== wrap) node.style.whiteSpace = wrap;
+    const width = fitted.wraps ? `${Math.round(fitted.maxWidthPx)}px` : "";
+    if (node.style.maxWidth !== width) node.style.maxWidth = width;
+  });
   return (
     /* `style` as well as `pointerEvents`: drei only forwards the prop to its inner div in
        `transform` mode, so without this the wrapper keeps `pointer-events: auto` and a label
@@ -324,13 +349,19 @@ function RoomLabel({ room }: { room: Room }) {
       zIndexRange={[20, 0]}
     >
       <div
-        className="pointer-events-none flex select-none flex-col items-center gap-1 transition-transform duration-[180ms] ease-out-soft"
+        // `w-max`, so a label near the canvas edge is never squeezed into one word per line by an
+        // absolutely positioned box's shrink-to-fit.
+        className="pointer-events-none flex w-max select-none flex-col items-center gap-1 text-center transition-transform duration-[180ms] ease-out-soft"
         style={{ transform: hovered ? "translateY(-7px)" : "none" }}
       >
-        <span className="label-caps whitespace-nowrap" style={hovered ? { color: "var(--color-ink)" } : undefined}>
+        <span
+          ref={nameRef}
+          className="label-caps whitespace-nowrap"
+          style={{ fontSize: `${LABEL_PX}px`, ...(hovered ? { color: "var(--color-ink)" } : {}) }}
+        >
           {room.name}
         </span>
-        <span className="numerals text-[13px] text-ink">{roomAreaM2(room).toFixed(1)} m²</span>
+        <span className="numerals whitespace-nowrap text-[13px] text-ink">{roomAreaM2(room).toFixed(1)} m²</span>
       </div>
     </Html>
   );

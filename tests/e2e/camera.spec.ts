@@ -538,6 +538,92 @@ test.describe("camera", () => {
     expect((await camera(page)).offHome).toBe(false);
   });
 
+  test("Space and drag pans from anywhere, furniture included", async ({ page }) => {
+    // The hand tool: a furnished room leaves almost no bare floor to start a pan on, so holding
+    // Space makes every pixel of the canvas draggable — and the sofa under the pointer stays put.
+    await openStudio(page, true);
+    expect(await page.evaluate(() => (document.querySelector("canvas") as HTMLCanvasElement).style.cursor)).toBe("grab");
+
+    const sofa = await itemPoint(page, "sofa-1");
+    const at = () => page.evaluate(() => (window as unknown as HearthWin).__hearth.item("sofa-1")?.pos);
+    const posBefore = await at();
+    const before = await camera(page);
+
+    await page.keyboard.down("Space");
+    await page.waitForTimeout(120);
+    await page.mouse.move(sofa.x, sofa.y);
+    await page.mouse.down();
+    for (let step = 1; step <= 8; step += 1) {
+      // Space is let go halfway: a gesture finishes as the one it started as.
+      if (step === 4) await page.keyboard.up("Space");
+      await page.mouse.move(sofa.x + step * 14, sofa.y - step * 6);
+      await page.waitForTimeout(24);
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+
+    const after = await camera(page);
+    expect(await at(), "the hand tool never moves furniture").toEqual(posBefore);
+    expect(await page.evaluate(() => (window as unknown as HearthWin).__hearth.selection().itemId)).toBeFalsy();
+    expect(Math.hypot(after.pan.x - before.pan.x, after.pan.y - before.pan.y)).toBeGreaterThan(0.5);
+    expect(after.azimuthDeg, "Space pans, it does not orbit").toBeCloseTo(before.azimuthDeg, 3);
+  });
+
+  test("Space on a focused control still activates it", async ({ page }) => {
+    // The hand tool must never swallow the key a keyboard uses to press a button.
+    await openStudio(page);
+    await page.getByRole("button", { name: "Layouts", exact: true }).focus();
+    await page.keyboard.press("Space");
+    await expect(page.getByRole("dialog")).toContainText("Start from a floor plan");
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("the first pan of a browser explains the camera, once", async ({ page }) => {
+    // Deliberately *not* `?e2e=1`: the hint suppresses itself for the suite, so the only honest way
+    // to check that it appears at all is a plain visit — which is how it went unseen for a round.
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem("hearth.onboarding.v1", "dismissed");
+        window.localStorage.removeItem("hearth.camera.hint");
+      } catch {
+        // A blocked localStorage only means the welcome card shows; nothing here depends on it.
+      }
+    });
+    await page.goto("/");
+    await expect(page.locator('[data-studio="canvas"]')).toBeVisible({ timeout: 60_000 });
+    await page.waitForTimeout(6000);
+
+    const notifications = page.getByLabel("Studio notifications");
+    await expect(notifications).toHaveText("");
+
+    const spot = await page.evaluate(() => {
+      const rect = document.querySelector("canvas")!.getBoundingClientRect();
+      return { x: Math.round(rect.width * 0.5), y: Math.round(rect.height * 0.78) };
+    });
+    await page.mouse.move(spot.x, spot.y);
+    await page.mouse.down();
+    for (let step = 1; step <= 6; step += 1) {
+      await page.mouse.move(spot.x + step * 15, spot.y - step * 7);
+      await page.waitForTimeout(40);
+    }
+    await page.mouse.up();
+
+    await expect(notifications).toContainText("Hold Space and drag to pan from anywhere");
+    await expect(notifications).toContainText("Shift-drag to orbit");
+    // Once per browser: a second pan says nothing.
+    await page.waitForTimeout(6000);
+    await page.mouse.move(spot.x, spot.y);
+    await page.mouse.down();
+    for (let step = 1; step <= 6; step += 1) {
+      await page.mouse.move(spot.x - step * 15, spot.y + step * 7);
+      await page.waitForTimeout(40);
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(700);
+    await expect(notifications).toHaveText("");
+  });
+
   test("keeps the console clean through a pan, an orbit and a zoom", async ({ page }) => {
     const problems: string[] = [];
     page.on("console", (message) => {

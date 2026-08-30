@@ -1,59 +1,18 @@
 /**
- * Pure scene maths: cm→m frame conversion, camera fitting, wall fade, GLB normalisation and
- * stacking elevation. No three, no React — every export here is unit-tested without WebGL.
+ * Pure scene maths: room and item volumes, the wall cut-away, GLB normalisation onto a catalog
+ * footprint, and stacking elevation. No three, no React — every export here is unit-tested without
+ * WebGL.
+ *
+ * Two neighbours carry the rest and are re-exported from the bottom of this file, so "import the
+ * scene maths from math.ts" stays true: `src/scene/space.ts` is the frame of reference (cm→m, the
+ * architectural constants, the box and camera-axis maths) and `src/scene/cameraMath.ts` is the
+ * camera's own body of rules (the free orbit's angles and stops, the whole-home volume, the
+ * furniture cut-away).
  */
 import { footprint, polyBBox, polyInside } from "../engine/geometry";
-import type { CatalogItem, Furniture, Rotation, Room, Vec2, Yaw } from "../engine/types";
-
-export type Vec3 = [number, number, number];
-
-/** Centimetres → metres. The renderer converts exactly once (SCENE_SCHEMA.md). */
-export const M = 0.01;
-
-/** Architectural constants in centimetres (STYLE.md §2 dollhouse look). */
-export const WALL_H = 260;
-export const WALL_T = 12;
-export const BASEBOARD_H = 8;
-export const BASEBOARD_T = 2.2;
-export const DOOR_H = 205;
-export const DOOR_LEAF_T = 4;
-export const DOOR_OPEN_DEG = 70;
-export const ARCH_SPRING = 190;
-export const WINDOW_TOP = 210;
-export const SILL_T = 3;
-
-/** Isometric dollhouse pitch: atan(1/√2) ≈ 35.264° (STYLE.md §2). */
-export const DOLLHOUSE_PITCH = Math.atan(1 / Math.SQRT2);
-export const PLAN_PITCH = Math.PI / 2;
-
-/** Clamps a value into an inclusive range. */
-export function clamp(value: number, min: number, max: number): number {
-  return value < min ? min : value > max ? max : value;
-}
-
-/** Hermite smoothstep between two edges; returns 0 below `a` and 1 above `b`. */
-export function smoothstep(a: number, b: number, x: number): number {
-  if (b === a) return x < a ? 0 : 1;
-  const t = clamp((x - a) / (b - a), 0, 1);
-  return t * t * (3 - 2 * t);
-}
-
-/**
- * Camera azimuth in radians for a dollhouse yaw. The camera sits on that compass corner, so
- * `sw` (−45°) looks from the south-west toward the north-east and the north wall runs up-right.
- */
-export function yawAzimuth(yaw: Yaw): number {
-  return (YAW_DEGREES[yaw] * Math.PI) / 180;
-}
-
-/** Returns the target angle rewritten within ±π of `from` so tweens take the short way round. */
-export function nearestAngle(from: number, to: number): number {
-  const twoPi = Math.PI * 2;
-  let candidate = to;
-  while (candidate - from > Math.PI) candidate -= twoPi;
-  while (from - candidate > Math.PI) candidate += twoPi;
-  return candidate;
-}
+import type { CatalogItem, Furniture, Rotation, Room, Vec2 } from "../engine/types";
+import { M, WALL_T, homeBox, smoothstep } from "./space";
+import type { Box3Like, Vec3 } from "./space";
 
 /**
  * Mesh Y rotation for a scene rotation. 0 = front faces south (+z); the model's front is −z,
@@ -71,69 +30,6 @@ export function directionRadians(dx: number, dy: number): number {
 /** Room-local centimetres → world metres on the floor plane. */
 export function toWorld(room: Room, point: Vec2): Vec3 {
   return [(room.origin.x + point.x) * M, 0, (room.origin.y + point.y) * M];
-}
-
-/** Camera right axis for an azimuth/pitch pair (Euler YXZ: y = azimuth, x = −pitch). */
-export function cameraRight(azimuth: number): Vec3 {
-  return [Math.cos(azimuth), 0, -Math.sin(azimuth)];
-}
-
-/** Camera up axis for an azimuth/pitch pair. At pitch 90° it points north, giving plan view. */
-export function cameraUp(azimuth: number, pitch: number): Vec3 {
-  return [-Math.sin(pitch) * Math.sin(azimuth), Math.cos(pitch), -Math.sin(pitch) * Math.cos(azimuth)];
-}
-
-/** Unit vector from the framed centre toward the camera. */
-export function cameraOffset(azimuth: number, pitch: number): Vec3 {
-  return [Math.cos(pitch) * Math.sin(azimuth), Math.sin(pitch), Math.cos(pitch) * Math.cos(azimuth)];
-}
-
-/** Camera position at `distance` metres from `centre` along the view axis. */
-export function cameraPosition(centre: Vec3, azimuth: number, pitch: number, distance: number): Vec3 {
-  const offset = cameraOffset(azimuth, pitch);
-  return [centre[0] + offset[0] * distance, centre[1] + offset[1] * distance, centre[2] + offset[2] * distance];
-}
-
-export interface Box3Like {
-  min: Vec3;
-  max: Vec3;
-}
-
-/** The eight corners of an axis-aligned box, in metres. */
-export function boxCorners(box: Box3Like): Vec3[] {
-  const corners: Vec3[] = [];
-  for (const x of [box.min[0], box.max[0]]) {
-    for (const y of [box.min[1], box.max[1]]) {
-      for (const z of [box.min[2], box.max[2]]) corners.push([x, y, z]);
-    }
-  }
-  return corners;
-}
-
-/** Box centre in metres. */
-export function boxCentre(box: Box3Like): Vec3 {
-  return [(box.min[0] + box.max[0]) / 2, (box.min[1] + box.max[1]) / 2, (box.min[2] + box.max[2]) / 2];
-}
-
-/**
- * Orthographic half-height that frames a box for the given azimuth/pitch and viewport aspect,
- * with fractional padding (0.12 = 12 % per STYLE.md framing).
- */
-export function fitHalfHeight(box: Box3Like, azimuth: number, pitch: number, aspect: number, padding: number): number {
-  const centre = boxCentre(box);
-  const right = cameraRight(azimuth);
-  const up = cameraUp(azimuth, pitch);
-  let halfWidth = 0;
-  let halfHeight = 0;
-  for (const corner of boxCorners(box)) {
-    const dx = corner[0] - centre[0];
-    const dy = corner[1] - centre[1];
-    const dz = corner[2] - centre[2];
-    halfWidth = Math.max(halfWidth, Math.abs(dx * right[0] + dy * right[1] + dz * right[2]));
-    halfHeight = Math.max(halfHeight, Math.abs(dx * up[0] + dy * up[1] + dz * up[2]));
-  }
-  const safeAspect = aspect > 0 ? aspect : 1;
-  return Math.max(halfHeight, halfWidth / safeAspect) * (1 + padding);
 }
 
 /** Cubic-bezier easing generator; `motion.easeOut` is cubicBezier(0.22, 1, 0.36, 1). */
@@ -232,37 +128,6 @@ export function wallOpacity(
 }
 
 /**
- * Per-item opacity for furniture standing between the camera and the framed room.
- *
- * The walls in front of the framed room are cut away (`wallOpacity`), which is what exposes the
- * neighbour's wardrobe standing behind them: at a low pitch or a face-on angle it plants itself in
- * the middle of the room the human is looking at. So the same test, on the same edges, for the body
- * as well as the wall — measured from the corner of the item's footprint nearest the camera.
- *
- * `centreCm` is the item's centre in world centimetres, `extentM` the half-extents of its
- * axis-aligned footprint in metres. Callers exclude the framed room's own items, ghosts and the
- * selection (src/scene/Furniture.tsx): only a *neighbour* can be in the way.
- */
-export function furnitureOpacity(
-  centreCm: Vec2,
-  extentM: { x: number; z: number },
-  focusCentre: Vec2,
-  azimuth: number,
-  pitch: number,
-  opts: { cutInFront?: boolean } = {},
-): number {
-  if (!(opts.cutInFront ?? true)) return 1;
-  // Above 80° the shot is nearly a plan and nothing occludes anything, exactly as for walls.
-  if (pitch > (Math.PI / 180) * 80) return 1;
-  const toCamera = { x: Math.sin(azimuth), y: Math.cos(azimuth) };
-  const dx = (centreCm.x - focusCentre.x) * M;
-  const dy = (centreCm.y - focusCentre.y) * M;
-  const frontness = dx * toCamera.x + dy * toCamera.y
-    + Math.abs(toCamera.x) * extentM.x + Math.abs(toCamera.y) * extentM.z;
-  return 1 - smoothstep(0.35, 1.3, frontness);
-}
-
-/**
  * Height of the selection halo above the floor, in metres. Above every rug the catalog ships — the
  * tallest, `rug-mark`, tops out at 4.13 cm — so selecting a chair standing on a rug draws its ring
  * on the rug rather than inside it (`tests/scene/assets.test.ts` checks this against the manifest).
@@ -289,23 +154,6 @@ export function stackElevationCm(item: Furniture, product: CatalogItem, scene: {
   return best;
 }
 
-/** World-space bounding box in metres for a set of rooms, from floor to wall top. */
-export function homeBox(rooms: Room[]): Box3Like {
-  if (rooms.length === 0) return { min: [0, 0, 0], max: [1, WALL_H * M, 1] };
-  let minX = Infinity;
-  let minZ = Infinity;
-  let maxX = -Infinity;
-  let maxZ = -Infinity;
-  for (const room of rooms) {
-    const box = polyBBox(room.poly);
-    minX = Math.min(minX, room.origin.x + box.minX);
-    maxX = Math.max(maxX, room.origin.x + box.maxX);
-    minZ = Math.min(minZ, room.origin.y + box.minY);
-    maxZ = Math.max(maxZ, room.origin.y + box.maxY);
-  }
-  return { min: [minX * M, 0, minZ * M], max: [maxX * M, WALL_H * M, maxZ * M] };
-}
-
 /**
  * World-space bounding box in metres for one room, from floor to wall top and inflated by the wall
  * thickness. A room's walls extrude *outward* from its polygon, so framing the bare polygon clips
@@ -320,26 +168,6 @@ export function roomBox(room: Room): Box3Like {
   };
 }
 
-/**
- * World-space bounding box in metres for the whole home, inflated by the wall thickness exactly as
- * `roomBox` inflates one room: walls extrude *outward* from the room polygons, so framing the bare
- * polygons clips the very walls that frame the shot.
- */
-export function wholeHomeBox(rooms: Room[]): Box3Like {
-  const box = homeBox(rooms);
-  const pad = WALL_T * M;
-  return {
-    min: [box.min[0] - pad, box.min[1], box.min[2] - pad],
-    max: [box.max[0] + pad, box.max[1], box.max[2] + pad],
-  };
-}
-
-/** Centre of the home's footprint in world centimetres — what the wall cut-away measures against. */
-export function homeCentreCm(rooms: Room[]): Vec2 {
-  const box = homeBox(rooms);
-  return { x: (box.min[0] + box.max[0]) / 2 / M, y: (box.min[2] + box.max[2]) / 2 / M };
-}
-
 /** World-space bounding box in metres around a single placed item, padded by `pad` metres. */
 export function itemBox(room: Room, item: Furniture, product: CatalogItem, pad = 0.6): Box3Like {
   const box = polyBBox(footprint(item, product));
@@ -349,98 +177,54 @@ export function itemBox(room: Room, item: Furniture, product: CatalogItem, pad =
   };
 }
 
-/* ─────────────────────────── free orbit (src/scene/cameraState.ts) ─────────────────────────── */
-
-/** Camera azimuth in degrees for each dollhouse yaw corner — the odd multiples of 45°. */
-export const YAW_DEGREES: Record<Yaw, number> = { sw: -45, se: 45, ne: 135, nw: -135 };
-
-/** The isometric dollhouse pitch in degrees: the base every manual pitch offset is measured from. */
-export const DOLLHOUSE_PITCH_DEG = (DOLLHOUSE_PITCH * 180) / Math.PI;
-
 /**
- * Free-orbit pitch limits (STYLE.md §2). Below 15° the camera starts to look up at the floor from
- * outside the house; above 75° the isometric shot flattens into a fake plan with none of plan
- * view's clarity. The dollhouse pitch sits inside the range, so 0 is always a legal offset.
+ * The frame of reference lives in `src/scene/space.ts` and the camera's own maths in
+ * `src/scene/cameraMath.ts`; both are re-exported here so the renderer, the rig and the tests keep
+ * importing "the scene maths" from one place.
  */
-export const PITCH_MIN_DEG = 15;
-export const PITCH_MAX_DEG = 75;
-
-/** The camera's eight stops: the four dollhouse corners and the four face-on elevations. */
-export const VIEW_STEP_DEG = 45;
-
-/** Rewrites an angle in degrees into (−180, 180], so an unbounded orbit never drifts. */
-export function normalizeDeg(deg: number): number {
-  if (!Number.isFinite(deg)) return 0;
-  const wrapped = ((((deg + 180) % 360) + 360) % 360) - 180;
-  return wrapped === -180 ? 180 : wrapped;
-}
-
-/** Clamps an absolute pitch in degrees into the free-orbit range. */
-export function clampPitchDeg(deg: number): number {
-  return clamp(deg, PITCH_MIN_DEG, PITCH_MAX_DEG);
-}
-
-/** Rounds an angle onto a grid of `step` degrees. The wall cut-away re-renders on this grid only. */
-export function quantizeDeg(deg: number, step: number): number {
-  if (!(step > 0)) return deg;
-  // −0 would be a different snapshot value from 0 for a strict-equality memo, so normalise it away.
-  return Math.round(deg / step) * step + 0;
-}
-
-/** The yaw corner whose azimuth is exactly `deg`, or undefined for a face-on elevation. */
-export function yawAtDegrees(deg: number): Yaw | undefined {
-  const wanted = normalizeDeg(deg);
-  for (const yaw of Object.keys(YAW_DEGREES) as Yaw[]) {
-    if (Math.abs(normalizeDeg(YAW_DEGREES[yaw] - wanted)) < 1e-6) return yaw;
-  }
-  return undefined;
-}
-
-/** A camera stop, split into the corner the scene stores and the offset the camera store holds. */
-export interface ViewStep {
-  yaw: Yaw;
-  offsetDeg: number;
-}
-
-/**
- * The next 45° stop past `yaw + offsetDeg`, decomposed back into a scene yaw and a camera offset.
- *
- * A corner stop is stored as the corner with no offset, so `[` and `]` keep writing the undoable,
- * agent-visible yaw they always did. A face-on elevation sits 45° from two corners: the one the
- * camera is already on wins (no second store write, no extra undo step), otherwise the corner
- * behind the travel, so the sweep stays continuous.
- */
-export function stepAzimuth(yaw: Yaw, offsetDeg: number, direction: number): ViewStep {
-  const way = direction >= 0 ? 1 : -1;
-  const current = normalizeDeg(YAW_DEGREES[yaw] + offsetDeg);
-  const notch = current / VIEW_STEP_DEG;
-  // Strictly past the current angle, so a press from a stop always moves exactly one notch.
-  const index = way > 0 ? Math.floor(notch + 1e-6) + 1 : Math.ceil(notch - 1e-6) - 1;
-  const target = normalizeDeg(index * VIEW_STEP_DEG);
-  const corner = yawAtDegrees(target);
-  if (corner) return { yaw: corner, offsetDeg: 0 };
-  const held = normalizeDeg(target - YAW_DEGREES[yaw]);
-  if (Math.abs(Math.abs(held) - VIEW_STEP_DEG) < 1e-6) return { yaw, offsetDeg: held };
-  const behind = yawAtDegrees(target - VIEW_STEP_DEG * way);
-  return behind ? { yaw: behind, offsetDeg: VIEW_STEP_DEG * way } : { yaw, offsetDeg: held };
-}
-
-/** The eight 45° stops as azimuths in radians. */
-export function viewStopAzimuths(): number[] {
-  const stops: number[] = [];
-  for (let index = -3; index <= 4; index += 1) stops.push((index * VIEW_STEP_DEG * Math.PI) / 180);
-  return stops;
-}
-
-/**
- * The largest framed half-height over every 45° stop at the orbit's pitch extremes — what a shot
- * has to be fitted against if the free orbit must never clip the framed room.
- */
-export function fitHalfHeightWorst(box: Box3Like, aspect: number, padding: number): number {
-  const pitches = [PITCH_MIN_DEG, DOLLHOUSE_PITCH_DEG, PITCH_MAX_DEG].map((deg) => (deg * Math.PI) / 180);
-  let worst = 0;
-  for (const azimuth of viewStopAzimuths()) {
-    for (const pitch of pitches) worst = Math.max(worst, fitHalfHeight(box, azimuth, pitch, aspect, padding));
-  }
-  return worst;
-}
+export {
+  ARCH_SPRING,
+  BASEBOARD_H,
+  BASEBOARD_T,
+  DOLLHOUSE_PITCH,
+  DOOR_H,
+  DOOR_LEAF_T,
+  DOOR_OPEN_DEG,
+  M,
+  PLAN_PITCH,
+  SILL_T,
+  WALL_H,
+  WALL_T,
+  WINDOW_TOP,
+  boxCentre,
+  boxCorners,
+  cameraOffset,
+  cameraPosition,
+  cameraRight,
+  cameraUp,
+  clamp,
+  fitHalfHeight,
+  homeBox,
+  nearestAngle,
+  smoothstep,
+} from "./space";
+export type { Box3Like, Vec3 } from "./space";
+export {
+  DOLLHOUSE_PITCH_DEG,
+  PITCH_MAX_DEG,
+  PITCH_MIN_DEG,
+  VIEW_STEP_DEG,
+  YAW_DEGREES,
+  clampPitchDeg,
+  fitHalfHeightWorst,
+  furnitureOpacity,
+  homeCentreCm,
+  normalizeDeg,
+  quantizeDeg,
+  stepAzimuth,
+  viewStopAzimuths,
+  wholeHomeBox,
+  yawAtDegrees,
+  yawAzimuth,
+} from "./cameraMath";
+export type { ViewStep } from "./cameraMath";

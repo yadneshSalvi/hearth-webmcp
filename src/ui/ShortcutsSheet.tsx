@@ -29,6 +29,7 @@ const KEYS: Row[] = [
 
 const POINTER: Row[] = [
   { keys: ["Drag"], label: "Pan — drag the floor or the background" },
+  { keys: ["Space", "Drag"], label: "Pan from anywhere, furniture included" },
   { keys: ["Right-drag"], label: "Orbit the view freely" },
   { keys: ["⇧", "Drag"], label: "Orbit with the left button" },
   { keys: ["Scroll"], label: "Zoom in and out" },
@@ -62,9 +63,11 @@ export function ShortcutsSheet() {
       onClose={close}
       title="Keyboard & pointer"
       subtitle="Every key and gesture the studio answers."
-      width={420}
+      width={620}
     >
-      <div className="flex flex-col gap-4">
+      {/* Two columns from the small breakpoint up: eighteen rows in one column outgrew the 84 vh the
+          sheet is allowed, and a map you have to scroll is not a map. One column on a phone. */}
+      <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
         <section className="flex flex-col gap-1">
           <h3 className="label-caps text-ink-faint">Keys</h3>
           <Rows rows={KEYS} />
