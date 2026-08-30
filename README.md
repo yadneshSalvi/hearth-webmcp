@@ -22,6 +22,7 @@ tools are available. Then ask:
 - "Set up the living room for movie nights, then show me the evening light."
 - "Save this as *Before*, rearrange for conversation, save as *After*, and compare them."
 - "Add everything in the living room to the cart and give me the checkout link."
+- "Give me a 4-bedroom home, show me the whole thing, then take me into the main bedroom from the north."
 
 **Chrome 152+ (no agent needed to see the tools):** enable `chrome://flags/#enable-webmcp-testing`, open the live URL, then
 *DevTools → Application → WebMCP* lists every tool and lets you run them by hand. The **Model Context Tool Inspector**
@@ -87,7 +88,8 @@ document.modelContext.registerTool(
 |---|---|
 | ![The Tools panel listing the WebMCP tools registered on the page with their schemas](docs/tools-panel.png) <br> **The tools, as an agent sees them** — 26 registered on load, each with its title, description and JSON Schema. | ![A door-swing conflict drawn as a dashed amber arc, with the inspector offering the fix in centimetres](docs/conflict.png) <br> **Conflicts are diagrams, not error text** — a dashed door-swing arc, and a fix in centimetres. |
 | ![Accessibility mode on: 90 cm paths and a 150 cm turning circle drawn on the floor](docs/accessibility.png) <br> **Accessibility mode** — 90 cm paths and Ø150 cm turning circles, checked by the engine. | ![A ghost preview of a sofa in the room with the cart panel showing the line and subtotal](docs/shop-preview.png) <br> **Try before you buy** — `preview_in_room` ghosts the product; confirming it adds the Shopify line. |
-| ![The exported design board: dollhouse render, plan, palette and the item list with prices](docs/board.png) <br> **`export_design_board`** — one 1600 × 1000 PNG with the render, the plan, the palette and the bill. | |
+| ![The exported design board: dollhouse render, plan, palette and the item list with prices](docs/board.png) <br> **`export_design_board`** — one 1600 × 1000 PNG with the render, the plan, the palette and the bill. | ![The Layouts sheet: seven floor plans from studio to five bedrooms, each drawn as a mini plan with its room count and area](docs/layouts.png) <br> **Seven floor plans, one click or one `apply_template`** — studio, 1–5 bedrooms and a loft, each arriving furnished and conflict-free. |
+| ![The entire five-bedroom home framed in dollhouse view, with the Entire home inspector card](docs/entire-home.png) <br> **The whole home** — `H`, the room switcher or `set_view {focus:"home"}`; the studio pulls back here after every layout change. | ![The living room seen from a low, face-on angle after orbiting, with a selected sofa and its mini toolbar](docs/orbit.png) <br> **Your camera** — drag the floor to pan, right-drag to orbit, scroll to zoom, `0` to come home; walls and neighbours' furniture step aside. |
 
 ## How it's built
 
@@ -106,8 +108,8 @@ document.modelContext.registerTool(
 - **Shopify** (`src/shopify`, `app/api`): Storefront API 2026-07 (search, product, cart, checkout URL) behind route
   handlers; catalog metafields (`hearth.dims_cm`, `hearth.colorways`, …); a committed snapshot keeps browsing and
   previews working offline.
-- **Quality**: `pnpm typecheck && pnpm lint && pnpm test` (58 files / 616 tests: engine, tools, budgets, UI), 30 Playwright
-  e2e specs (drag, catalog drop, confirm dialogs, compare, board, assistant), a `webmcp-evals` prompt suite in
+- **Quality**: `pnpm typecheck && pnpm lint && pnpm test` (63 files / 724 tests: engine, tools, budgets, UI, camera), 60 Playwright
+  e2e specs (drag, catalog drop, confirm dialogs, compare, board, assistant, camera gestures, layouts), a `webmcp-evals` prompt suite in
   [`evals/`](evals/), and Lighthouse on the production build (performance 98 · accessibility 96 · best practices 100).
 
   | Eval suite (32 prompts × 2 runs, `evals/prompts.json`) | gpt-5.6-sol | claude-sonnet-5 |
