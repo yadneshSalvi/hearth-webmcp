@@ -3,6 +3,7 @@ import { createCatalog } from "../../engine/catalog";
 import { evaluateRoom } from "../../engine/conflicts";
 import type { Scene, Variant } from "../../engine/types";
 import { diffVariants } from "../../engine/variants";
+import { variantComparisonRoom } from "../../state/selectors";
 import type { DefinedTool } from "../define";
 import { defineTool } from "../define";
 import { describeParam, roomParam } from "../params";
@@ -22,16 +23,16 @@ export function compareVariantsTool(): DefinedTool {
   return defineTool({
     name: "compare_variants",
     title: "Compare variants",
-    description: "Shows two saved layout variants of a room side by side with a draggable split slider and returns their differences (items only in one of them, items that moved) and the conflict count of each. Any layout change closes the comparison.",
+    description: "Shows two saved layout variants of a room side by side with a draggable split slider and returns their differences and conflict counts. Room defaults to the active room when it has at least two variants, otherwise the first room with at least two. Any layout change closes the comparison.",
     group: "variants",
     input: z.object({
       left: z.string().min(1).describe(describeParam("Saved variant name for the left/right half.")),
       right: z.string().min(1).describe(describeParam("Saved variant name for the left/right half.")),
-      room: roomParam.optional(),
+      room: roomParam.optional().describe(describeParam("Room id or name. Defaults to the active room with 2 variants, otherwise the first room with 2.")),
     }).strict(),
     handler(input, context) {
       const state = context.store.getState();
-      const room = resolveRoom(state, input.room);
+      const room = resolveRoom(state, input.room ?? variantComparisonRoom(state)?.id);
       if ("ok" in room) return room;
       const left = resolveVariant(state.scene, room.id, input.left);
       if ("ok" in left) return left;

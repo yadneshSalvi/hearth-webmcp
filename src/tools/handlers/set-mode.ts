@@ -8,7 +8,7 @@ export function setModeTool(): DefinedTool {
   return defineTool({
     name: "set_mode",
     title: "Switch mode",
-    description: "Switches the studio mode. build: edit rooms and openings (enables apply_template, create_room, update_room, add_opening, move_opening and remove_opening). design: place and arrange furniture. shop: browse products and manage the cart with prices shown. Design and shop tools stay available in every mode.",
+    description: "Switches the studio mode. build: edit rooms and openings (enables apply_template, create_room, update_room, add_opening, move_opening and remove_opening). design: place and arrange furniture. shop: browse products and manage the cart with prices shown; enables get_checkout_link. Design and shop tools stay available in every mode.",
     group: "core",
     input: z.object({
       mode: z.enum(["build", "design", "shop"]).describe(describeParam("Studio mode: build, design or shop.")),

@@ -210,7 +210,7 @@
     },
     {
       "name": "compare_variants",
-      "description": "Shows two saved layout variants of a room side by side with a draggable split slider and returns their differences (items only in one of them, items that moved) and the conflict count of each. Any layout change closes the comparison.",
+      "description": "Shows two saved layout variants of a room side by side with a draggable split slider and returns their differences and conflict counts. Room defaults to the active room when it has at least two variants, otherwise the first room with at least two. Any layout change closes the comparison.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -225,9 +225,9 @@
             "description": "Saved variant name for the left/right half."
           },
           "room": {
+            "description": "Room id or name. Defaults to the active room with 2 variants, otherwise the first room with 2.",
             "type": "string",
-            "minLength": 1,
-            "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+            "minLength": 1
           }
         },
         "required": [
@@ -1146,7 +1146,7 @@
     },
     {
       "name": "set_mode",
-      "description": "Switches the studio mode. build: edit rooms and openings (enables apply_template, create_room, update_room, add_opening, move_opening and remove_opening). design: place and arrange furniture. shop: browse products and manage the cart with prices shown. Design and shop tools stay available in every mode.",
+      "description": "Switches the studio mode. build: edit rooms and openings (enables apply_template, create_room, update_room, add_opening, move_opening and remove_opening). design: place and arrange furniture. shop: browse products and manage the cart with prices shown; enables get_checkout_link. Design and shop tools stay available in every mode.",
       "inputSchema": {
         "type": "object",
         "properties": {

@@ -66,13 +66,13 @@ const happyCases: HappyCase[] = [
     summary: "Kept Liva Sofa (added to cart)",
   },
   {
-    name: "compare_variants", input: { left: "Cos", right: "Media", room: "living" },
+    name: "compare_variants", input: { left: "Cos", right: "Media" },
     prepare: () => {
-      hearthStore.getState().saveVariant("human", "living", "Cosy");
-      hearthStore.getState().moveItem("human", "sofa-1", { pos: { x: 250, y: 60 } });
-      hearthStore.getState().saveVariant("human", "living", "Media wall");
+      hearthStore.getState().saveVariant("human", "kitchen", "Cosy");
+      hearthStore.getState().moveItem("human", "table-1", { pos: { x: 230, y: 240 } });
+      hearthStore.getState().saveVariant("human", "kitchen", "Media wall");
     },
-    expected: { ok: true, room: "living", left: "Cosy", right: "Media wall", diff: { moved: ["Endre Sofa"] } },
+    expected: { ok: true, room: "kitchen", left: "Cosy", right: "Media wall", diff: { moved: ["Ake Table"] } },
     summary: "Comparing “Cosy” vs “Media wall”",
   },
   {
@@ -86,6 +86,39 @@ const happyCases: HappyCase[] = [
 beforeEach(() => resetStore(furnished2br()));
 
 describe("second-round handlers", () => {
+  it("reports only tool groups whose gates are closed", async () => {
+    const { registry } = harness();
+    const result = await registry.execute("get_scene_summary", {}, "test");
+    expect(result).toMatchObject({
+      ok: true,
+      gated_tools: {
+        preview: "preview_in_room → confirm_preview, cancel_preview",
+        variants: "save 2 variants in one room → compare_variants",
+        checkout: "add an item to the cart → get_checkout_link",
+        build: "set_mode build → apply_template, create_room, update_room, add_opening, move_opening, remove_opening",
+      },
+    });
+
+    hearthStore.getState().setMode("human", "build");
+    const product = hearthStore.getState().catalog[0];
+    if (!product) throw new Error("Fixture catalog is empty");
+    hearthStore.getState().setGhost("agent", {
+      id: "ghost", catalogId: product.id, roomId: "living", pos: { x: 200, y: 200 },
+      rotation: 0, colorway: product.colorways[0]?.id ?? "oak", status: "ghost",
+    });
+    hearthStore.getState().saveVariant("human", "kitchen", "A");
+    hearthStore.getState().saveVariant("human", "kitchen", "B");
+    hearthStore.getState().setCart({
+      lines: [{
+        id: "line", variantId: "variant", handle: product.id, title: product.name,
+        colorway: product.colorways[0]?.id ?? "oak", quantity: 1, unitUsd: 1, lineUsd: 1,
+      }],
+      subtotalUsd: 1,
+      status: "idle",
+    });
+    expect(await registry.execute("get_scene_summary", {}, "test")).toMatchObject({ ok: true, gated_tools: {} });
+  });
+
   it.each(happyCases)("$name happy path and contracted receipt", async (testCase) => {
     if (testCase.empty) resetStore(emptyHome());
     const { registry } = harness();

@@ -5,6 +5,8 @@ import { cartPayload, roomDetails, roomRow, selectionPayload, truncateList } fro
 import { measure as measureScene } from "../../engine/measure";
 import { designReport } from "../../engine/report";
 import type { Conflict } from "../../engine/types";
+import { desiredToolGroups } from "../../state/selectors";
+import type { HearthState, ToolGroup } from "../../state/types";
 import type { DefinedTool, ToolResult } from "../define";
 import { defineTool } from "../define";
 import { describeParam, roomParam } from "../params";
@@ -30,7 +32,26 @@ function money(value: number): string {
   return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
-export function getSceneSummaryTool(): DefinedTool {
+type ToolNamesByGroup = ReadonlyMap<ToolGroup, readonly string[]>;
+
+function gateInstruction(group: ToolGroup): string {
+  switch (group) {
+    case "build": return "set_mode build";
+    case "preview": return "preview_in_room";
+    case "variants": return "save 2 variants in one room";
+    case "checkout": return "add an item to the cart";
+    default: return `open the ${group} gate`;
+  }
+}
+
+function gatedTools(state: HearthState, namesByGroup: ToolNamesByGroup): Partial<Record<ToolGroup, string>> {
+  const registered = new Set(desiredToolGroups(state));
+  return Object.fromEntries([...namesByGroup]
+    .filter(([group, names]) => !registered.has(group) && names.length > 0)
+    .map(([group, names]) => [group, `${gateInstruction(group)} → ${names.join(", ")}`]));
+}
+
+export function getSceneSummaryTool(namesByGroup: () => ToolNamesByGroup): DefinedTool {
   return defineTool({
     name: "get_scene_summary",
     title: "Scene summary",
@@ -71,7 +92,8 @@ export function getSceneSummaryTool(): DefinedTool {
         },
         cart: { lines: state.cart.lines.length, subtotal_usd: Math.round(state.cart.subtotalUsd) },
         ...(state.scene.meta.budgetUsd === undefined ? {} : { budget_usd: Math.round(state.scene.meta.budgetUsd) }),
-        hint: "Use get_room_details for walls, openings and item positions of one room.",
+        gated_tools: gatedTools(state, namesByGroup()),
+        hint: "Use get_room_details for one room's walls, openings and item positions.",
       };
     },
     summarize: () => "Read scene summary",

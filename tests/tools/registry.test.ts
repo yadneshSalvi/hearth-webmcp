@@ -73,8 +73,9 @@ describe("registry lifecycle against the real polyfill", () => {
       rotation: 0, colorway: product.colorways[0]?.id ?? "oak", status: "ghost",
     });
     expect((await modelContext.getTools()).map(({ name }) => name)).toEqual(expect.arrayContaining(["confirm_preview", "cancel_preview"]));
-    hearthStore.getState().saveVariant("human", "living", "Cosy");
-    hearthStore.getState().saveVariant("human", "living", "Media");
+    hearthStore.getState().saveVariant("human", "kitchen", "Cosy");
+    hearthStore.getState().saveVariant("human", "kitchen", "Media");
+    expect(hearthStore.getState().scene.meta.activeRoomId).toBe("living");
     expect((await modelContext.getTools()).map(({ name }) => name)).toContain("compare_variants");
     hearthStore.getState().setCart({
       id: "cart", status: "idle", subtotalUsd: 10,

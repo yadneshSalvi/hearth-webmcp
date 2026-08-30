@@ -1,3 +1,4 @@
+import type { ToolGroup } from "../../state/types";
 import { bindDefinedTool } from "../define";
 import type { DefinedTool, ToolContext, ToolSource } from "../define";
 import {
@@ -22,6 +23,16 @@ import {
 import { setModeTool } from "./set-mode";
 import { compareVariantsTool } from "./variants";
 
+function toolNamesByGroup(tools: readonly DefinedTool[]): ReadonlyMap<ToolGroup, readonly string[]> {
+  const grouped = new Map<ToolGroup, string[]>();
+  for (const tool of tools) {
+    const names = grouped.get(tool.group) ?? [];
+    names.push(tool.name);
+    grouped.set(tool.group, names);
+  }
+  return grouped;
+}
+
 function bindStandalone(tools: DefinedTool[], context: ToolContext): DefinedTool[] {
   for (const tool of tools) bindDefinedTool(tool, {
     context(source: ToolSource, signal?: AbortSignal) {
@@ -36,8 +47,9 @@ function bindStandalone(tools: DefinedTool[], context: ToolContext): DefinedTool
 
 /** All 36 fully implemented Hearth WebMCP handler definitions. */
 export function allTools(context: ToolContext): DefinedTool[] {
-  return bindStandalone([
-    getSceneSummaryTool(),
+  let groupedNames: ReadonlyMap<ToolGroup, readonly string[]> = new Map();
+  const tools = [
+    getSceneSummaryTool(() => groupedNames),
     getRoomDetailsTool(),
     getSelectionTool(),
     measureTool(),
@@ -73,7 +85,9 @@ export function allTools(context: ToolContext): DefinedTool[] {
     addOpeningTool(),
     moveOpeningTool(),
     removeOpeningTool(),
-  ], context);
+  ];
+  groupedNames = toolNamesByGroup(tools);
+  return bindStandalone(tools, context);
 }
 
 /** All 36 static definitions used by the lifecycle registry. */

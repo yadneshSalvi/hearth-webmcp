@@ -54,6 +54,13 @@ export function variantsForRoom(state: HearthState, roomId: string): Variant[] {
   return state.scene.variants.filter((variant) => variant.roomId === roomId);
 }
 
+/** Returns the active comparable room, or the first room with at least two variants. */
+export function variantComparisonRoom(state: HearthState): Room | undefined {
+  const active = activeRoom(state);
+  if (active && variantsForRoom(state, active.id).length >= 2) return active;
+  return state.scene.rooms.find((room) => variantsForRoom(state, room.id).length >= 2);
+}
+
 /** Returns the total cart quantity. */
 export function cartCount(state: HearthState): number {
   return state.cart.lines.reduce((total, line) => total + line.quantity, 0);
@@ -63,7 +70,7 @@ export function cartCount(state: HearthState): number {
 export function desiredToolGroups(state: HearthState): ToolGroup[] {
   const groups: ToolGroup[] = ["core", "design", "shop", "present"];
   if (ghost(state)) groups.push("preview");
-  if (variantsForRoom(state, state.scene.meta.activeRoomId).length >= 2) groups.push("variants");
+  if (variantComparisonRoom(state)) groups.push("variants");
   if (state.cart.lines.length > 0) groups.push("checkout");
   if (state.scene.meta.mode === "build") groups.push("build");
   return groups;

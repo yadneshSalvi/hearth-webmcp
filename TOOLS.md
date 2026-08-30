@@ -97,7 +97,7 @@ nudge along the wall/axis up to **60 cm** (5 cm steps, nearest first) and report
 | `shop` | 24–25 | always |
 | `present` | 26 | always |
 | `preview` | 27–28 | a ghost (preview) item exists |
-| `variants` | 29 | the active room has ≥ 2 saved variants |
+| `variants` | 29 | any room has ≥ 2 saved variants |
 | `checkout` | 30 | the cart has ≥ 1 line |
 | `build` | 31–36 | `meta.mode === "build"` |
 
@@ -120,9 +120,10 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
  "accessibility":false,"active_room":"living",
  "rooms":[{"id":"living","name":"Living Room","type":"living","area_m2":22.9,"walls":"N 520 · E 440 · S 520 · W 440","items":7,"conflicts":1}],
  "selection":{"item":"sofa-1","room":"living"},"cart":{"lines":2,"subtotal_usd":1240},"budget_usd":3000,
- "hint":"Use get_room_details for walls, openings and item positions of one room."}
+ "gated_tools":{"build":"set_mode build → apply_template, create_room, update_room, add_opening, move_opening, remove_opening","preview":"preview_in_room → confirm_preview, cancel_preview","variants":"save 2 variants in one room → compare_variants","checkout":"add an item to the cart → get_checkout_link"},
+ "hint":"Use get_room_details for one room's walls, openings and item positions."}
 ```
-**Budget:** rooms are compact rows (walls as one string); ≤ 8 rooms then `more`. No item lists here.
+**Budget:** rooms are compact rows (walls as one string); ≤ 8 rooms then `more`. No item lists here. `gated_tools` contains only currently unregistered groups; tool names come from their registered definitions.
 **Receipt:** "Read scene summary"
 
 ### 2. `get_room_details` · core · R
@@ -208,7 +209,7 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 
 ### 10. `set_mode` · core
 **Title:** Switch mode
-**Description:** Switches the studio mode. build: edit rooms and openings (enables apply_template, create_room, update_room, add_opening, move_opening and remove_opening). design: place and arrange furniture. shop: browse products and manage the cart with prices shown. Design and shop tools stay available in every mode.
+**Description:** Switches the studio mode. build: edit rooms and openings (enables apply_template, create_room, update_room, add_opening, move_opening and remove_opening). design: place and arrange furniture. shop: browse products and manage the cart with prices shown; enables get_checkout_link. Design and shop tools stay available in every mode.
 **Input:** `{ mode: "build"|"design"|"shop" }`
 **Result:** `{"ok":true,"mode":"build","hint":"Build tools are now available: create_room, add_opening…"}`
 **Receipt:** "Switched to Build mode"
@@ -357,10 +358,10 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 **Result:** `{"ok":true,"room":"living","discarded":{"product":"sofa-endre","name":"Endre Sofa"},"hint":"…"}`
 **Receipt:** "Discarded preview of Endre Sofa"
 
-### 29. `compare_variants` · variants (gated: ≥ 2 variants in the active room)
+### 29. `compare_variants` · variants (gated: ≥ 2 variants in any room)
 **Title:** Compare variants
-**Description:** Shows two saved layout variants of a room side by side with a draggable split slider and returns their differences (items only in one of them, items that moved) and the conflict count of each. Any layout change closes the comparison.
-**Input:** `{ left: string, right: string, room?: string }` — `left`/`right` — "Saved variant name for the left/right half."
+**Description:** Shows two saved layout variants of a room side by side with a draggable split slider and returns their differences and conflict counts. Room defaults to the active room when it has at least two variants, otherwise the first room with at least two. Any layout change closes the comparison.
+**Input:** `{ left: string, right: string, room?: string }` — `left`/`right` — "Saved variant name for the left/right half."; `room` — "Room id or name. Defaults to the active room with 2 variants, otherwise the first room with 2."
 **Result:** `{"ok":true,"room":"living","left":"Cosy","right":"Media wall","diff":{"only_left":["Nook Armchair"],"only_right":["Media Unit"],"moved":["Endre Sofa"]},"conflicts":{"left":0,"right":2},"hint":"…"}`
 **Budget:** each diff list ≤ 8 names.
 **Receipt:** "Comparing “Cosy” vs “Media wall”"
@@ -450,7 +451,7 @@ interface ToolContext { store: HearthStore; ui: { confirm(msg: string): Promise<
   write receipt → `executing--` → return the plain object. Confirmation returns its reason directly.
 - **Groups:** one `AbortController` per group. `sync(scene)` computes the desired set:
   `core|design|shop|present` always; `build` iff `meta.mode==="build"`; `preview` iff a `status:"ghost"` item exists;
-  `variants` iff the active room has ≥ 2 variants; `checkout` iff cart lines ≥ 1. Diff → `registerTool` for new
+  `variants` iff any room has ≥ 2 variants; `checkout` iff cart lines ≥ 1. Diff → `registerTool` for new
   groups, `abort()` for stale ones.
 - **Deferral rule (Chrome < 153 cancels in-flight executions on abort):** never abort while `executing > 0`;
   queue the sync and flush on a macrotask (`setTimeout(…, 50)`) after the last executing tool resolved. Registration
