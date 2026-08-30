@@ -55,6 +55,13 @@ interface Gesture {
 interface Press {
   pointerId: number;
   itemId?: string;
+  /**
+   * True when this press was handed to the camera. Only then may `cameraGestureMoved` veto the
+   * click on pointer-up: the camera store remembers the *last* gesture per pointer id, and a mouse
+   * reuses one id forever, so a press on furniture that consulted it would inherit the veto from
+   * the pan before it and never select anything again.
+   */
+  toCamera: boolean;
   clientX: number;
   clientY: number;
   /** Item centre minus the pointer's floor point at press time, world centimetres. */
@@ -237,7 +244,9 @@ export function Interaction() {
       altRef.current = event.altKey;
       if (event.button !== 0 || event.ctrlKey) return;
       const state = hearthStore.getState();
-      const found = itemAt(event.clientX, event.clientY);
+      // Shift is the orbit gesture, wherever it lands: a person holding it is turning the house,
+      // not moving the sofa they happen to have started on.
+      const found = event.shiftKey ? undefined : itemAt(event.clientX, event.clientY);
       const room = found ? state.scene.rooms.find((entry) => entry.id === found.roomId) : undefined;
       const product = found ? catalog.byId(found.catalogId) : undefined;
       let grab: Vec2 = { x: 0, y: 0 };
@@ -251,10 +260,12 @@ export function Interaction() {
       // Nothing under the pointer: this press belongs to the camera — a pan, or an orbit with
       // Shift held (src/scene/cameraGestures.ts). The click that activates the room is still
       // recorded below; a camera gesture only takes the press over once it actually moves.
-      if (!found && !event.altKey) beginCameraDrag(event, event.shiftKey ? "orbit" : "pan");
+      const toCamera = !found && !event.altKey;
+      if (toCamera) beginCameraDrag(event, event.shiftKey ? "orbit" : "pan");
       pressRef.current = {
         pointerId: event.pointerId,
         itemId: found?.id,
+        toCamera,
         clientX: event.clientX,
         clientY: event.clientY,
         grab,
@@ -298,7 +309,7 @@ export function Interaction() {
         return;
       }
       // A background drag panned or orbited the camera; it must not also select or activate.
-      if (cameraGestureMoved(event.pointerId)) return;
+      if (press.toCamera && cameraGestureMoved(event.pointerId)) return;
       if (Math.hypot(event.clientX - press.clientX, event.clientY - press.clientY) > DRAG_THRESHOLD_PX * 2) return;
       const state = hearthStore.getState();
       if (press.itemId) {

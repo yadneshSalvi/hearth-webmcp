@@ -20,12 +20,25 @@ export interface FocusTarget {
 export type FocusKind = "home" | "room" | "item";
 
 let target: FocusTarget | undefined;
+/**
+ * Monotonic framing token. Every write counts as a framing command, even one that asks for the shot
+ * the camera already has: an agent calling `set_view` with the current room, or a human re-picking
+ * the active room in the switcher, means "put the camera back", and comparing targets alone would
+ * silently ignore both (the rig re-homes on this token — src/scene/CameraRig.tsx).
+ */
+let token = 0;
 const listeners = new Set<() => void>();
 
 /** Pins the camera to the home, a room or an item; `undefined` returns to the active room. */
 export function setFocusTarget(next: FocusTarget | undefined): void {
   target = next && (next.home || next.roomId || next.itemId) ? next : undefined;
+  token += 1;
   for (const listener of listeners) listener();
+}
+
+/** How many framing commands have been issued. Changes on every `setFocusTarget` call. */
+export function focusToken(): number {
+  return token;
 }
 
 /** The current override, read imperatively (the store watcher and the dev bridge use this). */
@@ -66,3 +79,9 @@ export function useFocusTarget(): FocusTarget | undefined {
 export function useHomeFocus(): boolean {
   return useSyncExternalStore(subscribe, isHomeFocus, () => false);
 }
+
+/** The framing token, so the rig re-homes for every command and not only for a changed target. */
+export function useFocusToken(): number {
+  return useSyncExternalStore(subscribe, focusToken, () => 0);
+}
+

@@ -5,12 +5,25 @@
  */
 import { useEffect, useState } from "react";
 import { useHearthStore } from "../state/store";
-import { confirmLabel } from "./format";
+import { confirmLabel, plural } from "./format";
 import { Button } from "./primitives";
 import { Sheet } from "./Sheet";
+import { confirmAttribution } from "./toolUi";
 import { toolUi } from "./useHearth";
 
 const TIMEOUT_S = 45;
+
+/**
+ * The line under the question: who asked, and what it costs. A human choosing a layout from the
+ * Layouts sheet is not "your agent", and a home with furniture in it should say how much is at stake
+ * before the button is pressed.
+ */
+function subtitleFor(by: "human" | "agent", placed: number): string {
+  const stake = placed > 0
+    ? `${plural(placed, "placed item")} will go; undo brings them back.`
+    : "Undo restores it either way.";
+  return by === "agent" ? `Your agent asked for this. ${stake}` : stake;
+}
 
 /** Keyed by the confirmation id, so a new question starts a fresh countdown by remounting. */
 function Countdown() {
@@ -36,6 +49,9 @@ function Countdown() {
 
 export function ConfirmModal() {
   const pending = useHearthStore((state) => state.ui.pendingConfirm);
+  const placed = useHearthStore(
+    (state) => state.scene.furniture.filter((item) => item.status === "placed").length,
+  );
   if (!pending) return null;
 
   const decline = (): void => toolUi.resolveConfirm(pending.id, false);
@@ -45,7 +61,7 @@ export function ConfirmModal() {
       open
       onClose={decline}
       title={pending.message}
-      subtitle="Your agent asked for this. Undo restores it either way."
+      subtitle={subtitleFor(confirmAttribution(), placed)}
       width={420}
       showClose={false}
       footer={

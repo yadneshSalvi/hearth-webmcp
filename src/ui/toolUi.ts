@@ -14,11 +14,29 @@ import type { ExportBoardResult, ToolFocus, ToolUi } from "../tools/define";
 import { publishBoard } from "./board-bus";
 import { BOARD_SIZE_PX } from "./boardCompose";
 import { composeBoard } from "./boardExport";
+import { humanizeConfirmMessage } from "./templates";
 
 /** How long a pulsed item stays highlighted for the renderer and the interaction layer. */
 const PULSE_MS = 1_600;
 
+/** Who asked the question the confirmation dialog is showing. */
+export type ConfirmBy = "human" | "agent";
+
+/**
+ * Attribution for the confirmation currently on screen. Written synchronously by `confirm` /
+ * `confirmHuman` before the dialog's store entry appears, so the modal reads it during the very
+ * render that shows the question (src/ui/ConfirmModal.tsx). One dialog is on screen at a time.
+ */
+let confirmedBy: ConfirmBy = "agent";
+
+/** Who asked for the confirmation now on screen. */
+export function confirmAttribution(): ConfirmBy {
+  return confirmedBy;
+}
+
 export interface HearthToolUi extends ToolUi {
+  /** Asks the same question on the human's own behalf, so the dialog does not blame the agent. */
+  confirmHuman: ToolUi["confirm"];
   /** Sends the agent orb to a room-local point with a label chip. */
   flyOrb(point: { roomId: string; pos: Vec2 }, label: string): void;
   /** Starts a browser download without leaving the page. */
@@ -55,7 +73,14 @@ export function createToolUi(studio: StudioApi, store: StoreApi<HearthStore>): H
   };
 
   return {
-    confirm: gate.confirm,
+    confirm(message: string) {
+      confirmedBy = "agent";
+      return gate.confirm(humanizeConfirmMessage(message));
+    },
+    confirmHuman(message: string) {
+      confirmedBy = "human";
+      return gate.confirm(humanizeConfirmMessage(message));
+    },
     resolveConfirm: gate.resolve,
     cancelConfirms: gate.cancelAll,
 

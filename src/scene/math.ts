@@ -232,6 +232,37 @@ export function wallOpacity(
 }
 
 /**
+ * Per-item opacity for furniture standing between the camera and the framed room.
+ *
+ * The walls in front of the framed room are cut away (`wallOpacity`), which is what exposes the
+ * neighbour's wardrobe standing behind them: at a low pitch or a face-on angle it plants itself in
+ * the middle of the room the human is looking at. So the same test, on the same edges, for the body
+ * as well as the wall — measured from the corner of the item's footprint nearest the camera.
+ *
+ * `centreCm` is the item's centre in world centimetres, `extentM` the half-extents of its
+ * axis-aligned footprint in metres. Callers exclude the framed room's own items, ghosts and the
+ * selection (src/scene/Furniture.tsx): only a *neighbour* can be in the way.
+ */
+export function furnitureOpacity(
+  centreCm: Vec2,
+  extentM: { x: number; z: number },
+  focusCentre: Vec2,
+  azimuth: number,
+  pitch: number,
+  opts: { cutInFront?: boolean } = {},
+): number {
+  if (!(opts.cutInFront ?? true)) return 1;
+  // Above 80° the shot is nearly a plan and nothing occludes anything, exactly as for walls.
+  if (pitch > (Math.PI / 180) * 80) return 1;
+  const toCamera = { x: Math.sin(azimuth), y: Math.cos(azimuth) };
+  const dx = (centreCm.x - focusCentre.x) * M;
+  const dy = (centreCm.y - focusCentre.y) * M;
+  const frontness = dx * toCamera.x + dy * toCamera.y
+    + Math.abs(toCamera.x) * extentM.x + Math.abs(toCamera.y) * extentM.z;
+  return 1 - smoothstep(0.35, 1.3, frontness);
+}
+
+/**
  * Height of the selection halo above the floor, in metres. Above every rug the catalog ships — the
  * tallest, `rug-mark`, tops out at 4.13 cm — so selecting a chair standing on a rug draws its ring
  * on the rug rather than inside it (`tests/scene/assets.test.ts` checks this against the manifest).
