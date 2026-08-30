@@ -11,7 +11,7 @@ import type { StudioApi } from "../scene/Studio";
 import type { HearthStore } from "../state/types";
 import { motion } from "../tokens";
 import { boardModel } from "./boardCompose";
-import { captureFrame } from "./capture";
+import { captureFrame, fromFramedShot } from "./capture";
 import type { BoardModel } from "./boardCompose";
 import { renderBoard } from "./boardRender";
 import type { BoardImages } from "./boardRender";
@@ -68,20 +68,25 @@ export async function composeBoard(
   if (!room) throw new Error(`Room ${input.roomId} is not part of this home`);
 
   const startView = state.scene.meta.view;
-  let current: View = startView;
   const shots: Partial<Record<View, Blob>> = {};
-  try {
-    for (const view of ["dollhouse", "plan"] as const) {
-      if (current !== view) {
-        store.getState().setView("system", { view }, { quiet: true });
-        current = view;
-        await wait(SETTLE_MS);
+  // Both shots from the framed shot, and the human's orbit, zoom and pan handed back once the view
+  // is home again — the plan half of the board resets the orbit on its way in (`setCameraPlanView`),
+  // so restoring per capture would lose it (see `fromFramedShot`).
+  await fromFramedShot(async () => {
+    let current: View = startView;
+    try {
+      for (const view of ["dollhouse", "plan"] as const) {
+        if (current !== view) {
+          store.getState().setView("system", { view }, { quiet: true });
+          current = view;
+          await wait(SETTLE_MS);
+        }
+        shots[view] = await captureFrame(studio);
       }
-      shots[view] = await captureFrame(studio);
+    } finally {
+      if (current !== startView) store.getState().setView("system", { view: startView }, { quiet: true });
     }
-  } finally {
-    if (current !== startView) store.getState().setView("system", { view: startView }, { quiet: true });
-  }
+  }, room.id);
 
   const dollhouseBlob = shots.dollhouse;
   const planBlob = shots.plan;

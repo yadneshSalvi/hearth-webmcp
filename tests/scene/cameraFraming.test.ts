@@ -6,12 +6,13 @@ import type { TemplateId } from "@/src/engine/types";
 import { hearthStore } from "@/src/state/store";
 import {
   focusKind,
+  focusToken,
   getFocusTarget,
   isHomeFocus,
   setFocusTarget,
   toggleHomeFocus,
 } from "@/src/scene/focus";
-import { watchHomeFraming } from "@/src/scene/homeFocus";
+import { frameHomeForHistory, isTemplateReceipt, watchHomeFraming } from "@/src/scene/homeFocus";
 import { cameraBridgeSnapshot, resetCameraStateForTests } from "@/src/scene/cameraState";
 import { M, WALL_T, homeCentreCm, wallOpacity, wholeHomeBox } from "@/src/scene/math";
 
@@ -180,5 +181,69 @@ describe("framing the home after a template apply", () => {
       name: "Utility", type: "hall", width_cm: 200, depth_cm: 200, place: "east_of", relative_to: room.id,
     });
     expect(isHomeFocus()).toBe(false);
+  });
+});
+
+/**
+ * The framing token: the rig re-homes on every framing *command*, not only on a changed target, so
+ * an agent asking for the room it is already on — or a human re-picking the active room in the
+ * switcher — puts the camera back (src/scene/CameraRig.tsx).
+ */
+describe("the framing token", () => {
+  it("advances on every write, even one that changes nothing", () => {
+    setFocusTarget({ roomId: "living" });
+    const first = focusToken();
+    setFocusTarget({ roomId: "living" });
+    expect(focusToken()).toBe(first + 1);
+    setFocusTarget(undefined);
+    const cleared = focusToken();
+    setFocusTarget(undefined);
+    expect(focusToken()).toBe(cleared + 1);
+    expect(getFocusTarget()).toBeUndefined();
+  });
+});
+
+/** Undoing an apply replaces the home too, so it is framed like an apply (src/ui/useHearth.ts). */
+describe("framing the home after an undo", () => {
+  beforeEach(() => {
+    setFocusTarget(undefined);
+  });
+
+  it("frames the home when the history moved a template receipt", () => {
+    expect(frameHomeForHistory([{ title: "Apply template" }])).toBe(true);
+    expect(isHomeFocus()).toBe(true);
+  });
+
+  it("leaves the shot alone for any other change", () => {
+    expect(frameHomeForHistory([{ title: "Move furniture" }, { title: "Place furniture" }])).toBe(false);
+    expect(isHomeFocus()).toBe(false);
+  });
+});
+
+/**
+ * Two writers, one rule. A human's apply leaves the store's own "Apply template" row; an agent's is
+ * suppressed while the tool batch is open and the tool's own receipt lands instead (see the note in
+ * src/scene/homeFocus.ts).
+ */
+describe("recognising a template apply", () => {
+  it("accepts the store's own entry", () => {
+    expect(isTemplateReceipt({ title: "Apply template" })).toBe(true);
+  });
+
+  it("accepts the tool's receipt, whatever it is titled", () => {
+    expect(isTemplateReceipt({ title: "Apply floor-plan template", tool: "apply_template" })).toBe(true);
+  });
+
+  it("rejects every other receipt", () => {
+    expect(isTemplateReceipt(undefined)).toBe(false);
+    expect(isTemplateReceipt({ title: "Create room" })).toBe(false);
+    expect(isTemplateReceipt({ title: "Set view", tool: "set_view" })).toBe(false);
+    expect(isTemplateReceipt({ title: "Move furniture", tool: "move_furniture" })).toBe(false);
+  });
+
+  it("frames the home when an undo moved an agent's apply", () => {
+    setFocusTarget(undefined);
+    expect(frameHomeForHistory([{ title: "Apply floor-plan template", tool: "apply_template" }])).toBe(true);
+    expect(isHomeFocus()).toBe(true);
   });
 });

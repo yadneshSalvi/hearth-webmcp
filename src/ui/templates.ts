@@ -24,6 +24,25 @@ export function templateLabel(id: string): string {
   return `${count} ${count === 1 ? "bedroom" : "bedrooms"}`;
 }
 
+/**
+ * The question the confirmation gate asks before a layout replaces the home. One sentence, the
+ * layout named the way the chooser names it — never the raw id (`1br`), whoever asked.
+ */
+export function templateConfirmMessage(id: string): string {
+  return `Replace this home with the ${templateLabel(id)} layout?`;
+}
+
+/**
+ * The agent's `apply_template` builds its own confirmation string from the raw template id
+ * (src/tools/handlers/build.ts, and a tool's message is part of its contract). The chrome owns how a
+ * question is *worded* for a human, so it rewrites that one shape into `templateConfirmMessage`.
+ * Anything else is passed through untouched.
+ */
+export function humanizeConfirmMessage(message: string): string {
+  const match = /^Replace this home and its \d+ placed items with the (\S+) template\?$/.exec(message);
+  return match?.[1] ? templateConfirmMessage(match[1]) : message;
+}
+
 export interface TemplateSummary {
   rooms: number;
   beds: number;

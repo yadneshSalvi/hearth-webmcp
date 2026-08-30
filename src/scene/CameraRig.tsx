@@ -30,7 +30,7 @@ import {
   setCameraPlanView,
   subscribeCamera,
 } from "./cameraState";
-import { setFocusTarget, useFocusTarget } from "./focus";
+import { setFocusTarget, useFocusTarget, useFocusToken } from "./focus";
 import { introAzimuthOffset } from "./intro";
 import type { FocusTarget } from "./focus";
 import { useFramedBox } from "./framing";
@@ -87,6 +87,7 @@ export function CameraRig() {
   const rooms = useRooms();
   const framed = useFramedBox();
   const focus = useFocusTarget();
+  const focusToken = useFocusToken();
   // STYLE.md §3: choreography degrades to a cut. A framing command lands on the frame it is asked
   // for; the drag path is already immediate (see `cameraState`).
   const reduced = useReducedMotion();
@@ -198,9 +199,9 @@ export function CameraRig() {
   useEffect(() => {
     if (consumeFramingSkip()) return;
     resetCamera({ tween: true });
-    // The focus object identity is the dependency on purpose: `setFocusTarget` publishes a fresh
-    // object for every write, so re-framing the same home after a second template apply counts.
-  }, [meta.view, meta.yaw, meta.activeRoomId, focus]);
+    // `focusToken` counts framing *commands*, not changes: `set_view` with the room the camera is
+    // already on, or the switcher re-picking the active room, both mean "put the camera back".
+  }, [meta.view, meta.yaw, meta.activeRoomId, focus, focusToken]);
 
   useFrame(() => {
     const camera = cameraRef.current;

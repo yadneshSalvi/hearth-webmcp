@@ -43,6 +43,8 @@ const DEG = Math.PI / 180;
 const WALL_FADE_STEP_DEG = 4;
 /** A cut-away wall keeps its baseboard readable so the room's outline never disappears. */
 const BASEBOARD_FLOOR = 0.32;
+/** Plan-view room labels are annotation, never a pointer target: the canvas owns the gesture. */
+const LABEL_STYLE = { pointerEvents: "none" } as const;
 
 /** Minimal shape of a drei `Line` so its material opacity can be driven per frame. */
 interface LineHandle {
@@ -311,9 +313,13 @@ function RoomLabel({ room }: { room: Room }) {
     return { x: sum.x / room.poly.length, y: sum.y / room.poly.length };
   }, [room.poly]);
   return (
+    /* `style` as well as `pointerEvents`: drei only forwards the prop to its inner div in
+       `transform` mode, so without this the wrapper keeps `pointer-events: auto` and a label
+       swallows the pan that starts on it. */
     <Html
       position={[(room.origin.x + centre.x) * M, WALL_H * M * 0.03, (room.origin.y + centre.y) * M]}
       center
+      style={LABEL_STYLE}
       pointerEvents="none"
       zIndexRange={[20, 0]}
     >

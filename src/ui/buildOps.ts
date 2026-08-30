@@ -9,6 +9,7 @@ import type { Opening, Room, RoomType, TemplateId } from "../engine/types";
 import { hearthStore } from "../state/store";
 import { HearthError } from "../state/types";
 import type { OpeningInput, OpeningPatch, RoomPatch, RoomPlacement } from "../state/types";
+import { templateConfirmMessage } from "./templates";
 import { historyMarker, toolUi, undoTo } from "./useHearth";
 import { pushToast } from "./toast-bus";
 
@@ -32,7 +33,9 @@ function attempt(title: string, run: () => void): boolean {
 export async function applyTemplate(template: TemplateId, furnished: boolean): Promise<void> {
   const placed = hearthStore.getState().scene.furniture.filter((item) => item.status === "placed").length;
   if (placed > 0) {
-    const decision = await toolUi.confirm(`Replace this home and its ${placed} placed items with the ${template} template?`);
+    // The human's own question, attributed to the human: the shared gate would otherwise say the
+    // agent asked for this (src/ui/ConfirmModal.tsx).
+    const decision = await toolUi.confirmHuman(templateConfirmMessage(template));
     if (!decision.accepted) return;
   }
   const marker = historyMarker();

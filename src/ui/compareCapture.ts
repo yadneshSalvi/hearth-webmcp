@@ -8,7 +8,7 @@
 import type { Furniture, Variant } from "../engine/types";
 import { hearthStore } from "../state/store";
 import { studioApi } from "../scene/Studio";
-import { captureFrame } from "./capture";
+import { captureFrame, fromFramedShot } from "./capture";
 
 /** Drop-and-settle for a fresh set of items (react-spring `motion.spring`), plus a beat. */
 const SETTLE_MS = 720;
@@ -60,12 +60,14 @@ export async function captureComparison(roomId: string, left: string, right: str
   };
 
   try {
-    return {
+    // Both halves from the same framed shot, whatever the human has orbited to: two variants
+    // photographed from two different angles are not a comparison.
+    return await fromFramedShot(async () => ({
       left: await shoot(leftVariant),
       right: await shoot(rightVariant),
       leftVariant,
       rightVariant,
-    };
+    }), roomId);
   } finally {
     // If a human or an agent changed the layout while we were photographing, their change wins and
     // the comparison closes itself; putting the old furniture back would silently undo their work.

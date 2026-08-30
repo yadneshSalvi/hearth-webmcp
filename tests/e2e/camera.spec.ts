@@ -126,6 +126,22 @@ function at(page: Page, pos: Point = PROBE): Promise<Point | undefined> {
   return page.evaluate((probe) => (window as unknown as HearthWin).__hearth.project("living", probe), pos);
 }
 
+/** A client point on an item's body that the studio's own pick agrees is that item. */
+async function itemPoint(page: Page, itemId: string): Promise<Point> {
+  const point = await page.evaluate((id) => {
+    const handle = (window as unknown as HearthWin).__hearth;
+    const item = handle.item(id);
+    if (!item) return undefined;
+    for (const height of [30, 45, 20, 60, 10, 0]) {
+      const candidate = handle.project("living", item.pos, height);
+      if (candidate && handle.pick(candidate.x, candidate.y) === id) return candidate;
+    }
+    return undefined;
+  }, itemId);
+  expect(point, `a pickable point on ${itemId}`).toBeTruthy();
+  return point as Point;
+}
+
 /** A client point over the canvas with no furniture under it and no floating chrome over it. */
 async function background(page: Page): Promise<Point> {
   const point = await page.evaluate(() => {
@@ -452,6 +468,74 @@ test.describe("camera", () => {
     await settle(page);
     expect((await camera(page)).focus).toBe("room");
     await expect(trigger).toContainText("Living Room");
+  });
+
+  test("a click on furniture after a background pan still selects", async ({ page }) => {
+    // The camera store remembers the last gesture per pointer id so a pan is never also a click, and
+    // a mouse reuses pointer id 1 for ever: a press on furniture must not inherit that veto.
+    await openStudio(page, true);
+    const point = await background(page);
+    await drag(page, point, { x: point.x + 110, y: point.y - 40 });
+    expect((await camera(page)).offHome).toBe(true);
+
+    const sofa = await itemPoint(page, "sofa-1");
+    await page.mouse.click(sofa.x, sofa.y);
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => (window as unknown as HearthWin).__hearth.selection().itemId)).toBe("sofa-1");
+  });
+
+  test("shift-drag that starts on furniture orbits and leaves the item alone", async ({ page }) => {
+    await openStudio(page, true);
+    const before = await camera(page);
+    const sofa = await itemPoint(page, "sofa-1");
+    const at = () => page.evaluate(() => (window as unknown as HearthWin).__hearth.item("sofa-1")?.pos);
+    const posBefore = await at();
+
+    await drag(page, sofa, { x: sofa.x + 120, y: sofa.y - 10 }, { shift: true, steps: 10 });
+
+    expect(await at(), "shift is the orbit gesture, wherever it starts").toEqual(posBefore);
+    expect(Math.abs((await camera(page)).azimuthDeg - before.azimuthDeg)).toBeGreaterThan(20);
+  });
+
+  test("a plan-view room label does not eat the pan", async ({ page }) => {
+    await openStudio(page);
+    await page.getByRole("radio", { name: "Plan", exact: true }).click();
+    await settle(page);
+    const label = await page.evaluate(() => {
+      const nodes = [...document.querySelectorAll("span")].filter((node) => /m²/.test(node.textContent ?? ""));
+      const node = nodes[0];
+      if (!node) return undefined;
+      const rect = node.getBoundingClientRect();
+      const point = { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) };
+      return { point, tag: document.elementFromPoint(point.x, point.y)?.tagName };
+    });
+    expect(label, "a plan-view room label").toBeTruthy();
+    // drei only forwards `pointerEvents` to its inner div in `transform` mode, so the wrapper has to
+    // be told as well — otherwise the canvas never sees the press.
+    expect(label?.tag).toBe("CANVAS");
+
+    const before = await camera(page);
+    await drag(page, label!.point, { x: label!.point.x + 70, y: label!.point.y + 30 });
+    const after = await camera(page);
+    expect(Math.hypot(after.pan.x - before.pan.x, after.pan.y - before.pan.y)).toBeGreaterThan(0.5);
+  });
+
+  test("re-picking the active room re-homes an orbited camera", async ({ page }) => {
+    await openStudio(page);
+    await page.evaluate(() => (window as unknown as HearthWin).__hearth.state().setActiveRoom("human", "bed-1"));
+    await settle(page);
+    expect((await camera(page)).focus).toBe("room");
+
+    const point = await background(page);
+    await drag(page, point, { x: point.x - 100, y: point.y + 40 }, { button: "right" });
+    expect((await camera(page)).offHome).toBe(true);
+
+    // Asking for the shot you already have is still asking for it (`focusToken` in scene/focus.ts).
+    const trigger = page.locator("header button[aria-haspopup]");
+    await trigger.click();
+    await page.getByRole("group", { name: "Rooms in this home" }).getByRole("button", { name: /^Main Bedroom/ }).click();
+    await page.waitForTimeout(1200);
+    expect((await camera(page)).offHome).toBe(false);
   });
 
   test("keeps the console clean through a pan, an orbit and a zoom", async ({ page }) => {

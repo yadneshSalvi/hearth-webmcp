@@ -10,9 +10,19 @@
 import { useCallback, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import { Plane, Raycaster, Vector2, Vector3 } from "three";
+import type { Object3D } from "three";
 import type { Furniture, Vec2 } from "../engine/types";
 import { hearthStore } from "../state/store";
 import { threeToWorldCm } from "./interactionMath";
+
+/** True when nothing between `node` and `root` (inclusive of node) has been switched off. */
+function visibleInTree(node: Object3D, root: Object3D): boolean {
+  for (let current: Object3D | null = node; current; current = current.parent) {
+    if (!current.visible) return false;
+    if (current === root) break;
+  }
+  return true;
+}
 
 export interface Picking {
   /** The point under a client position on the horizontal plane at `planeY` metres, world cm. */
@@ -63,6 +73,10 @@ export function usePicking(): Picking {
       group.updateWorldMatrix(false, true);
       const furniture = hearthStore.getState().scene.furniture;
       for (const intersection of raycaster.intersectObject(group, true)) {
+        // three's raycaster ignores `visible`, so a piece the renderer has switched off — the item in
+        // hand, or a neighbour faded out of the way of the framed room (src/scene/Furniture.tsx) —
+        // would still swallow the click that was meant for what is actually on screen.
+        if (!visibleInTree(intersection.object, group)) continue;
         for (let node = intersection.object; node; node = node.parent as typeof node) {
           if (!node.name.startsWith("item-")) continue;
           const found = furniture.find((entry) => entry.id === node.name.slice(5));

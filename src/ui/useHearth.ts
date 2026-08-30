@@ -10,6 +10,7 @@ import { evaluateRoom } from "../engine/conflicts";
 import type { Conflict, TimeOfDay } from "../engine/types";
 import { resetCamera, stepView } from "../scene/cameraState";
 import { toggleHomeFocus } from "../scene/focus";
+import { frameHomeForHistory } from "../scene/homeFocus";
 import { devBridgesEnabled } from "../scene/devBridge";
 import { studioApi } from "../scene/Studio";
 import { createLocalShopify } from "../shopify/local";
@@ -150,6 +151,10 @@ let historyReceipts = 0;
 /** Writes the human-side receipt for an undo or redo, naming what actually changed. */
 function historyReceipt(kind: "Undo" | "Redo", entries: ActivityEntry[]): void {
   if (entries.length === 0) return;
+  // Undoing or redoing a template apply swaps the whole home, so the camera pulls back to it just
+  // as the apply did (src/scene/homeFocus.ts). Done before the receipt so the framing lands with
+  // the rooms it belongs to.
+  frameHomeForHistory(entries);
   historyReceipts += 1;
   const what = (entries[0]?.summary ?? "a change").replace(/^(You|Agent|Assistant|System) /, "");
   hearthStore.getState().pushActivity({

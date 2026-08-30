@@ -22,7 +22,11 @@ import { useMaterialFade } from "./fade";
 import { useIsHovered } from "./hover";
 import { useReducedMotion } from "./idle";
 import { useDraggingItemId } from "./interactionDrag";
-import { M, SELECTION_HALO_Y, clamp, rotationRadians, stackElevationCm } from "./math";
+import { useOrbitQuantized } from "./cameraState";
+import {
+  DOLLHOUSE_PITCH, M, PLAN_PITCH, SELECTION_HALO_Y, clamp, furnitureOpacity, rotationRadians,
+  stackElevationCm, yawAzimuth,
+} from "./math";
 import type { Vec3 } from "./math";
 import { Placeholder } from "./Placeholder";
 import { useSoftRing } from "./textures";
@@ -38,6 +42,17 @@ const lastPositions = new Map<string, Vec3>();
 
 /** How far furniture outside the framed room blends toward plaster, so the hero room reads first. */
 const RECEDE = 0.34;
+
+/**
+ * The cut-away fade for furniture standing in front of the framed room, on the walls' own 300 ms
+ * tween and sampled on the walls' own 4° grid (src/scene/Rooms.tsx): the wall and the wardrobe
+ * behind it have to leave together, or the wardrobe is left hanging in the room's doorway.
+ */
+const FOREGROUND_FADE_MS = 300;
+const FOREGROUND_STEP_DEG = 4;
+/** Below this the piece is switched off outright: no draw call, and no pick either. */
+const FOREGROUND_OFF = 0.02;
+const DEG = Math.PI / 180;
 
 const HOVER_LIFT = 0.02;
 const DROP_HEIGHT = 0.4;
@@ -98,6 +113,33 @@ export function Furniture() {
   const focusRoomId = framed.roomId ?? meta.activeRoomId;
   const draggingId = useDraggingItemId();
   const dragging = useHearthStore((state) => state.ui.dragging);
+  // The camera the human is actually looking through, on the wall cut-away's grid.
+  const orbit = useOrbitQuantized(FOREGROUND_STEP_DEG);
+  const plan = meta.view === "plan";
+  const azimuth = plan ? 0 : yawAzimuth(meta.yaw) + orbit.azimuthDeg * DEG;
+  const pitch = plan ? PLAN_PITCH : DOLLHOUSE_PITCH + orbit.pitchDeg * DEG;
+  // Framing the whole home turns the in-front test off, exactly as it does for the walls: every
+  // piece in the southern half of a 15 m home stands in front of the home's centre.
+  const cutInFront = !plan && framed.kind !== "home";
+
+  /**
+   * How visible a piece is once the walls in front of the framed room have been cut away. Only a
+   * *neighbour's* furniture can be in the way; a ghost is under someone's pointer and the selection
+   * is what the human is working on, so neither ever fades.
+   */
+  const foregroundOpacity = (entry: Resolved): number => {
+    if (!cutInFront) return 1;
+    if (entry.item.roomId === focusRoomId) return 1;
+    if (entry.item.status === "ghost" || meta.selection.itemId === entry.item.id) return 1;
+    return furnitureOpacity(
+      { x: entry.room.origin.x + entry.item.pos.x, y: entry.room.origin.y + entry.item.pos.y },
+      { x: entry.footprintM.w / 2, z: entry.footprintM.d / 2 },
+      framed.centreCm,
+      azimuth,
+      pitch,
+      { cutInFront },
+    );
+  };
 
   return (
     <IntroLift>
@@ -112,11 +154,13 @@ export function Furniture() {
           framed={entry.item.roomId === focusRoomId}
           hidden={entry.item.id === draggingId}
           invalid={dragging?.itemId === entry.item.id && dragging.valid === false}
+          foreground={foregroundOpacity(entry)}
+          homeToken={rooms}
           reduced={reduced}
         />
       ))}
       {exiting.map((entry) => (
-        <FurniturePiece key={`exit-${entry.item.id}`} entry={entry} moveDelay={0} selected={false} exiting reduced={reduced} />
+        <FurniturePiece key={`exit-${entry.item.id}`} entry={entry} moveDelay={0} selected={false} exiting homeToken={rooms} reduced={reduced} />
       ))}
     </IntroLift>
   );
@@ -161,9 +205,18 @@ interface PieceProps {
    * the rest draw the placeholder until the warm-up wave reaches them (src/scene/assetWaves.ts).
    */
   framed?: boolean;
+  /** 1 normally; less when this piece stands between the camera and the framed room. */
+  foreground?: number;
+  /**
+   * The home this pose belongs to — `scene.rooms`, whose identity a template apply replaces and a
+   * furniture move does not (immer only rebuilds the slice it touched). Items that survive by id —
+   * `bed-1` exists in every bedroom plan — are unrelated objects in a different home, so they must
+   * not glide there from wherever they stood in the plan that was just discarded.
+   */
+  homeToken: object;
 }
 
-function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = false, recede = 0, hidden = false, invalid = false, reduced, framed = true }: PieceProps) {
+function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = false, recede = 0, hidden = false, invalid = false, reduced, framed = true, foreground = 1, homeToken }: PieceProps) {
   const { item, product, position, footprintM } = entry;
   const ghost = item.status === "ghost";
   // "Calm" bodies skip the drop: a ghost, an item on its way out, and every item under reduced
@@ -183,18 +236,38 @@ function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = fa
     [],
   );
 
-  // One fade serves both cross-fades: the reduced-motion arrival at a new pose and the removal that
-  // pairs with the exit shrink. At 1 nothing is faded and no material is cloned.
-  const startFade = useMaterialFade(body);
+  // One fade, two channels (src/scene/fade.ts): `run` carries the reduced-motion arrival at a new
+  // pose and the removal that pairs with the exit shrink, `setBase` holds the cut-away fade for a
+  // piece standing in front of the framed room. At 1 nothing is faded and no material is cloned.
+  const { run: startFade, setBase, value: fadeValue } = useMaterialFade(body);
+  useEffect(() => {
+    setBase(foreground, reduced ? 0 : FOREGROUND_FADE_MS);
+  }, [foreground, reduced, setBase]);
+
+  // A body faded all the way out is switched off, once the fade has actually run: it costs no draw
+  // call, and `itemAt` stops picking it, so a click on the framed room reaches the framed room
+  // rather than the wardrobe next door (src/scene/interactionPicking.ts). Driven from the frame loop
+  // like the walls' own cut-away, so React never re-renders the layer for it.
+  const dimRef = useRef<Group>(null);
+  useFrame(() => {
+    const group = dimRef.current;
+    if (!group) return;
+    const lit = fadeValue() > FOREGROUND_OFF;
+    if (group.visible !== lit) group.visible = lit;
+  });
 
   const previous = useRef<Vec3>(position);
+  const lastHome = useRef(homeToken);
   const [{ ox, oy, oz, arc }, glideApi] = useSpring(() => ({ ox: 0, oy: 0, oz: 0, arc: 1 }), []);
   useLayoutEffect(() => {
     const last = previous.current;
+    // A different home is not a move: the pose is taken at once and the change is carried by the
+    // same cross-fade reduced motion uses (see `homeToken` in `Furniture`).
+    const sameHome = lastHome.current === homeToken;
+    lastHome.current = homeToken;
     if (last[0] === position[0] && last[1] === position[1] && last[2] === position[2]) return;
     previous.current = position;
-    if (reduced) {
-      // Reduced motion takes the pose immediately and carries the change on a cross-fade instead.
+    if (reduced || !sameHome) {
       glideApi.set({ ox: 0, oy: 0, oz: 0, arc: 1 });
       startFade(0.15, 1, CROSSFADE_MS);
       return;
@@ -205,7 +278,7 @@ function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = fa
       delay: moveDelay,
       config: motionTokens.spring,
     });
-  }, [position, moveDelay, glideApi, reduced, startFade]);
+  }, [position, moveDelay, glideApi, reduced, startFade, homeToken]);
 
   const [{ exit }, exitApi] = useSpring(() => ({ exit: 1, config: { duration: EXIT_MS } }), []);
   useEffect(() => {
@@ -221,15 +294,17 @@ function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = fa
 
   return (
     <group name={`item-${item.id}`} position={position} visible={!hidden}>
-      <animated.group position-x={ox} position-y={oy} position-z={oz}>
-        <animated.group position-y={bodyY} scale={bodyScale}>
-          <group ref={body} rotation-y={rotationRadians(item.rotation)}>
-            <ItemBody product={product} colorway={item.colorway} ghost={ghost} recede={recede} framed={framed} />
-          </group>
+      <group ref={dimRef}>
+        <animated.group position-x={ox} position-y={oy} position-z={oz}>
+          <animated.group position-y={bodyY} scale={bodyScale}>
+            <group ref={body} rotation-y={rotationRadians(item.rotation)}>
+              <ItemBody product={product} colorway={item.colorway} ghost={ghost} recede={recede} framed={framed} />
+            </group>
+          </animated.group>
         </animated.group>
-      </animated.group>
-      {selected && !ghost ? <Halo width={footprintM.w} depth={footprintM.d} invalid={invalid} /> : null}
-      {dust && !calm ? <DustRing width={footprintM.w} depth={footprintM.d} /> : null}
+        {selected && !ghost ? <Halo width={footprintM.w} depth={footprintM.d} invalid={invalid} /> : null}
+        {dust && !calm ? <DustRing width={footprintM.w} depth={footprintM.d} /> : null}
+      </group>
     </group>
   );
 }

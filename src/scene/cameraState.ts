@@ -207,6 +207,28 @@ export function zoomBy(factor: number): void {
   publish({ zoom, mode: "immediate" });
 }
 
+/**
+ * The human's adjustments, copied out. A capture borrows the framed shot (src/ui/capture.ts) and has
+ * to hand back exactly the view it took, down to the pan.
+ */
+export function cameraAdjustments(): CameraState {
+  return { orbit: { ...state.orbit }, zoom: state.zoom, pan: { ...state.pan }, mode: state.mode };
+}
+
+/**
+ * Puts a snapshot from `cameraAdjustments` back, by tween. Unlike `setOrbit` this ignores the plan
+ * flag: a capture switches the view to plan and back, and the human's tilt has to survive that.
+ */
+export function restoreCameraAdjustments(saved: CameraState, opts: { tween?: boolean } = {}): void {
+  const tween = (opts.tween ?? true) && !reducedMotion();
+  publish({
+    orbit: { ...saved.orbit },
+    zoom: saved.zoom,
+    pan: { ...saved.pan },
+    mode: tween ? "tween" : "immediate",
+  });
+}
+
 /** Returns the camera to the framed shot. Already home is not an event. */
 export function resetCamera(opts: { tween?: boolean } = {}): void {
   if (!cameraOffHome()) return;

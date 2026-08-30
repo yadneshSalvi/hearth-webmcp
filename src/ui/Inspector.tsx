@@ -1,24 +1,26 @@
 "use client";
 /**
  * Inspector: the selected item, or — when nothing is selected — the room itself, scored by the
- * design engine. Both states are designed; neither is ever blank.
+ * design engine, or the whole home while the camera is framing it. Every state is designed; none is
+ * ever blank.
  */
 import { useMemo } from "react";
 import { resolveAnchor, rotateBy } from "../engine/anchors";
 import { createCatalog } from "../engine/catalog";
-import { conflictsForItem } from "../engine/conflicts";
+import { conflictsForItem, evaluateRoom } from "../engine/conflicts";
 import { wallsLine } from "../engine/describe";
 import { roomAreaM2 } from "../engine/geometry";
 import { designReport } from "../engine/report";
 import type { DesignScores } from "../engine/report";
-import type { CatalogItem, Furniture, Room } from "../engine/types";
+import type { CatalogItem, Furniture, Room, Scene } from "../engine/types";
+import { useHomeFocus } from "../scene/focus";
 import { hearthStore, useHearthStore } from "../state/store";
 import { cartOps, historyMarker, undoTo, useConflicts } from "./useHearth";
 import { CatalogThumb } from "./CatalogThumb";
 import { ConflictRow } from "./ConflictRow";
 import { categoryLabel } from "./catalogQuery";
 import { colorwayLabel, dimsFull, plural, usd } from "./format";
-import { IconCart, IconCheck, IconCompare, IconLock, IconPanelRight, IconRotateRight, IconTrash, IconUnlock } from "./icons";
+import { IconCart, IconCheck, IconCompare, IconHome, IconLock, IconPanelRight, IconRotateRight, IconTrash, IconUnlock } from "./icons";
 import { Button, EmptyState, IconButton, Panel, Tag } from "./primitives";
 import { pushToast } from "./toast-bus";
 
@@ -76,6 +78,88 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
       </span>
       <span className="numerals w-5 shrink-0 text-right text-[11.5px] text-ink-muted">{value}</span>
     </li>
+  );
+}
+
+/** One measured row of the home summary: a small-caps label and a Fraunces figure. */
+function HomeStat({ label, value, tone = "ink" }: { label: string; value: string; tone?: "ink" | "muted" }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b border-hairline/70 py-1.5 last:border-0">
+      <span className="label-caps">{label}</span>
+      <span className={`numerals text-[13px] ${tone === "muted" ? "text-ink-muted" : "text-ink"}`}>{value}</span>
+    </div>
+  );
+}
+
+/**
+ * The whole home, while the camera is framing it (src/scene/homeFocus.ts — which is where a template
+ * apply lands). The panel and the camera must agree about the subject: naming the active room under
+ * a shot of eleven rooms is the panel disagreeing with what the human can see.
+ */
+function HomeCard({ scene, catalogItems }: { scene: Scene; catalogItems: CatalogItem[] }) {
+  const summary = useMemo(() => {
+    const catalog = createCatalog(catalogItems);
+    const placed = scene.furniture.filter((item) => item.status === "placed");
+    let conflicts = 0;
+    let errors = 0;
+    for (const room of scene.rooms) {
+      for (const conflict of evaluateRoom(scene, room.id, catalog)) {
+        conflicts += 1;
+        if (conflict.severity === "error") errors += 1;
+      }
+    }
+    return {
+      rooms: scene.rooms.length,
+      bedrooms: scene.rooms.filter((room) => room.type === "bedroom").length,
+      baths: scene.rooms.filter((room) => room.type === "bath").length,
+      areaM2: scene.rooms.reduce((total, room) => total + roomAreaM2(room), 0),
+      items: placed.length,
+      spentUsd: placed.reduce((total, item) => total + (catalog.byId(item.catalogId)?.price ?? 0), 0),
+      conflicts,
+      errors,
+    };
+  }, [scene, catalogItems]);
+  const budgetUsd = scene.meta.budgetUsd;
+  const remaining = budgetUsd === undefined ? undefined : budgetUsd - summary.spentUsd;
+
+  return (
+    <div className="flex flex-col gap-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="font-display flex items-center gap-2 truncate text-[19px] leading-tight text-ink">
+            <IconHome size={16} className="shrink-0 text-terracotta" />
+            Entire home
+          </h3>
+          <p className="label-caps mt-1.5">
+            {plural(summary.rooms, "room")} · {plural(summary.items, "item")}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="numerals text-[26px] leading-none text-ink">{summary.areaM2.toFixed(1)}</p>
+          <p className="label-caps mt-1 text-ink-faint">m²</p>
+        </div>
+      </div>
+
+      <dl className="flex flex-col">
+        <HomeStat label="Bedrooms" value={`${summary.bedrooms}`} />
+        <HomeStat label="Bathrooms" value={`${summary.baths}`} />
+        <HomeStat label="Furniture" value={usd(summary.spentUsd)} />
+        <HomeStat
+          label={budgetUsd === undefined ? "Budget" : "Remaining"}
+          value={remaining === undefined ? "not set" : usd(remaining)}
+          tone={remaining !== undefined && remaining < 0 ? "ink" : "muted"}
+        />
+        <HomeStat
+          label="Conflicts"
+          value={summary.conflicts === 0 ? "none" : `${summary.conflicts}${summary.errors > 0 ? ` · ${summary.errors} to fix` : ""}`}
+          tone={summary.conflicts === 0 ? "muted" : "ink"}
+        />
+      </dl>
+
+      <p className="text-[12.5px] leading-relaxed text-ink-muted">
+        Pick a room from the switcher, or click one on the canvas, to zoom in and score it.
+      </p>
+    </div>
   );
 }
 
@@ -267,6 +351,7 @@ function ItemCard({ item, product }: { item: Furniture; product: CatalogItem }) 
 export function Inspector({ className = "", collapsible = false }: { className?: string; collapsible?: boolean }) {
   const scene = useHearthStore((state) => state.scene);
   const catalogItems = useHearthStore((state) => state.catalog);
+  const home = useHomeFocus();
   const selectedId = scene.meta.selection.itemId;
   const item = scene.furniture.find((candidate) => candidate.id === selectedId);
   const product = item ? createCatalog(catalogItems).byId(item.catalogId) : undefined;
@@ -303,6 +388,8 @@ export function Inspector({ className = "", collapsible = false }: { className?:
     >
       {item && product ? (
         <ItemCard item={item} product={product} />
+      ) : home ? (
+        <HomeCard scene={scene} catalogItems={catalogItems} />
       ) : room ? (
         <RoomCard room={room} />
       ) : (

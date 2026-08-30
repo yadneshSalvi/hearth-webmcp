@@ -4,27 +4,49 @@
  *
  * A template apply replaces every room in the home, so the shot the human is looking at — one
  * bedroom of the plan they just discarded — is never the right answer. One rule, in one place, for
- * every caller: the human's Layouts sheet, the Build panel's picker and the agent's `apply_template`
- * tool all write the same receipt, and that receipt is the signal.
+ * every caller: the human's Layouts sheet, the Build panel's picker, the agent's `apply_template`
+ * tool and an undo of any of them. The apply's *receipt* is the signal.
  *
  * The receipt, rather than the room array, is what is watched: `create_room` and `update_room`
  * replace `scene.rooms` too (immer hands back a new array for any edit), and re-applying the *same*
- * template changes neither `meta.template` nor the room ids. A fresh "Apply template" entry is the
- * only thing that means "this is a different home now".
+ * template changes neither `meta.template` nor the room ids. A fresh apply receipt is the only thing
+ * that means "this is a different home now".
  *
- * Undo is deliberately not special-cased: undoing an apply restores the previous activity list, so
- * the top entry is no longer the apply and the camera keeps whatever shot it had. Undoing *past* a
- * second apply surfaces the first one's receipt again and does re-frame the home.
+ * There are two shapes of that receipt, and both have to count. A human's apply writes the store's
+ * own "Apply template" entry; an agent's or the assistant's is *suppressed* on purpose — `prepend`
+ * in src/state/store.ts drops a non-human store entry while a tool batch is open, so one tool call
+ * leaves one row — and what lands instead is the tool's receipt, titled "Apply floor-plan template"
+ * and tagged `tool: "apply_template"`. Watching the title alone meant the agent's apply, the primary
+ * way this studio is driven, never pulled the camera back at all.
+ *
+ * Undo and redo are the same rule read backwards: undoing an apply *also* replaces every room in
+ * the home, so it is an apply too and the camera pulls back to the whole home again. The store's
+ * `undo`/`redo` hand back the receipts they moved, so the chrome tells this module (`frameHomeForHistory`)
+ * rather than this module guessing from the restored activity list.
  */
 import { hearthStore } from "../state/store";
 import { getFocusTarget, setFocusTarget } from "./focus";
 
-/** The activity title `applyTemplate` writes, whoever called it (src/state/store.ts). */
+/** The activity title the store's own `applyTemplate` writes (src/state/store.ts). */
 export const TEMPLATE_RECEIPT_TITLE = "Apply template";
+/** The tool whose receipt lands instead when an agent or the assistant applies one (TOOLS.md §31). */
+export const TEMPLATE_TOOL_NAME = "apply_template";
 
-/** True when this activity entry is the receipt of a template apply. */
-export function isTemplateReceipt(entry: { title: string } | undefined): boolean {
-  return entry?.title === TEMPLATE_RECEIPT_TITLE;
+/** True when this activity entry is the receipt of a template apply, from either writer. */
+export function isTemplateReceipt(entry: { title: string; tool?: string } | undefined): boolean {
+  if (!entry) return false;
+  return entry.tool === TEMPLATE_TOOL_NAME || entry.title === TEMPLATE_RECEIPT_TITLE;
+}
+
+/**
+ * Frames the whole home when an undo or a redo moved a template apply. Called by the chrome with the
+ * receipts the store handed back (src/ui/useHearth.ts) — undoing the plan you just chose puts the
+ * previous home on screen, and being left inside one of its bedrooms is the same bug as before.
+ */
+export function frameHomeForHistory(entries: readonly { title: string; tool?: string }[]): boolean {
+  if (!entries.some((entry) => isTemplateReceipt(entry))) return false;
+  setFocusTarget({ home: true });
+  return true;
 }
 
 /**

@@ -57,7 +57,14 @@ export function LayoutsSheet({ open, onClose }: LayoutsSheetProps) {
     <Sheet open={open} onClose={onClose} title="Layouts" subtitle="Start from a floor plan." width={588}>
       <div className="flex flex-col gap-3.5">
         <div className="flex items-center gap-2">
-          <Chip active={furnished} icon={furnished ? IconCheck : undefined} onClick={() => setFurnished(!furnished)}>
+          {/* The first thing to answer is "furnished?", so it takes the focus the sheet hands out and
+              the tab order reads toggle → cards → close rather than starting on the close button. */}
+          <Chip
+            active={furnished}
+            icon={furnished ? IconCheck : undefined}
+            data-autofocus=""
+            onClick={() => setFurnished(!furnished)}
+          >
             Furnished
           </Chip>
           <span className="text-[11.5px] leading-snug text-ink-faint">
