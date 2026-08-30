@@ -50,6 +50,20 @@ export function frameHomeForHistory(entries: readonly { title: string; tool?: st
 }
 
 /**
+ * A human picked a room on the canvas. Every framing override lets go — the whole-home shot a
+ * template apply leaves on, a room or item another command pinned — and the rig goes back to
+ * framing the active room, which the caller sets next.
+ *
+ * The case this exists for is the one the subscription below cannot see. After an apply the home is
+ * framed *and* `activeRoomId` is already the front room, so clicking that room's own floor changed
+ * no id, released nothing, and did nothing at all — while clicking any other room worked. The room
+ * switcher has always cleared the override before activating; the floor now does too.
+ */
+export function releaseFocusForRoomPick(): void {
+  if (getFocusTarget()) setFocusTarget(undefined);
+}
+
+/**
  * Subscribes to the store: frames the whole home on a template apply, and lets go of that shot as
  * soon as the human activates a room (the switcher, a click on a floor, an agent's `set_view`).
  */

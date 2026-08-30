@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DOLLHOUSE_PITCH, furnitureOpacity } from "@/src/scene/math";
-import { humanizeConfirmMessage, templateConfirmMessage, templateLabel } from "@/src/ui/templates";
+import { templateLabel } from "@/src/engine";
+import { humanizeConfirmMessage, templateConfirmMessage } from "@/src/ui/templates";
 
 const DEG = Math.PI / 180;
 /** The framed room's centre, in world centimetres. */
@@ -58,6 +59,15 @@ describe("template confirmation copy", () => {
   });
 
   it("rewrites the tool's own question into the same sentence", () => {
+    // The shape apply_template asks in today. The string the *live* tool produces is fed through
+    // this same function by tests/tools/handlers.test.ts, so the regex cannot go stale again.
+    expect(humanizeConfirmMessage("Replace this home and its 24 placed items with the 5 bedrooms layout?"))
+      .toBe("Replace this home with the 5 bedrooms layout?");
+    expect(humanizeConfirmMessage("Replace this home and its 1 placed items with the Studio layout?"))
+      .toBe("Replace this home with the Studio layout?");
+  });
+
+  it("still rewrites the shape the tool asked in before engine-owned labels", () => {
     expect(humanizeConfirmMessage("Replace this home and its 24 placed items with the 5br template?"))
       .toBe("Replace this home with the 5 bedrooms layout?");
     expect(humanizeConfirmMessage("Replace this home and its 1 placed items with the studio template?"))

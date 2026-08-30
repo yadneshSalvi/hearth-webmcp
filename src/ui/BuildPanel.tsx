@@ -92,7 +92,7 @@ function TemplateSection() {
   return (
     <section className="flex flex-col gap-2.5">
       <h3 className="label-caps">Floor plan</h3>
-      <Segmented label="Floor-plan template" value={choice} options={TEMPLATES} size="sm" className="h-auto flex-wrap" onChange={(value) => setChoice(value)} />
+      <Segmented label="Floor-plan template" value={choice} options={TEMPLATES} size="sm" wrap onChange={(value) => setChoice(value)} />
       <div className="flex items-center gap-2">
         <Chip active={furnished} icon={furnished ? IconCheck : undefined} onClick={() => setFurnished(!furnished)}>
           Furnished

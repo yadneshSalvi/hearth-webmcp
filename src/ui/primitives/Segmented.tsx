@@ -16,6 +16,11 @@ export interface SegmentedProps<T extends string> {
   onChange(value: T): void;
   size?: "sm" | "md";
   iconOnly?: boolean;
+  /**
+   * Lets the track run onto a second row and grow to hold it. A fixed-height track cannot: seven
+   * floor plans wrapped inside a 28 px pill and the last one landed on top of the control below it.
+   */
+  wrap?: boolean;
   className?: string;
 }
 
@@ -27,9 +32,13 @@ export function Segmented<T extends string>({
   onChange,
   size = "md",
   iconOnly = false,
+  wrap = false,
   className = "",
 }: SegmentedProps<T>) {
-  const height = size === "sm" ? "h-7" : "h-9";
+  const height = wrap ? (size === "sm" ? "min-h-7" : "min-h-9") : size === "sm" ? "h-7" : "h-9";
+  // A wrapped track has no definite height for `h-full` to resolve against, so the segments state
+  // their own — the same 24/32 px the fixed-height track gives them inside its 2 px of padding.
+  const itemHeight = wrap ? (size === "sm" ? "h-6" : "h-8") : "h-full";
   const pad = iconOnly ? (size === "sm" ? "w-7" : "w-9") : size === "sm" ? "px-2.5" : "px-3";
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -46,7 +55,7 @@ export function Segmented<T extends string>({
       role="radiogroup"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={`inline-flex ${height} items-center gap-0.5 rounded-pill border border-hairline bg-charcoal/5 p-0.5 ${className}`}
+      className={`inline-flex ${height} items-center gap-0.5 rounded-pill border border-hairline bg-charcoal/5 p-0.5 ${wrap ? "shrink-0 flex-wrap gap-y-0.5" : ""} ${className}`}
     >
       {options.map((option) => {
         const selected = option.value === value;
@@ -60,7 +69,7 @@ export function Segmented<T extends string>({
             aria-label={iconOnly ? option.label : undefined}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(option.value)}
-            className={`inline-flex h-full items-center justify-center gap-1.5 rounded-pill text-[12px] transition-colors duration-200 ease-out-soft ${pad} ${
+            className={`inline-flex ${itemHeight} items-center justify-center gap-1.5 rounded-pill text-[12px] transition-colors duration-200 ease-out-soft ${pad} ${
               selected ? "bg-plaster text-ink shadow-chip" : "text-ink-muted hover:text-ink"
             }`}
           >

@@ -12,7 +12,7 @@ import {
   setFocusTarget,
   toggleHomeFocus,
 } from "@/src/scene/focus";
-import { frameHomeForHistory, isTemplateReceipt, watchHomeFraming } from "@/src/scene/homeFocus";
+import { frameHomeForHistory, isTemplateReceipt, releaseFocusForRoomPick, watchHomeFraming } from "@/src/scene/homeFocus";
 import { cameraBridgeSnapshot, resetCameraStateForTests } from "@/src/scene/cameraState";
 import { M, WALL_T, homeCentreCm, wallOpacity, wholeHomeBox } from "@/src/scene/math";
 
@@ -169,6 +169,28 @@ describe("framing the home after a template apply", () => {
     expect(other).toBeTruthy();
     hearthStore.getState().setActiveRoom("human", other!.id);
     expect(isHomeFocus()).toBe(false);
+  });
+
+  /**
+   * The click the subscription above cannot see: after an apply the home is framed and the front
+   * room is already `activeRoomId`, so activating it changes nothing. Interaction.tsx releases the
+   * override itself before it activates — this is that pair, in order.
+   */
+  it("lets go of the home shot for a click into the room that is already active", () => {
+    hearthStore.getState().applyTemplate("human", "2br", true);
+    expect(isHomeFocus()).toBe(true);
+    const active = hearthStore.getState().scene.meta.activeRoomId;
+    releaseFocusForRoomPick();
+    hearthStore.getState().setActiveRoom("human", active);
+    expect(isHomeFocus()).toBe(false);
+    expect(getFocusTarget()).toBeUndefined();
+  });
+
+  it("issues no framing command when nothing is pinned, so a floor click keeps the human's orbit", () => {
+    setFocusTarget(undefined);
+    const before = focusToken();
+    releaseFocusForRoomPick();
+    expect(focusToken()).toBe(before);
   });
 
   it("does not fire for a room edit", () => {
