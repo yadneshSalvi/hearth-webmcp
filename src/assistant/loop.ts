@@ -22,6 +22,17 @@ export interface AssistantOptions {
   endpoint?: string;
   maxCallsPerTurn?: number;
   execute?: (name: string, input: unknown) => Promise<unknown>;
+  /**
+   * Resolves once the page's tool registry has finished reacting to whatever the last round did.
+   *
+   * Hearth's tool list is dynamic (TOOLS.md §4): `set_mode build` adds six tools, a ghost adds the
+   * preview pair, a second variant adds `compare_variants`. Registering a group takes the best part
+   * of two seconds, and `document.modelContext.getTools()` answers with the *old* list until it
+   * lands — so a loop that asks the moment a tool returns builds its next request from a list that
+   * is already wrong, and the model is told "Build tools are now available" while it cannot see one.
+   * Awaited only after a round that actually called something.
+   */
+  settle?: () => Promise<void>;
 }
 
 interface ClientSseEvent {
@@ -157,6 +168,7 @@ export function createAssistant(opts: AssistantOptions = {}): {
   reset(): void;
 } {
   const endpoint = opts.endpoint ?? "/api/assistant";
+  const settle = opts.settle ?? (async () => undefined);
   const configuredMax = opts.maxCallsPerTurn ?? DEFAULT_MAX_CALLS_PER_TURN;
   const maxCalls = Math.max(1, Math.min(DEFAULT_MAX_CALLS_PER_TURN, Math.floor(configuredMax)));
   let messages: AssistantMessage[] = [];
@@ -213,6 +225,13 @@ export function createAssistant(opts: AssistantOptions = {}): {
             if (event === "text") {
               if (!isRecord(data) || typeof data.delta !== "string") {
                 throw new AssistantLoopError("The assistant returned an invalid text event.", true);
+              }
+              // A turn can speak in more than one round — "…confirm in the dialog." before a tool
+              // call, "Done." after it — and both land in one bubble. Without a break between them
+              // they run together as "dialog.Done".
+              if (roundText.length === 0 && fullText.length > 0 && !/\s$/.test(fullText) && !/^\s/.test(data.delta)) {
+                fullText += "\n\n";
+                ev.onText("\n\n");
               }
               roundText += data.delta;
               fullText += data.delta;
@@ -278,6 +297,8 @@ export function createAssistant(opts: AssistantOptions = {}): {
 
           if (roundText) messages.push({ role: "assistant", content: roundText });
           shouldContinue = roundCalls > 0;
+          // The next round re-reads the registry, so let it finish changing first.
+          if (shouldContinue && !controller.signal.aborted) await settle();
         }
         if (!controller.signal.aborted) ev.onDone({ text: fullText, calls: callCount });
       } catch (error) {

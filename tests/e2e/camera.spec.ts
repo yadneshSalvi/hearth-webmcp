@@ -582,6 +582,15 @@ test.describe("camera", () => {
   test("the first pan of a browser explains the camera, once", async ({ page }) => {
     // Deliberately *not* `?e2e=1`: the hint suppresses itself for the suite, so the only honest way
     // to check that it appears at all is a plain visit — which is how it went unseen for a round.
+    //
+    // A bundle built with NEXT_PUBLIC_HEARTH_E2E=1 silences the hint on *every* load, flag or no
+    // flag (src/scene/cameraGestures.ts) — that is what the switch is for — so this one case cannot
+    // run against such a build. Whoever points the suite at one says so; nothing is inferred from
+    // the page, because `next dev` also exposes the bridges and there the hint does appear.
+    test.skip(
+      process.env.HEARTH_E2E_BUNDLE === "1",
+      "this bundle was built with NEXT_PUBLIC_HEARTH_E2E=1, which silences the hint by design",
+    );
     await page.addInitScript(() => {
       try {
         window.localStorage.setItem("hearth.onboarding.v1", "dismissed");

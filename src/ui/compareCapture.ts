@@ -37,8 +37,31 @@ function layoutFor(variant: Variant, others: Furniture[]): Furniture[] {
   return [...others, ...variant.furniture.map((item) => ({ ...item, pos: { ...item.pos }, status: "placed" as const }))];
 }
 
+/**
+ * The photo session that is already running, if one is.
+ *
+ * A comparison swaps the room's furniture three times — variant A, variant B, then the layout it
+ * found — and the overlay closes itself when *anything else* changes the layout, which is how a
+ * second, overlapping session reads to the first. React's StrictMode starts exactly that second
+ * session in development: the effect runs, is cleaned up and runs again, and with a room the camera
+ * has to reframe onto first the two sessions stagger by the 740 ms reframe, so the later one's swaps
+ * land after the earlier one has put the split on screen and shut it again a beat later. One session
+ * per comparison, shared by every caller asking for it.
+ */
+let inFlight: { key: string; pair: Promise<ComparePair> } | undefined;
+
 /** Captures both variants and restores the room, even if a capture fails. */
-export async function captureComparison(roomId: string, left: string, right: string): Promise<ComparePair> {
+export function captureComparison(roomId: string, left: string, right: string): Promise<ComparePair> {
+  const key = `${roomId}\u0000${left}\u0000${right}`;
+  if (inFlight?.key === key) return inFlight.pair;
+  const pair = shootComparison(roomId, left, right).finally(() => {
+    if (inFlight?.pair === pair) inFlight = undefined;
+  });
+  inFlight = { key, pair };
+  return pair;
+}
+
+async function shootComparison(roomId: string, left: string, right: string): Promise<ComparePair> {
   const leftVariant = findVariant(roomId, left);
   const rightVariant = findVariant(roomId, right);
   if (!leftVariant || !rightVariant) throw new Error("Both variants must still be saved to compare them");
