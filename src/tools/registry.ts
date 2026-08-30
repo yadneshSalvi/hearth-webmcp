@@ -42,6 +42,7 @@ export interface Registry {
   start(): void;
   stop(): void;
   sync(): void;
+  settled(): Promise<void>;
   execute(name: string, input: unknown, source: ToolSource): Promise<ToolResult>;
   list(): DefinedTool[];
   readonly executing: number;
@@ -71,6 +72,21 @@ export function createRegistry(options: RegistryOptions): Registry {
   let subscription: (() => void) | undefined;
   let selectedGateKey = gateKey(options.store.getState());
   let mirrorRequest = 0;
+  let progressRevision = 0;
+  const pendingRegistrations = new Set<Promise<void>>();
+  const progressWaiters = new Set<() => void>();
+
+  const signalProgress = (): void => {
+    progressRevision += 1;
+    const waiters = [...progressWaiters];
+    progressWaiters.clear();
+    waiters.forEach((resolve) => resolve());
+  };
+
+  const waitForProgress = (revision: number): Promise<void> => {
+    if (revision !== progressRevision) return Promise.resolve();
+    return new Promise((resolve) => progressWaiters.add(resolve));
+  };
 
   const placeholderContext: ToolContext = {
     store: options.store,
@@ -108,7 +124,11 @@ export function createRegistry(options: RegistryOptions): Registry {
       },
       after() {
         activeExecutions = Math.max(0, activeExecutions - 1);
+        signalProgress();
         flushPending();
+      },
+      settled() {
+        return registry.settled();
       },
       now,
     });
@@ -117,13 +137,18 @@ export function createRegistry(options: RegistryOptions): Registry {
   const registerOne = (tool: DefinedTool, controller: AbortController): void => {
     try {
       const registration = options.modelContext.registerTool(tool, { signal: controller.signal });
-      void registration.catch((error: unknown) => {
-        if (isAbortError(error)) return;
-        console.warn(`[Hearth WebMCP] Failed to register ${tool.name}.`, error);
+      const tracked = registration.catch((error: unknown) => {
+        if (!isAbortError(error)) console.warn(`[Hearth WebMCP] Failed to register ${tool.name}.`, error);
+      });
+      pendingRegistrations.add(tracked);
+      void tracked.then(() => {
+        pendingRegistrations.delete(tracked);
+        signalProgress();
       });
     } catch (error) {
       if (isAbortError(error)) return;
       console.warn(`[Hearth WebMCP] Failed to register ${tool.name}.`, error);
+      signalProgress();
     }
   };
 
@@ -137,6 +162,7 @@ export function createRegistry(options: RegistryOptions): Registry {
       const controller = controllers.get(tool.group);
       if (controller) registerOne(tool, controller);
     }
+    signalProgress();
   };
 
   const registerGroup = (group: ToolGroup): void => {
@@ -145,6 +171,7 @@ export function createRegistry(options: RegistryOptions): Registry {
       queueMicrotask(() => {
         recentlyAborted.delete(group);
         if (started && desiredToolGroups(options.store.getState()).includes(group) && !registered[group]) registerGroup(group);
+        signalProgress();
       });
       return;
     }
@@ -152,6 +179,7 @@ export function createRegistry(options: RegistryOptions): Registry {
     controllers.set(group, controller);
     registered[group] = true;
     definitions.filter((tool) => tool.group === group).forEach((tool) => registerOne(tool, controller));
+    signalProgress();
   };
 
   const abortGroup = (group: ToolGroup): void => {
@@ -161,6 +189,7 @@ export function createRegistry(options: RegistryOptions): Registry {
     registered[group] = false;
     recentlyAborted.add(group);
     queueMicrotask(() => recentlyAborted.delete(group));
+    signalProgress();
   };
 
   const mirror = (): void => {
@@ -181,12 +210,16 @@ export function createRegistry(options: RegistryOptions): Registry {
     });
   };
 
-  const onToolChange = (): void => mirror();
+  const onToolChange = (): void => {
+    signalProgress();
+    mirror();
+  };
 
   function sync(): void {
     if (!started) return;
     if (activeExecutions > 0) {
       pendingSync = true;
+      signalProgress();
       return;
     }
     const desired = new Set(desiredToolGroups(options.store.getState()));
@@ -194,7 +227,36 @@ export function createRegistry(options: RegistryOptions): Registry {
       if (desired.has(group) && !registered[group]) registerGroup(group);
       else if (!desired.has(group) && registered[group]) abortGroup(group);
     }
+    signalProgress();
   }
+
+  const registrationsMatch = (tools: WebMCP.RegisteredTool[]): boolean => {
+    const names = new Set(tools.map(({ name }) => name));
+    const desired = new Set(desiredToolGroups(options.store.getState()));
+    return definitions.every((tool) => names.has(tool.name) === desired.has(tool.group));
+  };
+
+  const waitUntilSettled = async (): Promise<void> => {
+    while (started) {
+      const revision = progressRevision;
+      const desired = new Set(desiredToolGroups(options.store.getState()));
+      const groupsMatch = GROUPS.every((group) => registered[group] === desired.has(group));
+      if (pendingRegistrations.size > 0) {
+        await Promise.all([...pendingRegistrations]);
+        continue;
+      }
+      if (pendingSync || syncScheduled || !groupsMatch) {
+        flushPending();
+        await waitForProgress(revision);
+        continue;
+      }
+      const selected = gateKey(options.store.getState());
+      const tools = await options.modelContext.getTools();
+      if (!started) return;
+      if (selected === gateKey(options.store.getState()) && registrationsMatch(tools)) return;
+      await waitForProgress(revision);
+    }
+  };
 
   const registry: Registry = {
     start() {
@@ -207,10 +269,12 @@ export function createRegistry(options: RegistryOptions): Registry {
       sync();
       options.modelContext.addEventListener("toolchange", onToolChange);
       mirror();
+      signalProgress();
       subscription = options.store.subscribe((state) => {
         const next = gateKey(state);
         if (next === selectedGateKey) return;
         selectedGateKey = next;
+        signalProgress();
         sync();
       });
     },
@@ -226,8 +290,12 @@ export function createRegistry(options: RegistryOptions): Registry {
       for (const group of GROUPS) abortGroup(group);
       recentlyAborted.clear();
       options.store.getState().setToolsMirror([], webMcpStatus());
+      signalProgress();
     },
     sync,
+    settled() {
+      return waitUntilSettled();
+    },
     async execute(name, input, source) {
       const tool = byName.get(name);
       if (!tool) return {

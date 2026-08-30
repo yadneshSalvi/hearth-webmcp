@@ -27,7 +27,7 @@ export function applyTemplateTool(): DefinedTool {
   return defineTool({
     name: "apply_template",
     title: "Apply floor-plan template",
-    description: "Replaces the whole home with one of seven floor plans: studio, 1br, 2br, 3br, 4br, 5br, or loft. The 3br/4br/5br homes contain living, kitchen and dining, N bedrooms, one or two baths, and a hall. Every template has doors and windows; furnished adds a starter layout. Asks for confirmation if the current home has furniture.",
+    description: "Replaces the whole home with one of seven floor plans: studio, 1br, 2br, 3br, 4br, 5br, or loft. The 3br/4br/5br homes contain living, kitchen and dining, N bedrooms, one or two baths, and a hall. Every template has doors and windows; furnished adds a starter layout. Keeps the current mode, time of day, accessibility and palette. Asks for confirmation if the current home has furniture.",
     group: "build",
     input: z.object({
       template: z.enum(TEMPLATE_IDS).describe(describeParam("Template id: studio, 1br, 2br, 3br, 4br, 5br or loft.")),

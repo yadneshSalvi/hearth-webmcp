@@ -3,8 +3,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createLocalShopify } from "../../src/shopify/local";
 import { hearthStore } from "../../src/state/store";
+import { toolBatchIsActive } from "../../src/state/tool-batch";
 import { createConfirmGate } from "../../src/tools/confirm";
-import type { ToolUi } from "../../src/tools/define";
+import type { ToolResult, ToolUi } from "../../src/tools/define";
 import { createRegistry } from "../../src/tools/registry";
 import { emptyHome, furnished2br } from "../fixtures/scenes";
 import { clearRealPolyfill, loadRealPolyfill, resetStore, testUi } from "./helpers";
@@ -31,6 +32,57 @@ function registryWith(
   });
 }
 
+const BUILD_TOOL_NAMES = new Set([
+  "add_opening", "apply_template", "create_room", "move_opening", "remove_opening", "update_room",
+]);
+
+class DelayedBuildModelContext extends EventTarget implements WebMCP.ModelContext {
+  ontoolchange: ((this: WebMCP.ModelContext, ev: Event) => unknown) | null = null;
+  private readonly tools = new Map<string, WebMCP.ModelContextTool>();
+
+  constructor(private readonly delayMs: number) {
+    super();
+  }
+
+  registerTool(tool: WebMCP.ModelContextTool, options?: WebMCP.ModelContextRegisterToolOptions): Promise<void> {
+    const install = (): void => {
+      this.tools.set(tool.name, tool);
+      this.dispatchEvent(new Event("toolchange"));
+    };
+    const remove = (): void => {
+      if (this.tools.delete(tool.name)) this.dispatchEvent(new Event("toolchange"));
+    };
+    if (!BUILD_TOOL_NAMES.has(tool.name)) {
+      install();
+      options?.signal?.addEventListener("abort", remove, { once: true });
+      return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        install();
+        resolve();
+      }, this.delayMs);
+      options?.signal?.addEventListener("abort", () => {
+        clearTimeout(timer);
+        remove();
+        reject(new DOMException("Stopped", "AbortError"));
+      }, { once: true });
+    });
+  }
+
+  async getTools(): Promise<WebMCP.RegisteredTool[]> {
+    return [...this.tools.values()].map((tool) => ({
+      name: tool.name,
+      title: tool.title ?? tool.name,
+      description: tool.description,
+      ...(tool.inputSchema ? { inputSchema: tool.inputSchema } : {}),
+      ...(tool.annotations ? { annotations: tool.annotations } : {}),
+      window,
+      origin: window.origin,
+    }));
+  }
+}
+
 describe("registry lifecycle against the real polyfill", () => {
   it("registers exactly 26 default tools synchronously and alphabetically", async () => {
     const modelContext = loadRealPolyfill();
@@ -45,20 +97,86 @@ describe("registry lifecycle against the real polyfill", () => {
     registry.stop();
   });
 
-  it("adds and removes build tools on the deferred macrotask", async () => {
+  it("settles set_mode after its own deferred sync without deadlocking", async () => {
     const queued: Array<() => void> = [];
     const modelContext = loadRealPolyfill();
     const registry = registryWith(modelContext, testUi(), (fn) => queued.push(fn));
     registry.start();
-    expect((await registry.execute("set_mode", { mode: "build" }, "agent")).ok).toBe(true);
+    const building = registry.execute("set_mode", { mode: "build" }, "agent");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(registry.executing).toBe(0);
+    expect(toolBatchIsActive()).toBe(false);
     expect((await modelContext.getTools()).map(({ name }) => name)).not.toContain("apply_template");
     queued.splice(0).forEach((fn) => fn());
+    expect(await building).toMatchObject({ ok: true, tools_ready: true });
     expect((await modelContext.getTools()).map(({ name }) => name)).toContain("apply_template");
     expect(await modelContext.getTools()).toHaveLength(32);
-    expect((await registry.execute("set_mode", { mode: "design" }, "agent")).ok).toBe(true);
+    const designing = registry.execute("set_mode", { mode: "design" }, "agent");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(registry.executing).toBe(0);
     queued.splice(0).forEach((fn) => fn());
+    expect(await designing).toMatchObject({ ok: true, tools_ready: true });
     expect((await modelContext.getTools()).map(({ name }) => name)).not.toContain("apply_template");
     expect(await modelContext.getTools()).toHaveLength(26);
+    registry.stop();
+  });
+
+  it("uses only Hearth's 50 ms deferral on the synchronous polyfill path", async () => {
+    vi.useFakeTimers();
+    const modelContext = loadRealPolyfill();
+    const registry = registryWith(modelContext);
+    registry.start();
+    let result: ToolResult | undefined;
+    const execution = registry.execute("set_mode", { mode: "build" }, "agent").then((value) => {
+      result = value;
+    });
+
+    await vi.advanceTimersByTimeAsync(49);
+    expect(result).toBeUndefined();
+    expect((await modelContext.getTools()).map(({ name }) => name)).not.toContain("apply_template");
+    await vi.advanceTimersByTimeAsync(1);
+    await execution;
+    expect(result).toMatchObject({ ok: true, tools_ready: true });
+    expect((await modelContext.getTools()).map(({ name }) => name)).toContain("apply_template");
+    registry.stop();
+  });
+
+  it("settled waits for delayed host registration visibility after a group change", async () => {
+    vi.useFakeTimers();
+    const modelContext = new DelayedBuildModelContext(1_800);
+    const registry = registryWith(modelContext);
+    registry.start();
+    hearthStore.getState().setMode("human", "build");
+    let ready = false;
+    const settling = registry.settled().then(() => {
+      ready = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(1_799);
+    expect(ready).toBe(false);
+    expect((await modelContext.getTools()).map(({ name }) => name)).not.toContain("apply_template");
+    await vi.advanceTimersByTimeAsync(1);
+    await settling;
+    expect(ready).toBe(true);
+    expect((await modelContext.getTools()).map(({ name }) => name)).toContain("apply_template");
+    registry.stop();
+  });
+
+  it("caps a gating tool wait at five seconds and returns a retry hint", async () => {
+    vi.useFakeTimers();
+    const registry = registryWith(new DelayedBuildModelContext(6_000));
+    registry.start();
+    const execution = registry.execute("set_mode", { mode: "build" }, "agent");
+
+    await vi.advanceTimersByTimeAsync(5_050);
+    expect(await execution).toMatchObject({
+      ok: true,
+      mode: "build",
+      tools_ready: false,
+      hint: expect.stringContaining("refresh the tool list"),
+    });
     registry.stop();
   });
 
@@ -110,9 +228,11 @@ describe("registry lifecycle against the real polyfill", () => {
     expect(abortSpy).not.toHaveBeenCalled();
     expect((await modelContext.getTools()).map(({ name }) => name)).toContain("apply_template");
     release?.();
-    await executing;
     expect(abortSpy).not.toHaveBeenCalled();
+    await Promise.resolve();
+    await Promise.resolve();
     queued.splice(0).forEach((fn) => fn());
+    await executing;
     expect(abortSpy).toHaveBeenCalled();
     expect((await modelContext.getTools()).map(({ name }) => name)).not.toContain("apply_template");
     registry.stop();
