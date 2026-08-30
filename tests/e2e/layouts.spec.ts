@@ -351,8 +351,20 @@ test.describe("layouts", () => {
     expect((await camera(page)).focus).toBe("home");
     const card = page.locator("section").filter({ hasText: "Entire home" }).first();
     await expect(card).toContainText("11 rooms");
-    await expect(card).toContainText("Bedrooms");
-    await expect(card).toContainText("Conflicts");
+
+    // The card is a description list, and its money says what the tools say: a budget is spent by
+    // buying, so a home full of unbought furniture leaves the budget whole.
+    const money = await card.evaluate((node) => {
+      const rows: Record<string, string> = {};
+      for (const term of node.querySelectorAll("dt")) {
+        rows[term.textContent?.trim() ?? ""] = term.nextElementSibling?.textContent?.trim() ?? "";
+      }
+      return rows;
+    });
+    expect(Object.keys(money)).toEqual(["Bedrooms", "Bathrooms", "Furniture value", "Budget", "Cart", "Remaining", "Conflicts"]);
+    expect(money.Cart).toBe("$0");
+    expect(money.Remaining).toBe(money.Budget);
+    expect(Object.values(money).filter((value) => value.startsWith("-"))).toEqual([]);
 
     // …and the room card comes back the moment a room is activated.
     await page.evaluate(() => (window as unknown as HearthWin).__hearth.state().setActiveRoom("human", "bed-3"));

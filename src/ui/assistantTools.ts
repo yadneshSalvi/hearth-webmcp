@@ -15,6 +15,8 @@
  */
 import { useSyncExternalStore } from "react";
 import type { ShopifyClient } from "../shopify/types";
+import { desiredToolGroups } from "../state/selectors";
+import type { ToolGroup } from "../state/types";
 import { hearthStore } from "../state/store";
 import type { ToolUi } from "../tools/define";
 import { ensureModelContext } from "../tools/polyfill-loader";
@@ -101,6 +103,35 @@ export async function executeAssistantTool(name: string, input: unknown): Promis
   const tool = (await runtime.getTools()).find((candidate) => candidate.name === name);
   if (!tool) return { ok: false, error: "not_found", detail: `Tool ${name} is no longer available.` };
   return parse(await runtime.executeTool(tool, JSON.stringify(input)));
+}
+
+/** How long to wait for the registry to catch up before going on without it. */
+const SETTLE_TIMEOUT_MS = 4_000;
+const SETTLE_POLL_MS = 60;
+
+/**
+ * Resolves once the registry on this page has finished registering (and unregistering) the groups
+ * the current state asks for.
+ *
+ * Hearth's tool list is dynamic, and changing it is not instant: `set_mode build` returns in about
+ * 13 ms and its six build tools appear on `document.modelContext` about 1.8 seconds later. The
+ * fallback assistant re-reads the list between rounds, so without this it can be handed the *old*
+ * list right after the call that changed it — and answer "the floor-plan tools aren't available in
+ * this session" one step after switching to the mode that provides them, which is exactly what
+ * "give me a 4-bedroom home" does. Returns immediately when nothing is pending, so a round of tools
+ * that changes no group costs nothing.
+ */
+export async function assistantToolsSettled(timeoutMs = SETTLE_TIMEOUT_MS): Promise<void> {
+  const registry = liveRegistry();
+  if (!registry) return;
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const wanted = new Set(desiredToolGroups(hearthStore.getState()));
+    const registered = registry.state().registered;
+    const settled = Object.entries(registered).every(([group, on]) => on === wanted.has(group as ToolGroup));
+    if (settled || Date.now() >= deadline) return;
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_POLL_MS));
+  }
 }
 
 function subscribe(listener: () => void): () => void {

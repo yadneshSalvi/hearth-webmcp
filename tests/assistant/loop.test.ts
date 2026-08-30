@@ -106,6 +106,46 @@ describe("assistant client loop", () => {
     });
   });
 
+  it("keeps two rounds of speech from running into one another", async () => {
+    installTool(vi.fn(async () => ({ ok: true, rooms: 6 })));
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(sse([
+        "event: text\ndata: {\"delta\":\"Please confirm in the on-page dialog.\"}\n\n",
+        call("call-1", "get_scene_summary"),
+        done(),
+      ]))
+      .mockResolvedValueOnce(sse(["event: text\ndata: {\"delta\":\"Done — six rooms.\"}\n\n", done()]));
+    const ev = events();
+
+    await createAssistant().send("Give me a home", ev);
+
+    // One bubble, two sentences, and a break between them rather than "dialog.Done".
+    expect(ev.onDone).toHaveBeenCalledWith({ text: "Please confirm in the on-page dialog.\n\nDone — six rooms.", calls: 1 });
+    expect(ev.onText.mock.calls.flatMap((args) => args)).toEqual([
+      "Please confirm in the on-page dialog.",
+      "\n\n",
+      "Done — six rooms.",
+    ]);
+  });
+
+  it("lets the registry finish changing before it reads the tool list again", async () => {
+    installTool(vi.fn(async () => ({ ok: true, mode: "build" })));
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(sse([call("call-1", "get_scene_summary"), done()]))
+      .mockResolvedValueOnce(sse(["event: text\ndata: {\"delta\":\"Done.\"}\n\n", done()]));
+    const order: string[] = [];
+    const settle = vi.fn(async () => { order.push("settle"); });
+    const ev = events();
+
+    await createAssistant({ settle }).send("Switch to build", ev);
+
+    // Once, after the round that called something — and before the request that follows it, which
+    // is the one whose tool list has to be current.
+    expect(settle).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(["settle"]);
+    expect(ev.onDone).toHaveBeenCalledWith({ text: "Done.", calls: 1 });
+  });
+
   it("blocks the attempt that hits the per-turn guard and gives the model a final answer pass", async () => {
     installTool();
     const fetchMock = vi.mocked(fetch);

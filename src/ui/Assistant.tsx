@@ -14,7 +14,7 @@ import { createCatalog } from "../engine/catalog";
 import { hearthStore, useHearthStore } from "../state/store";
 import { createAssistant } from "./assistantClient";
 import type { AssistantEvents, AssistantSession } from "./assistantClient";
-import { ensureAssistantTools, executeAssistantTool } from "./assistantTools";
+import { assistantToolsSettled, ensureAssistantTools, executeAssistantTool } from "./assistantTools";
 import {
   MAX_CALLS_PER_TURN, callCapLine, callCapSentence, callCapSpent, capReached, dispatchAssistant,
   plainText, retryableTurn, useAssistantState,
@@ -272,7 +272,7 @@ export function Assistant({ className = "" }: { className?: string }) {
     void ensureAssistantTools({ ui: toolUi, shopify }).then(() => {
       // `execute` routes every call through Hearth's own registry as the assistant, so the receipt
       // is filed in plum rather than as an agent's work (src/ui/assistantTools.ts).
-      loop.current ??= createAssistant({ maxCallsPerTurn: MAX_CALLS_PER_TURN, execute: executeAssistantTool });
+      loop.current ??= createAssistant({ maxCallsPerTurn: MAX_CALLS_PER_TURN, execute: executeAssistantTool, settle: assistantToolsSettled });
       return loop.current.send(trimmed, events);
     }).catch((error: unknown) => {
       dispatchAssistant({

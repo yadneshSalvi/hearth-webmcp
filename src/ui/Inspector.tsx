@@ -20,6 +20,7 @@ import { CatalogThumb } from "./CatalogThumb";
 import { ConflictRow } from "./ConflictRow";
 import { categoryLabel } from "./catalogQuery";
 import { colorwayLabel, dimsFull, plural, usd } from "./format";
+import { homeBudgetRows } from "./homeBudget";
 import { IconCart, IconCheck, IconCompare, IconHome, IconLock, IconPanelRight, IconRotateRight, IconTrash, IconUnlock } from "./icons";
 import { Button, EmptyState, IconButton, Panel, Tag } from "./primitives";
 import { pushToast } from "./toast-bus";
@@ -119,8 +120,12 @@ function HomeCard({ scene, catalogItems }: { scene: Scene; catalogItems: Catalog
       errors,
     };
   }, [scene, catalogItems]);
-  const budgetUsd = scene.meta.budgetUsd;
-  const remaining = budgetUsd === undefined ? undefined : budgetUsd - summary.spentUsd;
+  // Money comes from the store's cart, not from what is on the floor (src/ui/homeBudget.ts).
+  const cartUsd = useHearthStore((state) => state.cart.subtotalUsd);
+  const money = useMemo(
+    () => homeBudgetRows({ furnitureUsd: summary.spentUsd, budgetUsd: scene.meta.budgetUsd, cartUsd }),
+    [summary.spentUsd, scene.meta.budgetUsd, cartUsd],
+  );
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -143,12 +148,9 @@ function HomeCard({ scene, catalogItems }: { scene: Scene; catalogItems: Catalog
       <dl className="flex flex-col">
         <HomeStat label="Bedrooms" value={`${summary.bedrooms}`} />
         <HomeStat label="Bathrooms" value={`${summary.baths}`} />
-        <HomeStat label="Furniture" value={usd(summary.spentUsd)} />
-        <HomeStat
-          label={budgetUsd === undefined ? "Budget" : "Remaining"}
-          value={remaining === undefined ? "not set" : usd(remaining)}
-          tone={remaining !== undefined && remaining < 0 ? "ink" : "muted"}
-        />
+        {money.map((row) => (
+          <HomeStat key={row.label} label={row.label} value={row.usd === undefined ? "not set" : usd(row.usd)} tone={row.tone} />
+        ))}
         <HomeStat
           label="Conflicts"
           value={summary.conflicts === 0 ? "none" : `${summary.conflicts}${summary.errors > 0 ? ` · ${summary.errors} to fix` : ""}`}
