@@ -21,6 +21,7 @@ import { hearthStore, useHearthStore } from "../state/store";
 import {
   beginCameraDrag, cameraGestureActive, cameraGestureMoved, panModifierHeld, useCameraGestures,
 } from "./cameraGestures";
+import { releaseFocusForRoomPick } from "./homeFocus";
 import { setPointerHover } from "./hover";
 import { useReducedMotion } from "./idle";
 import { DebugHandle, deleteItem, duplicateItem } from "./interactionCommands";
@@ -328,6 +329,10 @@ export function Interaction() {
       const point = floorAt(event.clientX, event.clientY);
       const room = point ? roomAtWorldCm(state.scene.rooms, point) : undefined;
       if (!room) return;
+      // A click on a floor is "show me this room", so it lets go of whatever the camera was pinned
+      // to first — including the whole-home shot, and including a click into the room that is
+      // already active, which is the most natural first click after a template apply.
+      releaseFocusForRoomPick();
       if (state.scene.meta.activeRoomId !== room.id) state.setActiveRoom("human", room.id);
       if (state.scene.meta.selection.itemId || state.scene.meta.selection.roomId !== room.id) {
         state.setSelection("human", { itemId: undefined, roomId: room.id });

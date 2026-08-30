@@ -81,11 +81,20 @@ export async function fromFramedShot<T>(shoot: () => Promise<T>, roomId?: string
   }
 }
 
-/** Captures one frame, retrying once (which also re-invalidates the render loop). */
+/**
+ * How much longer the second attempt is given. A machine that missed the first six seconds is a slow
+ * machine — a software renderer, a laptop under load — and asking it the same question with the same
+ * stopwatch just fails twice. Measured under Chrome's CPU throttling, a studio frame that misses
+ * 6 s still lands inside 18 s; the comparison and the board would rather take a beat than die with a
+ * warning toast, which is what the split view did once per few full suite runs.
+ */
+const RETRY_PATIENCE = 3;
+
+/** Captures one frame, retrying once with more patience (which also re-invalidates the render loop). */
 export async function captureFrame(studio: StudioApi, timeoutMs = CAPTURE_TIMEOUT_MS): Promise<Blob> {
   try {
     return await withDeadline(studio.capture(), timeoutMs);
   } catch {
-    return withDeadline(studio.capture(), timeoutMs);
+    return withDeadline(studio.capture(), timeoutMs * RETRY_PATIENCE);
   }
 }

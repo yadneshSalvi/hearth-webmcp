@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { TEMPLATE_IDS } from "@/src/engine/types";
-import { templateLabel } from "@/src/ui/templates";
+import { templateLabel } from "@/src/engine";
 import { background, camera, drag, emptyFloor, meta, openStudio, roomsOffScreen, runTool, settle } from "./studio-helpers";
 import type { HearthWin } from "./studio-helpers";
 
@@ -314,6 +314,36 @@ test.describe("layouts", () => {
       await page.keyboard.press("Escape");
     }
     await page.setViewportSize({ width: 1440, height: 900 });
+  });
+
+  test("a click into the front room lets go of the whole-home shot", async ({ page }) => {
+    // Empty rooms: the whole-home shot puts the front room behind the catalog panel's edge, and a
+    // furnished living room has almost no floor left to aim at (round 1, P2). The click under test
+    // is a click on a *floor*, which is the same click either way.
+    await openStudio(page, { template: "5br", furnished: false });
+    expect((await camera(page)).focus).toBe("home");
+    const active = (await meta(page)).activeRoomId;
+
+    // Two metres of that room's floor, in pixels: how big the camera is drawing it.
+    const span = async (): Promise<number> => page.evaluate((id) => {
+      const win = window as unknown as HearthWin;
+      const near = win.__hearth.project(id, { x: 0, y: 0 });
+      const far = win.__hearth.project(id, { x: 200, y: 200 });
+      return near && far ? Math.hypot(far.x - near.x, far.y - near.y) : 0;
+    }, active);
+    const framedHome = await span();
+
+    // The most natural first click after an apply is into the room the store *already* calls active,
+    // so no id changes — and that is exactly the click that used to do nothing at all.
+    const point = await emptyFloor(page, active);
+    await page.mouse.click(point.x, point.y);
+    await settle(page);
+
+    expect((await camera(page)).focus).toBe("room");
+    expect((await meta(page)).activeRoomId).toBe(active);
+    expect(await page.evaluate(() => (window as unknown as HearthWin).__hearth.selection().roomId)).toBe(active);
+    // The camera really moved in, rather than merely dropping the override.
+    expect(await span()).toBeGreaterThan(framedHome * 1.5);
   });
 
   test("the inspector names the whole home while the camera frames it", async ({ page }) => {

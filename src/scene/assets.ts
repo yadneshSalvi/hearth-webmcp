@@ -4,7 +4,7 @@
  * models from six sources read as one designed set. Which assets exist and when they are allowed to
  * load is `src/scene/glb.ts`; this file is what happens to one once it has arrived.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Box3, BufferAttribute, BufferGeometry, CanvasTexture, Color, Mesh, SRGBColorSpace, Vector3 } from "three";
@@ -135,6 +135,36 @@ function toFloatAttribute(attribute: BufferAttribute | InterleavedBufferAttribut
 }
 
 /**
+ * The geometries this module *creates* for one instance: the per-material merges and a plant's
+ * re-indexed clone. Everything else in a normalised model is shared — `clone(true)` hands every
+ * instance the loaded GLB's own `BufferGeometry` — so these are the only ones that may ever be
+ * disposed, and they are the only ones that have to be. Three counts a geometry from its first
+ * upload until its `dispose` event and never by reachability, so an undisposed merge is counted for
+ * the life of the page; a template apply unmounts every piece in the home at once.
+ */
+const ownedGeometries = new WeakMap<Group, BufferGeometry[]>();
+
+function own(root: Group, geometry: BufferGeometry): void {
+  const list = ownedGeometries.get(root);
+  if (list) list.push(geometry);
+  else ownedGeometries.set(root, [geometry]);
+}
+
+/**
+ * Frees the geometries `useNormalizedGlb` built for this instance. Shared ones are left alone.
+ *
+ * The register entry is *kept*, and that is the whole trick: React's StrictMode runs an effect's
+ * cleanup once on mount before the real one, so deleting the entry there left the real unmount with
+ * nothing to free and the geometry counted for good. Disposing twice is free — three re-uploads a
+ * still-rendered geometry on the next frame, and a `dispose` on an unregistered one is a no-op.
+ */
+export function disposeNormalizedGlb(root: Group): void {
+  const list = ownedGeometries.get(root);
+  if (!list) return;
+  for (const geometry of list) geometry.dispose();
+}
+
+/**
  * Collapses every mesh that ends up sharing one material into a single draw. The source models are
  * authored per part — one bookcase ships a mesh per book — which put 255 meshes on screen for the
  * furnished 2BR and cost roughly a fifth of the frame in draw-call overhead alone.
@@ -167,6 +197,7 @@ function mergeByMaterial(root: Group, meshes: Mesh[], material: Material, castSh
     const merged = mergeGeometries(parts, false);
     for (const part of parts) part.dispose();
     if (!merged) throw new Error("merge produced no geometry");
+    own(root, merged);
     const combined = new Mesh(merged, material);
     combined.castShadow = castShadow;
     combined.receiveShadow = true;
@@ -188,13 +219,13 @@ const POT_FRACTION = 0.3;
  * plants paint the whole model from one atlas material, so tinting all of it sage loses the pot; this
  * reorders the index into two groups so the bottom third can take clay and the rest sage.
  */
-function splitPlantPot(mesh: Mesh, potMaterial: Material, leafMaterial: Material): boolean {
+function splitPlantPot(mesh: Mesh, potMaterial: Material, leafMaterial: Material): BufferGeometry | null {
   const geometry = mesh.geometry as BufferGeometry;
   const position = geometry.getAttribute("position");
-  if (!position) return false;
+  if (!position) return null;
   const source = geometry.getIndex();
   const count = source ? source.count : position.count;
-  if (count < 3) return false;
+  if (count < 3) return null;
   let minY = Infinity;
   let maxY = -Infinity;
   for (let i = 0; i < position.count; i += 1) {
@@ -202,7 +233,7 @@ function splitPlantPot(mesh: Mesh, potMaterial: Material, leafMaterial: Material
     if (y < minY) minY = y;
     if (y > maxY) maxY = y;
   }
-  if (!(maxY > minY)) return false;
+  if (!(maxY > minY)) return null;
   const threshold = minY + (maxY - minY) * POT_FRACTION;
   const below: number[] = [];
   const above: number[] = [];
@@ -213,7 +244,7 @@ function splitPlantPot(mesh: Mesh, potMaterial: Material, leafMaterial: Material
     const centre = (position.getY(a) + position.getY(b) + position.getY(c)) / 3;
     (centre <= threshold ? below : above).push(a, b, c);
   }
-  if (below.length === 0 || above.length === 0) return false;
+  if (below.length === 0 || above.length === 0) return null;
   const merged = geometry.clone();
   merged.setIndex([...below, ...above]);
   merged.clearGroups();
@@ -221,16 +252,22 @@ function splitPlantPot(mesh: Mesh, potMaterial: Material, leafMaterial: Material
   merged.addGroup(below.length, above.length, 1);
   mesh.geometry = merged;
   mesh.material = [potMaterial, leafMaterial];
-  return true;
+  return merged;
 }
 
 /**
- * Clones, normalises and re-tints a loaded GLB. The clone is cached per catalog id + colorway +
- * colorway so switching colorways never re-parses the file.
+ * Clones, normalises and re-tints a loaded GLB for one mounted piece. The *file* is cached by
+ * `useGLTF` and parsed once; the clone is per instance and memoised on the product, colorway, ghost
+ * flag and recede depth, so re-colouring a sofa never re-parses it — but a clone it must stay,
+ * because one `Object3D` can only hang under one parent.
+ *
+ * Per instance also means per unmount: the merges this makes are freed by `disposeNormalizedGlb`
+ * when the piece goes, or every template apply would leave a home's worth of geometry counted
+ * against the renderer for the life of the page.
  */
 export function useNormalizedGlb(product: CatalogItem, colorwayHex: string, ghost = false, recede = 0): Group {
   const gltf = useGLTF(product.glb, DRACO_PATH, true);
-  return useMemo(() => {
+  const model = useMemo(() => {
     const root = (gltf.scene as Group).clone(true);
     const groups: { source: SourceMaterial; meshes: Mesh[]; map: Texture | null }[] = [];
     root.traverse((node: Object3D) => {
@@ -270,7 +307,8 @@ export function useNormalizedGlb(product: CatalogItem, colorwayHex: string, ghos
       const potSplit = product.category === "plant" && plan.length === 1 && !ghost;
       if (potSplit && combined) {
         const pot = getMaterial({ hex: POT_HEX, roughness: 0.9, ...(shading ? { map: shading } : {}), ...(recede > 0 ? { recede } : {}) });
-        splitPlantPot(combined, pot, material);
+        const split = splitPlantPot(combined, pot, material);
+        if (split) own(root, split);
       }
     });
     const box = new Box3().setFromObject(root);
@@ -279,5 +317,8 @@ export function useNormalizedGlb(product: CatalogItem, colorwayHex: string, ghos
     root.position.set(offset[0], offset[1], offset[2]);
     return root;
   }, [gltf, product, colorwayHex, ghost, recede]);
+  // Every mounted piece owns its own merges; a home is replaced piece by piece, so they go with it.
+  useEffect(() => () => disposeNormalizedGlb(model), [model]);
+  return model;
 }
 

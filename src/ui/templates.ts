@@ -5,42 +5,54 @@
  * The list itself is `TEMPLATE_IDS` (src/engine/types.ts), so a template added to the engine shows
  * up in the Layouts chooser without a second list to keep in step.
  */
+import { createTemplate, templateLabel } from "../engine";
 import { polyBBox, roomAreaM2 } from "../engine/geometry";
-import { createTemplate } from "../engine/templates";
 import { TEMPLATE_IDS } from "../engine/types";
 import type { Room, Scene, TemplateId } from "../engine/types";
 import { floorHex } from "../tokens";
 
-/**
- * The human name for a template id. `1br`, `2br`, `5br` … all read generically, so the three new
- * bedroom counts name themselves; anything unexpected falls back to the id in caps.
- */
-export function templateLabel(id: string): string {
-  if (id === "studio") return "Studio";
-  if (id === "loft") return "Loft";
-  const bedrooms = /^(\d+)br$/.exec(id);
-  if (!bedrooms) return id.toUpperCase();
-  const count = Number(bedrooms[1]);
-  return `${count} ${count === 1 ? "bedroom" : "bedrooms"}`;
+/** The one sentence the confirmation gate asks, whoever asked for the layout. */
+function confirmSentence(label: string): string {
+  return `Replace this home with the ${label} layout?`;
 }
 
 /**
  * The question the confirmation gate asks before a layout replaces the home. One sentence, the
- * layout named the way the chooser names it — never the raw id (`1br`), whoever asked.
+ * layout named the way the chooser names it — never the raw id (`1br`), whoever asked. The name
+ * itself belongs to the engine (`templateLabel`), so the chooser, the tool and this sentence cannot
+ * disagree about what a home is called.
  */
-export function templateConfirmMessage(id: string): string {
-  return `Replace this home with the ${templateLabel(id)} layout?`;
+export function templateConfirmMessage(id: TemplateId): string {
+  return confirmSentence(templateLabel(id));
+}
+
+/** The shape `apply_template` asks in today (src/tools/handlers/build.ts). */
+const TOOL_CONFIRM = /^Replace this home and its \d+ placed items with the (.+) layout\?$/;
+/** The shape it asked in before it took its labels from the engine — still rewritten, not shown raw. */
+const LEGACY_TOOL_CONFIRM = /^Replace this home and its \d+ placed items with the (\S+) template\?$/;
+
+function isTemplateId(id: string): id is TemplateId {
+  return (TEMPLATE_IDS as readonly string[]).includes(id);
 }
 
 /**
- * The agent's `apply_template` builds its own confirmation string from the raw template id
- * (src/tools/handlers/build.ts, and a tool's message is part of its contract). The chrome owns how a
- * question is *worded* for a human, so it rewrites that one shape into `templateConfirmMessage`.
- * Anything else is passed through untouched.
+ * The agent's `apply_template` writes its own confirmation, and a tool's message is part of its
+ * contract: it names the count because an agent's caller cannot see the room. The chrome owns how a
+ * question is *worded* for a human, and it already shows the count in the subtitle underneath — so
+ * it rewrites that one shape into `templateConfirmMessage`. Anything else passes through untouched.
+ *
+ * Two shapes are matched, and a round-3 gate review is why: the tool moved to engine-owned labels
+ * ("… with the 5 bedrooms layout?") while this regex still demanded the old raw-id one ("… with the
+ * 5br template?"), so every agent-path confirmation went out unrewritten with the count said twice.
+ * `tests/tools/handlers.test.ts` now feeds this function the string the live tool actually produces,
+ * so the two cannot drift apart again.
  */
 export function humanizeConfirmMessage(message: string): string {
-  const match = /^Replace this home and its \d+ placed items with the (\S+) template\?$/.exec(message);
-  return match?.[1] ? templateConfirmMessage(match[1]) : message;
+  const current = TOOL_CONFIRM.exec(message)?.[1];
+  if (current) return confirmSentence(current);
+  const legacy = LEGACY_TOOL_CONFIRM.exec(message)?.[1];
+  if (legacy && isTemplateId(legacy)) return templateConfirmMessage(legacy);
+  return message;
 }
 
 export interface TemplateSummary {

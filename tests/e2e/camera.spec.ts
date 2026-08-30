@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { TEMPLATE_IDS } from "@/src/engine/types";
 import type { TemplateId } from "@/src/engine/types";
-import { templateLabel } from "@/src/ui/templates";
+import { templateLabel } from "@/src/engine";
 
 /** The biggest bedroom plan the engine ships: 2br today, 5br once the new templates land. */
 const BIGGEST: TemplateId = [...TEMPLATE_IDS]

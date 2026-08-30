@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createLocalShopify } from "../../src/shopify/local";
+import { humanizeConfirmMessage, templateConfirmMessage } from "../../src/ui/templates";
 import { hearthStore } from "../../src/state/store";
 import type { ToolResult, ToolUi } from "../../src/tools/define";
 import { createRegistry } from "../../src/tools/registry";
@@ -116,6 +117,29 @@ describe("first-round handlers", () => {
     const result = await registry(ui).execute("apply_template", { template: "1br", furnished: false }, "test");
     expect(messages).toEqual(["Replace this home and its 23 placed items with the 1 bedroom layout?"]);
     expect(result).toEqual({ ok: false, error: "cancelled", detail: "The human declined the 1 bedroom layout." });
+  });
+
+  /**
+   * The tool owns the question; the chrome owns how it is worded for a human (src/ui/templates.ts).
+   * A gate review caught those two apart — the humanizer still matched the tool's *previous* string,
+   * so an agent's confirmation went out with the item count said twice. This feeds the humanizer the
+   * message the live tool actually produces, so the pair cannot drift again without a red test.
+   */
+  it("the chrome rewrites the confirmation the live tool asks, whatever the tool asks", async () => {
+    resetStore(furnished2br());
+    // The agent's own path: apply_template is build-gated, so an agent reaches it via set_mode.
+    hearthStore.getState().setMode("agent", "build");
+    const messages: string[] = [];
+    const ui = testUi(async (message) => {
+      messages.push(message);
+      return { accepted: false, reason: "declined" as const };
+    });
+    await registry(ui).execute("apply_template", { template: "5br", furnished: true }, "agent");
+    const asked = messages[0];
+    expect(asked).toBeDefined();
+    // Rewritten, not passed through: the count belongs in the subtitle, not in the question.
+    expect(humanizeConfirmMessage(asked ?? "")).toBe(templateConfirmMessage("5br"));
+    expect(humanizeConfirmMessage(asked ?? "")).not.toBe(asked);
   });
 
   it.each(["home", "Entire home"])("set_view frames the home for %s without changing selection", async (focus) => {
