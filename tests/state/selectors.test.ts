@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createTemplate } from "../../src/engine/templates";
-import { activeRoom, activityRecent, cartCount, desiredToolGroups, ghost, itemsInRoom, resolveItem, resolveRoom, roomById, variantsForRoom } from "../../src/state/selectors";
+import {
+  activeRoom, activityRecent, cartCount, desiredToolGroups, ghost, itemsInRoom, resolveItem, resolveRoom,
+  roomById, variantComparisonRoom, variantsForRoom,
+} from "../../src/state/selectors";
 import { hearthStore } from "../../src/state/store";
 
 beforeEach(() => {
@@ -66,10 +69,15 @@ describe("tool registration gates", () => {
     expect(desiredToolGroups(hearthStore.getState())).toContain("build");
     hearthStore.getState().setGhost("agent", { id: "x", catalogId: "sofa-endre", roomId: "living", pos: { x: 200, y: 200 }, rotation: 0, colorway: "oak", status: "ghost" });
     expect(desiredToolGroups(hearthStore.getState())).toContain("preview");
-    hearthStore.getState().saveVariant("agent", "living", "A");
+    hearthStore.getState().saveVariant("agent", "kitchen", "A");
     expect(desiredToolGroups(hearthStore.getState())).not.toContain("variants");
-    hearthStore.getState().saveVariant("agent", "living", "B");
+    hearthStore.getState().saveVariant("agent", "kitchen", "B");
+    expect(hearthStore.getState().scene.meta.activeRoomId).toBe("living");
+    expect(variantComparisonRoom(hearthStore.getState())?.id).toBe("kitchen");
     expect(desiredToolGroups(hearthStore.getState())).toContain("variants");
+    hearthStore.getState().saveVariant("agent", "living", "Active A");
+    hearthStore.getState().saveVariant("agent", "living", "Active B");
+    expect(variantComparisonRoom(hearthStore.getState())?.id).toBe("living");
     hearthStore.getState().setCart({ lines: [{ id: "1", variantId: "v", handle: "sofa-endre", title: "Endre Sofa", colorway: "oak", quantity: 1, unitUsd: 790, lineUsd: 790 }], subtotalUsd: 790, status: "idle" });
     expect(desiredToolGroups(hearthStore.getState())).toEqual(["core", "design", "shop", "present", "preview", "variants", "checkout", "build"]);
     hearthStore.getState().clearGhost("agent");

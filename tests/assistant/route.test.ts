@@ -69,7 +69,9 @@ describe("assistant route", () => {
       strict: false,
       parameters: validTool.inputSchema,
     })]);
-    expect(ASSISTANT_INSTRUCTIONS.length).toBeLessThanOrEqual(900);
+    expect(ASSISTANT_INSTRUCTIONS).toContain("If a tool you need is not in your list, call set_mode first");
+    expect(ASSISTANT_INSTRUCTIONS).toContain("Then continue the task in the same turn.");
+    expect(ASSISTANT_INSTRUCTIONS.length).toBeLessThanOrEqual(950);
   });
 
   it("rejects tool names outside the static Hearth allowlist", async () => {
@@ -112,4 +114,3 @@ describe("assistant route", () => {
     expect(await response.text()).toContain("event: error\ndata: {\"message\":\"The assistant is rate-limited. Retry in a moment.\"}");
   });
 });
-

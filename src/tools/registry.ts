@@ -31,10 +31,7 @@ function webMcpStatus(): "native" | "polyfill" {
 }
 
 function gateKey(state: HearthStore): string {
-  const active = state.scene.meta.activeRoomId;
-  const variants = state.scene.variants.filter((variant) => variant.roomId === active).length;
-  const ghost = state.scene.furniture.some((item) => item.status === "ghost");
-  return `${state.scene.meta.mode}|${ghost ? 1 : 0}|${variants}|${state.cart.lines.length}`;
+  return desiredToolGroups(state).join("|");
 }
 
 function isAbortError(error: unknown): boolean {
