@@ -40,7 +40,7 @@ async function exportTools(): Promise<void> {
       inputSchema: tool.inputSchema ?? {},
     }))
     .sort((left, right) => left.name.localeCompare(right.name));
-  if (tools.length !== 36) throw new Error(`Expected 36 Hearth tools, found ${tools.length}.`);
+  if (tools.length !== 40) throw new Error(`Expected 40 Hearth tools, found ${tools.length}.`);
 
   const output = resolve(process.cwd(), "evals/tools.json");
   const temporary = join(dirname(output), `.tools-${process.pid}.tmp`);

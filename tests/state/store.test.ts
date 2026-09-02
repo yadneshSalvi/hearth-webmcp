@@ -234,7 +234,7 @@ describe("room and opening actions", () => {
 
   it("resizes from the north-west and returns newly outside item ids", () => {
     const item = hearthStore.getState().placeItem("human", { catalogId: "plant-fern", roomId: "living", pos: { x: 480, y: 400 }, rotation: 0 });
-    const outside = hearthStore.getState().updateRoom("agent", "living", { width_cm: 500, depth_cm: 300, name: "Lounge", floor: "stone" });
+    const { outside } = hearthStore.getState().updateRoom("agent", "living", { width_cm: 500, depth_cm: 300, name: "Lounge", floor: "stone" });
     expect(outside).toEqual([item.id]);
     const room = hearthStore.getState().scene.rooms.find((candidate) => candidate.id === "living")!;
     expect(room.name).toBe("Lounge");
@@ -245,7 +245,7 @@ describe("room and opening actions", () => {
   });
 
   it("rejects a shrink that would leave openings outside their walls", () => {
-    expect(() => hearthStore.getState().updateRoom("agent", "living", { width_cm: 200 })).toThrow(/window-living-north.*340-500.*200 cm north wall/);
+    expect(() => hearthStore.getState().updateRoom("agent", "living", { width_cm: 150 })).toThrow(/window-living-north.*340-500.*150 cm north wall/);
     const state = hearthStore.getState();
     const living = state.scene.rooms.find((room) => room.id === "living")!;
     expect(living.poly[1]?.x).toBe(520);

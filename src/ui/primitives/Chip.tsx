@@ -1,5 +1,5 @@
 "use client";
-import type { ButtonHTMLAttributes, ComponentType, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ComponentType, HTMLAttributes, ReactNode } from "react";
 import type { IconProps } from "../icons";
 
 export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -38,15 +38,17 @@ export function Tag({
   icon: Icon,
   className = "",
   children,
+  ...rest
 }: {
   tone?: ChipProps["tone"];
   icon?: ComponentType<IconProps>;
   className?: string;
   children: ReactNode;
-}) {
+} & HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
       className={`inline-flex h-6 max-w-full items-center gap-1 rounded-pill border px-2 text-[11px] ${TONES[tone ?? "neutral"]} ${className}`}
+      {...rest}
     >
       {Icon ? <Icon size={12} /> : null}
       <span className="truncate">{children}</span>

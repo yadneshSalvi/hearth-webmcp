@@ -32,10 +32,15 @@ export const TEMPLATE_RECEIPT_TITLE = "Apply template";
 /** The tool whose receipt lands instead when an agent or the assistant applies one (TOOLS.md §31). */
 export const TEMPLATE_TOOL_NAME = "apply_template";
 
-/** True when this activity entry is the receipt of a template apply, from either writer. */
+/** The store's own `applyImportedPlan` title and the tool that lands instead (TOOLS.md §40). */
+export const IMPORT_RECEIPT_TITLE = "Import floor plan";
+export const IMPORT_TOOL_NAME = "import_floor_plan";
+
+/** True when this activity entry is the receipt of a template apply or a plan import, from either writer. */
 export function isTemplateReceipt(entry: { title: string; tool?: string } | undefined): boolean {
   if (!entry) return false;
-  return entry.tool === TEMPLATE_TOOL_NAME || entry.title === TEMPLATE_RECEIPT_TITLE;
+  return entry.tool === TEMPLATE_TOOL_NAME || entry.title === TEMPLATE_RECEIPT_TITLE
+    || entry.tool === IMPORT_TOOL_NAME || entry.title === IMPORT_RECEIPT_TITLE;
 }
 
 /**

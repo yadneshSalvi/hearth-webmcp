@@ -5,6 +5,7 @@
  */
 import { useRef, useState } from "react";
 import type { DragEvent } from "react";
+import type { DimsComparison } from "../engine/dims";
 import type { CatalogItem } from "../engine/types";
 import { ink, palette, shadow } from "../tokens";
 import { CatalogThumb } from "./CatalogThumb";
@@ -27,6 +28,15 @@ export interface CatalogCardProps {
   onAddToCart(product: CatalogItem, colorway: string): void;
   /** true for the rows that are on screen before anyone scrolls; their thumbnails load eagerly. */
   priority?: boolean;
+  /** How this product's size compares with the selected item's, when the human asked to match it. */
+  sizeMatch?: DimsComparison;
+}
+
+/** "Same size" · "Close · w+5 d−3 h0" · "Off · w+40 d0 h0" */
+export function sizeMatchLabel(match: DimsComparison): string {
+  if (match.match === "exact") return "Same size";
+  const delta = match.delta.replace(/-/g, "−");
+  return `${match.match === "close" ? "Close" : "Off"} · ${delta}`;
 }
 
 function dragImage(product: CatalogItem, colorway: string): HTMLElement {
@@ -45,7 +55,7 @@ function dragImage(product: CatalogItem, colorway: string): HTMLElement {
 }
 
 export function CatalogCard({
-  product, fit, roomName, shopMode, inCart, selected, onSelect, onPlace, onAddToCart, priority = false,
+  product, fit, roomName, shopMode, inCart, selected, onSelect, onPlace, onAddToCart, priority = false, sizeMatch,
 }: CatalogCardProps) {
   const [colorway, setColorway] = useState(product.colorways[0]?.id ?? "oak");
   const ghost = useRef<HTMLElement | undefined>(undefined);
@@ -121,6 +131,11 @@ export function CatalogCard({
           ))}
         </div>
         {shopMode && inCart ? <Tag tone="sage" icon={IconCheck}>In cart</Tag> : null}
+        {sizeMatch ? (
+          <Tag tone={sizeMatch.match === "exact" ? "sage" : sizeMatch.match === "close" ? "amber" : "neutral"} data-size-match={sizeMatch.match}>
+            {sizeMatchLabel(sizeMatch)}
+          </Tag>
+        ) : null}
         {/* The row wraps rather than truncates: a fit note is a measurement, and "by 14 c" is a lie. */}
         <Tag tone={fits ? "sage" : "amber"} className="ml-auto">{fit}</Tag>
       </div>

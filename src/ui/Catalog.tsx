@@ -7,6 +7,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { resolveAnchor } from "../engine/anchors";
+import { productFor } from "../engine/catalog";
+import { compareDims } from "../engine/dims";
 import { fitNote, wallFits } from "../engine/fit";
 import { walls } from "../engine/geometry";
 import type { CatalogItem, Category, Room, Scene } from "../engine/types";
@@ -18,7 +20,7 @@ import { edgeFades, emptySuggestion, nextCardIndex } from "./catalogNav";
 import type { CatalogSuggestion } from "./catalogNav";
 import { catalogGroups, catalogResults, categoryLabel, styleTags } from "./catalogQuery";
 import { cartOps, historyMarker, undoTo } from "./useHearth";
-import { IconPanelLeft, IconSearch } from "./icons";
+import { IconPanelLeft, IconResize, IconSearch } from "./icons";
 import { Chip, Field, IconButton, Panel } from "./primitives";
 import { pushToast } from "./toast-bus";
 
@@ -136,22 +138,43 @@ export function Catalog({ className = "", collapsible = false }: { className?: s
   const [style, setStyle] = useState<string | undefined>(undefined);
   const [price, setPrice] = useState<PriceCap>("any");
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const [matchSize, setMatchSize] = useState(false);
   const list = useRef<HTMLDivElement>(null);
 
   const room = scene.rooms.find((candidate) => candidate.id === scene.meta.activeRoomId) ?? scene.rooms[0];
   const shopMode = scene.meta.mode === "shop";
+  // The human's selected item, sized as it stands (a resized sofa is the size it was stretched to).
+  const target = useMemo(() => {
+    const selectedItem = scene.furniture.find((item) => item.id === scene.meta.selection.itemId);
+    const product = selectedItem ? productFor(selectedItem, catalog) : undefined;
+    return selectedItem && product ? { item: selectedItem, product } : undefined;
+  }, [scene.furniture, scene.meta.selection.itemId, catalog]);
+  const matching = matchSize && target !== undefined;
 
   useEffect(() => {
     const timer = setTimeout(() => setQuery(rawQuery), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [rawQuery]);
 
-  const results = useMemo(() => catalogResults(catalog, {
-    query,
-    ...(category ? { category } : {}),
-    ...(style ? { style } : {}),
-    ...(price === "any" ? {} : { maxPriceUsd: Number(price) }),
-  }), [catalog, query, category, style, price]);
+  const results = useMemo(() => {
+    const found = catalogResults(catalog, {
+      query,
+      ...(category ? { category } : {}),
+      ...(style ? { style } : {}),
+      ...(price === "any" ? {} : { maxPriceUsd: Number(price) }),
+    });
+    if (!matching) return found;
+    // Same ranking the agent's search_catalog uses with like_item: size distance first.
+    const distance = (product: CatalogItem): number => compareDims(product.dims, target.product.dims).distanceCm;
+    return [...found]
+      .filter((product) => product.category === target.product.category)
+      .sort((a, b) => distance(a) - distance(b) || (a.price ?? 0) - (b.price ?? 0) || a.name.localeCompare(b.name));
+  }, [catalog, query, category, style, price, matching, target]);
+
+  const sizeMatches = useMemo(
+    () => (matching ? new Map(results.map((product) => [product.id, compareDims(product.dims, target.product.dims)])) : undefined),
+    [matching, results, target],
+  );
 
   const groups = useMemo(() => catalogGroups(results), [results]);
 
@@ -258,6 +281,17 @@ export function Catalog({ className = "", collapsible = false }: { className?: s
           ))}
         </ScrollRow>
         <ScrollRow label="Style and price filters">
+          {target ? (
+            <Chip
+              active={matchSize}
+              icon={IconResize}
+              data-match-size=""
+              aria-label={`Rank by closeness to the selected ${target.product.name}'s size`}
+              onClick={() => setMatchSize(!matchSize)}
+            >
+              Match {target.product.name} size
+            </Chip>
+          ) : null}
           <Chip
             active={price !== "any"}
             aria-label={`Maximum price: ${PRICE_LABELS[price]}. Click to change.`}
@@ -313,6 +347,7 @@ export function Catalog({ className = "", collapsible = false }: { className?: s
                     onSelect={() => setSelectedId(selected === product.id ? undefined : product.id)}
                     onPlace={place}
                     onAddToCart={addToCart}
+                    sizeMatch={sizeMatches?.get(product.id)}
                   />
                 ))}
               </ul>

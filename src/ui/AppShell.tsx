@@ -15,6 +15,7 @@
  * time it is actually needed rather than in front of the first frame.
  */
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import Studio from "../scene/Studio";
 import { useHearthStore } from "../state/store";
 import { Activity } from "./Activity";
@@ -22,7 +23,9 @@ import { Cart } from "./Cart";
 import { Catalog } from "./Catalog";
 import { ConfirmModal } from "./ConfirmModal";
 import { EnableSheet } from "./EnableSheet";
-import { IconCart, IconPanelRight, IconRoom, IconTools } from "./icons";
+import { IconCart, IconPanelRight, IconRoom, IconTools, IconUpload } from "./icons";
+import { imageFileFrom, keepUploadedPlan, readPlanFile } from "./planUpload";
+import { pushToast } from "./toast-bus";
 import { Inspector } from "./Inspector";
 import { Onboarding } from "./Onboarding";
 import { IconButton } from "./primitives";
@@ -44,6 +47,65 @@ const Assistant = dynamic(() => import("./Assistant").then((module) => ({ defaul
 const Board = dynamic(() => import("./Board").then((module) => ({ default: module.Board })), { ssr: false });
 const BuildPanel = dynamic(() => import("./BuildPanel").then((module) => ({ default: module.BuildPanel })), { ssr: false });
 const Compare = dynamic(() => import("./Compare").then((module) => ({ default: module.Compare })), { ssr: false });
+const ImportPlanSheet = dynamic(() => import("./ImportPlanSheet").then((module) => ({ default: module.ImportPlanSheet })), { ssr: false });
+
+/**
+ * A floor-plan image dropped anywhere on the studio opens the import sheet with it (TOOLS.md §40).
+ * Only real files count: the catalog's own drags carry `application/x-hearth-catalog`, not files,
+ * and keep going to the canvas untouched.
+ */
+function usePlanDrop(): boolean {
+  const [over, setOver] = useState(false);
+  useEffect(() => {
+    let depth = 0;
+    const hasFiles = (event: DragEvent): boolean => Array.from(event.dataTransfer?.types ?? []).includes("Files");
+    const onEnter = (event: DragEvent): void => {
+      if (!hasFiles(event)) return;
+      depth += 1;
+      setOver(true);
+    };
+    const onOver = (event: DragEvent): void => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+    };
+    const onLeave = (event: DragEvent): void => {
+      if (!hasFiles(event)) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) setOver(false);
+    };
+    const onDrop = (event: DragEvent): void => {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      depth = 0;
+      setOver(false);
+      const file = imageFileFrom(event.dataTransfer);
+      if (!file) {
+        pushToast({ title: "Drop an image of a floor plan", detail: "png, jpeg or webp, up to 8 MB.", tone: "warn" });
+        return;
+      }
+      void readPlanFile(file).then((result) => {
+        if (!result.ok) {
+          pushToast({ title: "That image cannot be used", detail: result.detail, tone: "warn" });
+          return;
+        }
+        keepUploadedPlan(result.plan);
+        hearthStore.getState().setUi({ importSheetOpen: true });
+      });
+    };
+    window.addEventListener("dragenter", onEnter);
+    window.addEventListener("dragover", onOver);
+    window.addEventListener("dragleave", onLeave);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragenter", onEnter);
+      window.removeEventListener("dragover", onOver);
+      window.removeEventListener("dragleave", onLeave);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, []);
+  return over;
+}
 
 /** Keeps `overlays.conflicts` in step with the scene without re-rendering the shell. */
 function ConflictSync() {
@@ -103,6 +165,8 @@ export default function AppShell() {
   // here changes only when their chunk is fetched.
   const compareOpen = useHearthStore((state) => state.ui.compare !== undefined);
   const boardOpen = useHearthStore((state) => state.ui.boardOpen);
+  const importOpen = useHearthStore((state) => state.ui.importSheetOpen ?? false);
+  const droppingPlan = usePlanDrop();
 
   const catalogVisible = panelVisible(tier, catalogCollapsed);
   const sideVisible = panelVisible(tier, inspectorCollapsed);
@@ -198,6 +262,15 @@ export default function AppShell() {
 
       {compareOpen ? <Compare /> : null}
       {boardOpen ? <Board /> : null}
+      {importOpen ? <ImportPlanSheet /> : null}
+      {droppingPlan ? (
+        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-charcoal/24 backdrop-blur-[2px]" aria-hidden="true">
+          <div className="glass-solid flex items-center gap-3 rounded-panel px-5 py-4">
+            <IconUpload size={22} className="text-terracotta" />
+            <span className="font-display text-[17px] text-ink">Drop the floor plan to build this home from it</span>
+          </div>
+        </div>
+      ) : null}
       <ConfirmModal />
       <EnableSheet />
       <ShortcutsSheet />

@@ -6,9 +6,10 @@
  */
 import { useMemo } from "react";
 import { resolveAnchor, rotateBy } from "../engine/anchors";
-import { createCatalog } from "../engine/catalog";
+import { createCatalog, productFor } from "../engine/catalog";
 import { conflictsForItem, evaluateRoom } from "../engine/conflicts";
 import { wallsLine } from "../engine/describe";
+import { MAX_SIDE_CM, MIN_SIDE_CM } from "../engine/dims";
 import { roomAreaM2 } from "../engine/geometry";
 import { designReport } from "../engine/report";
 import type { DesignScores } from "../engine/report";
@@ -20,9 +21,11 @@ import { CatalogThumb } from "./CatalogThumb";
 import { ConflictRow } from "./ConflictRow";
 import { categoryLabel } from "./catalogQuery";
 import { colorwayLabel, dimsFull, plural, usd } from "./format";
+import { resizeItem } from "./furnitureOps";
 import { homeBudgetRows } from "./homeBudget";
-import { IconCart, IconCheck, IconCompare, IconHome, IconLock, IconPanelRight, IconRotateRight, IconTrash, IconUnlock } from "./icons";
-import { Button, EmptyState, IconButton, Panel, Tag } from "./primitives";
+import { clearHome, clearRoom, restoreFurniture } from "./homeOps";
+import { IconCart, IconCheck, IconCompare, IconHome, IconLock, IconPanelRight, IconResize, IconRestore, IconRotateRight, IconTrash, IconUnlock } from "./icons";
+import { Button, EmptyState, IconButton, Panel, Stepper, Tag } from "./primitives";
 import { pushToast } from "./toast-bus";
 
 const SCORE_LABELS: Record<keyof DesignScores, string> = {
@@ -115,7 +118,7 @@ function HomeCard({ scene, catalogItems }: { scene: Scene; catalogItems: Catalog
       baths: scene.rooms.filter((room) => room.type === "bath").length,
       areaM2: scene.rooms.reduce((total, room) => total + roomAreaM2(room), 0),
       items: placed.length,
-      spentUsd: placed.reduce((total, item) => total + (catalog.byId(item.catalogId)?.price ?? 0), 0),
+      spentUsd: placed.reduce((total, item) => total + (productFor(item, catalog)?.price ?? 0), 0),
       conflicts,
       errors,
     };
@@ -145,6 +148,8 @@ function HomeCard({ scene, catalogItems }: { scene: Scene; catalogItems: Catalog
         </div>
       </div>
 
+      <ClearRestoreRow scope="home" items={summary.items} />
+
       <dl className="flex flex-col">
         <HomeStat label="Bedrooms" value={`${summary.bedrooms}`} />
         <HomeStat label="Bathrooms" value={`${summary.baths}`} />
@@ -161,6 +166,32 @@ function HomeCard({ scene, catalogItems }: { scene: Scene; catalogItems: Catalog
       <p className="text-[12.5px] leading-relaxed text-ink-muted">
         Pick a room from the switcher, or click one on the canvas, to zoom in and score it.
       </p>
+    </div>
+  );
+}
+
+/**
+ * "Clear all furniture" and "Restore furniture" — the human twins of `clear_home` / `clear_room` and
+ * `restore_furniture` (TOOLS.md §38–39). Restore appears only while a cleared layout is waiting.
+ */
+function ClearRestoreRow({ scope, items, roomId, roomName }: { scope: "home" | "room"; items: number; roomId?: string; roomName?: string }) {
+  const cleared = useHearthStore((state) => state.ui.lastCleared);
+  const restorable = cleared !== undefined && cleared.furniture.length > 0;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5" data-clear-restore={scope}>
+      <Button
+        size="sm"
+        icon={IconTrash}
+        disabled={items === 0}
+        onClick={() => { void (scope === "home" ? clearHome() : roomId ? clearRoom(roomId) : Promise.resolve(false)); }}
+      >
+        {scope === "home" ? "Clear all furniture" : `Clear ${roomName ?? "room"}`}
+      </Button>
+      {restorable ? (
+        <Button size="sm" icon={IconRestore} onClick={() => restoreFurniture()}>
+          Restore {cleared.scope === "room" && cleared.roomName ? cleared.roomName.toLowerCase() : "furniture"}
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -200,6 +231,8 @@ function RoomCard({ room }: { room: Room }) {
 
       <p className="numerals text-[12px] text-ink-muted">{wallsLine(room)}</p>
       <p className="text-[12.5px] leading-relaxed text-ink-muted">{report.summary}</p>
+
+      <ClearRestoreRow scope="room" items={items} roomId={room.id} roomName={room.name} />
 
       {perfect ? (
         <p className="flex items-center gap-1.5 rounded-chip border border-sage/35 bg-sage/10 px-2.5 py-2 text-[12.5px] text-ink">
@@ -282,7 +315,37 @@ function ItemActions({ item, product }: { item: Furniture; product: CatalogItem 
   );
 }
 
-function ItemCard({ item, product }: { item: Furniture; product: CatalogItem }) {
+/**
+ * The item's size, editable: three steppers over `resizeItem` (the human twin of `resize_furniture`,
+ * TOOLS.md §37). The catalog size stays in view underneath so a stretched piece is never mistaken
+ * for the product as sold, and Reset drops the override.
+ */
+function SizeEditor({ item, product, catalogProduct }: { item: Furniture; product: CatalogItem; catalogProduct: CatalogItem }) {
+  const custom = item.dims !== undefined;
+  return (
+    <div className="flex flex-col gap-2" data-size-editor="">
+      <div className="flex items-center gap-2">
+        <span className="label-caps">Size · cm</span>
+        <span className="flex-1" />
+        {custom ? (
+          <Button size="sm" icon={IconResize} onClick={() => resizeItem(item, catalogProduct, { reset: true })}>
+            Reset to catalog size
+          </Button>
+        ) : null}
+      </div>
+      <div className="flex gap-1.5">
+        <Stepper label="Width" unit="" className="min-w-0 flex-1" value={product.dims.w} step={5} min={MIN_SIDE_CM} max={MAX_SIDE_CM} onChange={(value) => resizeItem(item, catalogProduct, { width_cm: value })} />
+        <Stepper label="Depth" unit="" className="min-w-0 flex-1" value={product.dims.d} step={5} min={MIN_SIDE_CM} max={MAX_SIDE_CM} onChange={(value) => resizeItem(item, catalogProduct, { depth_cm: value })} />
+        <Stepper label="Height" unit="" className="min-w-0 flex-1" value={product.dims.h} step={5} min={MIN_SIDE_CM} max={MAX_SIDE_CM} onChange={(value) => resizeItem(item, catalogProduct, { height_cm: value })} />
+      </div>
+      <p className="numerals text-[11.5px] text-ink-muted">
+        {custom ? `Catalog size ${dimsFull(catalogProduct.dims)}` : "As sold; nudge a side to stretch the model."}
+      </p>
+    </div>
+  );
+}
+
+function ItemCard({ item, product, catalogProduct }: { item: Furniture; product: CatalogItem; catalogProduct: CatalogItem }) {
   const conflicts = useConflicts();
   const mine = useMemo(() => conflictsForItem(conflicts, item.id), [conflicts, item.id]);
 
@@ -308,10 +371,14 @@ function ItemCard({ item, product }: { item: Furniture; product: CatalogItem }) 
         </div>
       ) : null}
 
+      <div className="border-t border-hairline pt-2.5">
+        <SizeEditor item={item} product={product} catalogProduct={catalogProduct} />
+      </div>
+
       <dl className="flex flex-col gap-1.5 border-y border-hairline py-2.5">
         <div className="flex items-baseline justify-between gap-3">
           <dt className="label-caps">Footprint</dt>
-          <dd className="numerals text-[12.5px] text-ink">{dimsFull(product.dims)}</dd>
+          <dd className="numerals text-[12.5px] text-ink">{dimsFull(product.dims)}{item.dims ? " · resized" : ""}</dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
           <dt className="label-caps">Position</dt>
@@ -356,7 +423,8 @@ export function Inspector({ className = "", collapsible = false }: { className?:
   const home = useHomeFocus();
   const selectedId = scene.meta.selection.itemId;
   const item = scene.furniture.find((candidate) => candidate.id === selectedId);
-  const product = item ? createCatalog(catalogItems).byId(item.catalogId) : undefined;
+  const product = item ? productFor(item, catalogItems) : undefined;
+  const catalogProduct = item ? createCatalog(catalogItems).byId(item.catalogId) : undefined;
   const room = scene.rooms.find((candidate) => candidate.id === scene.meta.activeRoomId) ?? scene.rooms[0];
 
   return (
@@ -388,8 +456,8 @@ export function Inspector({ className = "", collapsible = false }: { className?:
       fade
       footer={item && product ? <ItemActions item={item} product={product} /> : null}
     >
-      {item && product ? (
-        <ItemCard item={item} product={product} />
+      {item && product && catalogProduct ? (
+        <ItemCard item={item} product={product} catalogProduct={catalogProduct} />
       ) : home ? (
         <HomeCard scene={scene} catalogItems={catalogItems} />
       ) : room ? (

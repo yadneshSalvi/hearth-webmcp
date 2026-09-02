@@ -13,8 +13,8 @@ import type { TemplateId } from "../engine/types";
 import { hearthStore, useHearthStore } from "../state/store";
 import { palette } from "../tokens";
 import { applyTemplate } from "./buildOps";
-import { IconCheck } from "./icons";
-import { Chip, Tag } from "./primitives";
+import { IconCheck, IconUpload } from "./icons";
+import { Button, Chip, Tag } from "./primitives";
 import { Sheet } from "./Sheet";
 import { templateCards } from "./templates";
 
@@ -104,6 +104,11 @@ export function LayoutsSheet({ open, onClose }: LayoutsSheetProps) {
           <span className="text-[11.5px] leading-snug text-ink-faint">
             {furnished ? "Arrives with furniture placed." : "Arrives as empty rooms."}
           </span>
+          <span className="flex-1" />
+          {/* The eighth plan is the human's own: a floor-plan image, read and built to scale. */}
+          <Button size="sm" icon={IconUpload} data-import-plan="" onClick={() => { onClose(); hearthStore.getState().setUi({ importSheetOpen: true }); }}>
+            Import your own plan
+          </Button>
         </div>
 
         <ul role="list" className="grid grid-cols-[repeat(auto-fill,minmax(212px,1fr))] gap-3">

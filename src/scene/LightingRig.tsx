@@ -25,6 +25,7 @@ import { M, clamp, easeOut, homeBox, stackElevationCm } from "./math";
 import { setGlowIntensity } from "./materials";
 import { setBloomThreshold } from "./postState";
 import { useFurniture, useMeta, useProductLookup, useRooms } from "./useSceneStore";
+import { productFor } from "../engine/catalog";
 
 /** The whole lighting rig, including the shadow-map framing and the CSS background gradient. */
 export function LightingRig() {
@@ -142,7 +143,7 @@ function LampLights({ refs }: { refs: RefObject<(PointLight | null)[]> }) {
     const list: { id: string; position: [number, number, number]; gain: number }[] = [];
     for (const item of furniture) {
       if (item.status === "ghost") continue;
-      const product = byId(item.catalogId);
+      const product = productFor(item, byId);
       const room = rooms.find((candidate) => candidate.id === item.roomId);
       if (!product || !room) continue;
       if (product.category !== "floor-lamp" && product.category !== "table-lamp") continue;

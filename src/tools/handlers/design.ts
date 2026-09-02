@@ -309,7 +309,7 @@ export function clearRoomTool(): DefinedTool {
   return defineTool({
     name: "clear_room",
     title: "Clear room",
-    description: "Removes every item from a room after the human confirms in a dialog on the page. Returns cancelled if the human declines.",
+    description: "Removes every item from a room after the human confirms in a dialog on the page. The removed layout is kept so restore_furniture (or undo) can bring it back. Returns cancelled if the human declines.",
     group: "design",
     input: z.object({ room: roomParam.optional() }).strict(),
     confirm(input, scene) {
@@ -335,8 +335,9 @@ export function clearRoomTool(): DefinedTool {
           room: room.id,
           room_name: room.name,
           removed: ids.length,
-          removed_ids: ids,
-          hint: "undo restores them.",
+          removed_ids: ids.slice(0, 20),
+          ...(ids.length > 20 ? { more: ids.length - 20 } : {}),
+          hint: "restore_furniture or undo brings them back.",
         };
       } catch (error) {
         return fromCaught(error);
@@ -345,6 +346,81 @@ export function clearRoomTool(): DefinedTool {
     summarize(input, result) {
       if (!result.ok) return `Clear ${input.room ?? "room"} — declined`;
       return `Cleared ${String(result.room_name ?? result.room)} (${String(result.removed)} items)`;
+    },
+  });
+}
+
+export function clearHomeTool(): DefinedTool {
+  return defineTool({
+    name: "clear_home",
+    title: "Clear all furniture",
+    description: "Removes every item from every room after the human confirms in a dialog on the page. The removed layout is kept so restore_furniture (or undo) can bring it back. Returns cancelled if the human declines.",
+    group: "design",
+    input: z.object({}).strict(),
+    confirm(_input, scene) {
+      const count = scene.furniture.filter((item) => item.status !== "ghost").length;
+      return `Clear the whole home and remove ${count} item${count === 1 ? "" : "s"}?`;
+    },
+    cancelledDetail() {
+      return "The human declined to clear the home.";
+    },
+    handler(_input, context) {
+      const state = context.store.getState();
+      const rooms = new Set(state.scene.furniture.filter((item) => item.status !== "ghost").map((item) => item.roomId));
+      try {
+        const ids = context.store.getState().clearHome(sourceForStore(context.source));
+        return {
+          ok: true,
+          room: state.scene.meta.activeRoomId,
+          removed: ids.length,
+          rooms_cleared: rooms.size,
+          removed_ids: ids.slice(0, 20),
+          ...(ids.length > 20 ? { more: ids.length - 20 } : {}),
+          hint: "restore_furniture brings everything back; undo also works.",
+        };
+      } catch (error) {
+        return fromCaught(error);
+      }
+    },
+    summarize(_input, result) {
+      if (!result.ok) return "Clear the home — declined";
+      return `Cleared the whole home (${String(result.removed)} items)`;
+    },
+  });
+}
+
+export function restoreFurnitureTool(): DefinedTool {
+  return defineTool({
+    name: "restore_furniture",
+    title: "Restore furniture",
+    description: "Brings back the furniture removed by the last clear_home or clear_room, into the rooms it came from. Items whose room no longer exists are skipped and listed. Returns not_found when nothing has been cleared.",
+    group: "design",
+    input: z.object({}).strict(),
+    handler(_input, context) {
+      const snapshot = context.store.getState().ui.lastCleared;
+      if (!snapshot || snapshot.furniture.length === 0) {
+        return { ok: false, error: "not_found", detail: "Nothing has been cleared yet.", alternatives: [], suggestion: "clear_room or clear_home first; undo reverses other changes." };
+      }
+      try {
+        const report = context.store.getState().restoreFurniture(sourceForStore(context.source));
+        context.ui.pulse(report.restored.slice(0, 12));
+        return {
+          ok: true,
+          room: report.rooms[0] ?? context.store.getState().scene.meta.activeRoomId,
+          restored: report.restored.length,
+          rooms: report.rooms,
+          item_ids: report.restored.slice(0, 20),
+          ...(report.restored.length > 20 ? { more: report.restored.length - 20 } : {}),
+          skipped: report.skipped.slice(0, 10),
+          hint: "Cart lines removed by the clear are not re-added; use update_cart.",
+        };
+      } catch (error) {
+        return fromCaught(error);
+      }
+    },
+    summarize(_input, result) {
+      if (!result.ok) return "Restore furniture failed";
+      return `Restored ${String(result.restored)} item${result.restored === 1 ? "" : "s"}`;
     },
   });
 }

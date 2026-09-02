@@ -159,7 +159,7 @@ interface PieceProps {
 }
 
 function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = false, recede = 0, hidden = false, invalid = false, reduced, framed = true, foreground = 1, homeToken }: PieceProps) {
-  const { item, product, position, footprintM } = entry;
+  const { item, product, position, footprintM, stretch } = entry;
   const ghost = item.status === "ghost";
   // "Calm" bodies skip the drop: a ghost, an item on its way out, and every item under reduced
   // motion, which takes its pose immediately and cross-fades instead (STYLE.md §3).
@@ -239,7 +239,10 @@ function FurniturePiece({ entry, moveDelay, selected, storeHoverId, exiting = fa
         <animated.group position-x={ox} position-y={oy} position-z={oz}>
           <animated.group position-y={bodyY} scale={bodyScale}>
             <group ref={body} rotation-y={rotationRadians(item.rotation)}>
-              <ItemBody product={product} colorway={item.colorway} ghost={ghost} recede={recede} framed={framed} />
+              {/* A resized item is the same model stretched per axis; the shared GLB stays cached. */}
+              <group scale={stretch}>
+                <ItemBody product={product} colorway={item.colorway} ghost={ghost} recede={recede} framed={framed} />
+              </group>
             </group>
           </animated.group>
         </animated.group>

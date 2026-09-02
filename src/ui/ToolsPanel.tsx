@@ -137,7 +137,7 @@ export function ToolsPanel({ toolGroups }: { toolGroups: Record<string, ToolGrou
         {grouped.length === 0 ? (
           <EmptyState
             title="No tools are registered yet."
-            hint="Open Hearth in a browser with WebMCP enabled and the studio registers 26 tools before first paint."
+            hint="Open Hearth in a browser with WebMCP enabled and the studio registers 29 tools before first paint."
           />
         ) : (
           grouped.map(({ group, tools }) => (

@@ -18,9 +18,13 @@ const TIMEOUT_S = 45;
  * Layouts sheet is not "your agent", and a home with furniture in it should say how much is at stake
  * before the button is pressed.
  */
-function subtitleFor(by: "human" | "agent", placed: number): string {
-  const stake = placed > 0
-    ? `${plural(placed, "placed item")} will go; undo brings them back.`
+function subtitleFor(by: "human" | "agent", placed: number, message: string): string {
+  // A question that names its own count ("Clear Living and remove 3 items?") is about those items,
+  // not the whole home's; the home total is only the fallback.
+  const named = /\b(\d+) (?:placed )?items?\b/.exec(message)?.[1];
+  const count = named !== undefined ? Number(named) : placed;
+  const stake = count > 0
+    ? `${plural(count, "placed item")} will go; undo brings them back.`
     : "Undo restores it either way.";
   return by === "agent" ? `Your agent asked for this. ${stake}` : stake;
 }
@@ -61,7 +65,7 @@ export function ConfirmModal() {
       open
       onClose={decline}
       title={pending.message}
-      subtitle={subtitleFor(confirmAttribution(), placed)}
+      subtitle={subtitleFor(confirmAttribution(), placed, pending.message)}
       width={420}
       showClose={false}
       footer={

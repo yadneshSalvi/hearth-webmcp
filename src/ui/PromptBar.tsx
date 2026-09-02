@@ -8,7 +8,7 @@
  * Prompts button and the prompts get a sheet with room to be read.
  */
 import { useMemo, useState } from "react";
-import { createCatalog } from "../engine/catalog";
+import { productFor } from "../engine/catalog";
 import { useHearthStore } from "../state/store";
 import { HANDOFF_FLASH_MS, useCopyFlash } from "./clipboard";
 import { IconAgent, IconCopy, IconHandoff } from "./icons";
@@ -74,6 +74,8 @@ export function PromptBar({ className = "", tier = "full" }: { className?: strin
   const scene = useHearthStore((state) => state.scene);
   const catalogItems = useHearthStore((state) => state.catalog);
   const cartLines = useHearthStore((state) => state.cart.lines.length);
+  const uploadedPlan = useHearthStore((state) => state.ui.uploadedPlan !== undefined);
+  const cleared = useHearthStore((state) => (state.ui.lastCleared?.furniture.length ?? 0) > 0);
   const conflicts = useConflicts();
   const [sheetOpen, setSheetOpen] = useState(false);
   const compact = tier === "compact";
@@ -81,7 +83,7 @@ export function PromptBar({ className = "", tier = "full" }: { className?: strin
   const prompts = useMemo(() => {
     const room = scene.rooms.find((candidate) => candidate.id === scene.meta.activeRoomId) ?? scene.rooms[0];
     const selected = scene.furniture.find((item) => item.id === scene.meta.selection.itemId);
-    const product = selected ? createCatalog(catalogItems).byId(selected.catalogId) : undefined;
+    const product = selected ? productFor(selected, catalogItems) : undefined;
     return promptSuggestions({
       mode: scene.meta.mode,
       roomName: room?.name ?? "room",
@@ -90,8 +92,10 @@ export function PromptBar({ className = "", tier = "full" }: { className?: strin
       cartLines,
       variants: scene.variants.filter((variant) => variant.roomId === scene.meta.activeRoomId).length,
       accessibility: scene.meta.accessibilityMode,
+      uploadedPlan,
+      cleared,
     });
-  }, [scene, catalogItems, conflicts, cartLines]);
+  }, [scene, catalogItems, conflicts, cartLines, uploadedPlan, cleared]);
 
   return (
     <div

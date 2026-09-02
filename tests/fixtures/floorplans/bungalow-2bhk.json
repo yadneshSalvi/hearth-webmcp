@@ -1,0 +1,197 @@
+{
+ "title": "GROUND FLOOR PLAN",
+ "units": "ft",
+ "north_up": true,
+ "rooms": [
+  {
+   "name": "Utility",
+   "type": "other",
+   "dimension_label": "14'8\"X3'0\"",
+   "width_cm": 447.04,
+   "depth_cm": 91.44,
+   "bbox": {
+    "x0": 0.476,
+    "y0": 0.197,
+    "x1": 0.788,
+    "y1": 0.26
+   },
+   "doors_to": [
+    "Kitchen"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Kitchen",
+   "type": "kitchen",
+   "dimension_label": "14'0\"X10'0\"",
+   "width_cm": 426.72,
+   "depth_cm": 304.8,
+   "bbox": {
+    "x0": 0.483,
+    "y0": 0.26,
+    "x1": 0.785,
+    "y1": 0.441
+   },
+   "doors_to": [
+    "Utility",
+    "Living Room"
+   ],
+   "windows": [
+    "east"
+   ]
+  },
+  {
+   "name": "Living Room",
+   "type": "living",
+   "dimension_label": "14'0\"X12'8\"",
+   "width_cm": 426.72,
+   "depth_cm": 386.08,
+   "bbox": {
+    "x0": 0.261,
+    "y0": 0.437,
+    "x1": 0.7,
+    "y1": 0.672
+   },
+   "doors_to": [
+    "Kitchen",
+    "Dining",
+    "Ent. Lobby",
+    "Bed Room 1"
+   ],
+   "windows": [
+    "west"
+   ]
+  },
+  {
+   "name": "Dining",
+   "type": "dining",
+   "dimension_label": "6'9\"X9'8\"",
+   "width_cm": 205.74,
+   "depth_cm": 294.64,
+   "bbox": {
+    "x0": 0.7,
+    "y0": 0.442,
+    "x1": 0.91,
+    "y1": 0.672
+   },
+   "doors_to": [
+    "Living Room",
+    "W/C",
+    "Bath",
+    "Toilet",
+    "Bed Room 2"
+   ],
+   "windows": []
+  },
+  {
+   "name": "W/C",
+   "type": "bath",
+   "dimension_label": "4'0\"X3'0\"",
+   "width_cm": 121.92,
+   "depth_cm": 91.44,
+   "bbox": {
+    "x0": 0.986,
+    "y0": 0.442,
+    "x1": 0.782,
+    "y1": 0.497
+   },
+   "doors_to": [
+    "Dining"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Bath",
+   "type": "bath",
+   "dimension_label": "7'0\"X4'0\"",
+   "width_cm": 213.36,
+   "depth_cm": 121.92,
+   "bbox": {
+    "x0": 0.909,
+    "y0": 0.497,
+    "x1": 0.782,
+    "y1": 0.573
+   },
+   "doors_to": [
+    "Dining"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Toilet",
+   "type": "bath",
+   "dimension_label": "7'0\"X5'0\"",
+   "width_cm": 213.36,
+   "depth_cm": 152.4,
+   "bbox": {
+    "x0": 0.91,
+    "y0": 0.573,
+    "x1": 0.782,
+    "y1": 0.671
+   },
+   "doors_to": [
+    "Dining"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Ent. Lobby",
+   "type": "hall",
+   "dimension_label": "7'6\"X6'0\"",
+   "width_cm": 182.88,
+   "depth_cm": 228.6,
+   "bbox": {
+    "x0": 0.261,
+    "y0": 0.671,
+    "x1": 0.496,
+    "y1": 0.821
+   },
+   "doors_to": [
+    "Living Room",
+    "outside"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Bed Room 1",
+   "type": "bedroom",
+   "dimension_label": "10'0\"X12'0\"",
+   "width_cm": 304.8,
+   "depth_cm": 365.76,
+   "bbox": {
+    "x0": 0.495,
+    "y0": 0.671,
+    "x1": 0.813,
+    "y1": 0.89
+   },
+   "doors_to": [
+    "Living Room"
+   ],
+   "windows": [
+    "south"
+   ]
+  },
+  {
+   "name": "Bed Room 2",
+   "type": "bedroom",
+   "dimension_label": "10'0\"X12'0\"",
+   "width_cm": 304.8,
+   "depth_cm": 365.76,
+   "bbox": {
+    "x0": 0.812,
+    "y0": 0.671,
+    "x1": 0.787,
+    "y1": 0.89
+   },
+   "doors_to": [
+    "Dining"
+   ],
+   "windows": [
+    "south"
+   ]
+  }
+ ],
+ "entrance_room": "Ent. Lobby",
+ "confidence": 0.92,
+ "notes": "The stair core and recessed wardrobes were excluded. Living and dining are open-plan zones; east-side openings marked V were treated as ventilators rather than windows."
+}

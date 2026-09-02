@@ -7,6 +7,7 @@ import {
 } from "./geometry";
 import { ROTATIONS } from "./types";
 import type { CatalogItem, Furniture, Room, Rotation, Scene, Side, Span, Vec2, Wall } from "./types";
+import { productFor } from "./catalog";
 
 /** Semantic placement fields shared by place, move and preview tools. */
 export interface Anchor {
@@ -66,10 +67,6 @@ const DIRECTIONS: Record<Rotation, { front: Vec2; right: Vec2 }> = {
   270: { front: { x: 1, y: 0 }, right: { x: 0, y: 1 } },
 };
 
-function lookup(catalog: CatalogSource, id: string): CatalogItem | undefined {
-  return Array.isArray(catalog) ? catalog.find((item) => item.id === id) : catalog.byId(id);
-}
-
 function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -103,7 +100,7 @@ function notFound(kind: string, ref: string, candidates: { id: string; label?: s
 }
 
 function itemCandidates(scene: Scene, roomId: string, catalog: CatalogSource): Furniture[] {
-  return scene.furniture.filter((item) => item.roomId === roomId && item.status === "placed" && lookup(catalog, item.catalogId));
+  return scene.furniture.filter((item) => item.roomId === roomId && item.status === "placed" && productFor(item, catalog));
 }
 
 function resolveItem(scene: Scene, roomId: string, ref: string, catalog: CatalogSource): Furniture | undefined {
@@ -111,7 +108,7 @@ function resolveItem(scene: Scene, roomId: string, ref: string, catalog: Catalog
   const selected = normalize(ref) === "selected" ? scene.meta.selection.itemId : undefined;
   if (selected) return items.find((item) => item.id === selected);
   const needle = normalize(ref);
-  const label = (item: Furniture) => normalize(lookup(catalog, item.catalogId)?.name ?? "");
+  const label = (item: Furniture) => normalize(productFor(item, catalog)?.name ?? "");
   const exact = items.filter((item) => normalize(item.id) === needle || label(item) === needle);
   if (exact.length === 1) return exact[0];
   const prefix = items.filter((item) => normalize(item.id).startsWith(needle) || label(item).startsWith(needle));
@@ -167,7 +164,7 @@ function targetPoint(scene: Scene, room: Room, ref: string, catalog: CatalogSour
     return { x: wall.a.x + (wall.b.x - wall.a.x) * along / wall.length, y: wall.a.y + (wall.b.y - wall.a.y) * along / wall.length };
   }
   const item = resolveItem(scene, room.id, ref, catalog);
-  return item ? { ...item.pos } : notFound("Item", ref, itemCandidates(scene, room.id, catalog).map((entry) => ({ id: entry.id, label: lookup(catalog, entry.catalogId)?.name })));
+  return item ? { ...item.pos } : notFound("Item", ref, itemCandidates(scene, room.id, catalog).map((entry) => ({ id: entry.id, label: productFor(entry, catalog)?.name })));
 }
 
 function facingRotation(from: Vec2, target: Vec2): Rotation {
@@ -198,7 +195,7 @@ function positionFor(plan: PositionPlan, room: Room, cat: CatalogItem, rotation:
 function nextToPosition(plan: PositionPlan, cat: CatalogItem, rotation: Rotation, anchor: Anchor, catalog: CatalogSource): Vec2 | undefined {
   const neighbour = plan.neighbour;
   if (!neighbour) return undefined;
-  const neighbourCat = lookup(catalog, neighbour.catalogId);
+  const neighbourCat = productFor(neighbour, catalog);
   if (!neighbourCat) return undefined;
   const side = anchor.side ?? "right";
   const axes = DIRECTIONS[neighbour.rotation];
@@ -230,7 +227,7 @@ function placementBlockers(
 ): PlacementBlockers {
   const furniture = scene.furniture.flatMap((other): FurnitureBlocker[] => {
     if (other.roomId !== room.id || other.status !== "placed" || ignored.has(other.id)) return [];
-    const otherCat = lookup(catalog, other.catalogId);
+    const otherCat = productFor(other, catalog);
     if (!otherCat) return [];
     const poly = footprint(other, otherCat);
     const clearance = clearanceZone(other, otherCat);
@@ -412,7 +409,7 @@ export function resolveAnchor(scene: Scene, roomId: string, cat: CatalogItem, re
   if (anchor.centered) { plan = { kind: "centered" }; rotation = 0; }
   if (anchor.next_to) {
     const neighbour = resolveItem(scene, room.id, anchor.next_to, catalog);
-    if (!neighbour) return notFound("Item", anchor.next_to, itemCandidates(scene, room.id, catalog).map((entry) => ({ id: entry.id, label: lookup(catalog, entry.catalogId)?.name })));
+    if (!neighbour) return notFound("Item", anchor.next_to, itemCandidates(scene, room.id, catalog).map((entry) => ({ id: entry.id, label: productFor(entry, catalog)?.name })));
     plan = { kind: "next_to", neighbour }; rotation = neighbour.rotation;
   }
   if (req.pos) plan = { ...plan, kind: "raw" };
@@ -507,7 +504,7 @@ export function resolveAnchor(scene: Scene, roomId: string, cat: CatalogItem, re
 
 /** Describes an item's wall relationship and facing direction for receipts. */
 export function describePlacement(scene: Scene, item: Furniture, catalog: CatalogSource): string {
-  const room = scene.rooms.find((entry) => entry.id === item.roomId); const cat = lookup(catalog, item.catalogId);
+  const room = scene.rooms.find((entry) => entry.id === item.roomId); const cat = productFor(item, catalog);
   if (!room || !cat) return bounded(`at ${Math.round(item.pos.x)}, ${Math.round(item.pos.y)} cm, facing ${sideName(item.rotation)}`);
   const wall = walls(room).find((entry) => rotationForWall(entry.side) === item.rotation && itemToWallDistance(item, cat, entry) <= 5);
   if (wall) {
@@ -521,7 +518,7 @@ export function describePlacement(scene: Scene, item: Furniture, catalog: Catalo
 
 /** Resolves a relative move while ignoring the moved item's old footprint. */
 export function deltaMove(scene: Scene, item: Furniture, delta: { x?: number; y?: number }, catalog: CatalogSource): PlacementResult {
-  const cat = lookup(catalog, item.catalogId);
+  const cat = productFor(item, catalog);
   if (!cat) return notFound("Product", item.catalogId, []);
   return resolveAnchor(scene, item.roomId, cat, { pos: { x: item.pos.x + (delta.x ?? 0), y: item.pos.y + (delta.y ?? 0) }, rotation: item.rotation, ignoreItemIds: [item.id] }, catalog);
 }

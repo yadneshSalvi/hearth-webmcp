@@ -11,6 +11,7 @@ import type { Box3Like } from "./math";
 import { useFocusTarget } from "./focus";
 import type { FocusKind } from "./focus";
 import { useMeta, useProductLookup, useRooms, useFurniture } from "./useSceneStore";
+import { productFor } from "../engine/catalog";
 
 export interface Framed {
   box: Box3Like;
@@ -39,7 +40,7 @@ export function useFramedBox(): Framed {
     const item = override?.itemId ? furniture.find((candidate) => candidate.id === override.itemId) : undefined;
     if (item) {
       const room = rooms.find((candidate) => candidate.id === item.roomId);
-      const product = byId(item.catalogId);
+      const product = productFor(item, byId);
       if (room && product) {
         return { box: itemBox(room, item, product), centreCm: itemCentre(room.origin, item.pos), roomId: room.id, kind: "item" as const };
       }

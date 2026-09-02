@@ -5,7 +5,7 @@
  * the chrome itself.
  */
 import type { StoreApi } from "zustand";
-import { createCatalog } from "../engine/catalog";
+import { productFor } from "../engine/catalog";
 import type { Vec2 } from "../engine/types";
 import type { StudioApi } from "../scene/Studio";
 import type { HearthStore } from "../state/types";
@@ -52,7 +52,7 @@ function itemLabel(store: StoreApi<HearthStore>, id: string): string | undefined
   const state = store.getState();
   const item = state.scene.furniture.find((candidate) => candidate.id === id);
   if (!item) return undefined;
-  return createCatalog(state.catalog).byId(item.catalogId)?.name;
+  return productFor(item, state.catalog)?.name;
 }
 
 /** Wires the studio handle and the store into the effects tool handlers are allowed to ask for. */

@@ -2,7 +2,7 @@ import * as z from "zod";
 import { resolveAnchor, describePlacement, rotateBy } from "../../engine/anchors";
 import type { PlacementResult } from "../../engine/anchors";
 import { arrangeRoom } from "../../engine/arrange";
-import { createCatalog } from "../../engine/catalog";
+import { productFor, createCatalog } from "../../engine/catalog";
 import { conflictsForItem, evaluateRoom } from "../../engine/conflicts";
 import { clip, dimsStr, posArr, truncateList } from "../../engine/describe";
 import { walls } from "../../engine/geometry";
@@ -179,7 +179,7 @@ export function moveFurnitureTool(): DefinedTool {
       const room = resolveRoom(state, input.room ?? item.roomId);
       if ("ok" in room) return room;
       const catalog = createCatalog(state.catalog);
-      const product = catalog.byId(item.catalogId);
+      const product = productFor(item, catalog);
       if (!product) return notFound("Product", item.catalogId, state.catalog);
       const rotation: Rotation | undefined = input.rotation ?? (input.rotate_by === undefined ? undefined : rotateBy(item, input.rotate_by));
       const movedToAnotherRoom = room.id !== item.roomId;

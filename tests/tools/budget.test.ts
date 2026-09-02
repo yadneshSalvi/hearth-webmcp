@@ -137,7 +137,7 @@ describe("WebMCP budgets", () => {
     }
   });
 
-  it("keeps all 36 handler results within 1,500 characters on all three fixtures", async () => {
+  it("keeps all 40 handler results within 1,500 characters on all three fixtures", async () => {
     for (const fixture of [emptyHome, furnished2br, worstCase2br]) {
       for (const definition of allTools(toolContext())) {
         const scene = fixture();

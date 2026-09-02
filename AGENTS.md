@@ -16,14 +16,14 @@ Hearth is a human + agent shared interior-design studio: Next.js 16.3 (App Route
 ## Contracts (the law; change the contract first, then code)
 - `STYLE.md` — tokens, type, radius, shadow, 3D look, motion, forbidden list. Every UI/3D change is judged against it.
 - `SCENE_SCHEMA.md` — the scene graph types, units (cm), coordinate frame (room-local, NW origin, x east, y south, rotation clockwise, 0 = front faces south), invariants.
-- `TOOLS.md` — all 36 WebMCP tools: names, descriptions (≤ 500 chars), params (≤ 150), results (≤ 1.5K chars), groups/gates, registration lifecycle, receipts.
+- `TOOLS.md` — all 40 WebMCP tools: names, descriptions (≤ 500 chars), params (≤ 150), results (≤ 1.5K chars), groups/gates, registration lifecycle, receipts.
 - `SHOPIFY.md` — product model, metafields, seeder, route handlers, cart/checkout (password-gated dev store).
 
 ## Layout
 `app/` routes + route handlers (`app/api/**`, server-only, the only place secrets are read) · `src/tokens.ts` palette ·
 `src/state/` zustand store (immer + zundo; every mutation is an action tagged `source: "human"|"agent"`) ·
 `src/engine/` pure TS geometry/rules (no React, no three, 100 % unit-tested) · `src/tools/` WebMCP registry + handlers ·
-`src/scene/` R3F renderer · `src/ui/` panels/chrome · `src/shopify/` client + snapshot · `src/assistant/` fallback agent ·
+`src/scene/` R3F renderer · `src/ui/` panels/chrome · `src/shopify/` client + snapshot · `src/floorplan/` plan-reader schema + client (`app/api/floorplan` is the vision route) · `src/assistant/` fallback agent ·
 `scripts/` seeding/asset tooling (`tsx`) · `tests/` vitest (`tests/engine`, `tests/tools`) and Playwright (`tests/e2e`) ·
 `data/` catalog source + snapshot · `public/assets/{glb,hdri,thumbs}` · `evals/` webmcp-evals prompts + reports.
 

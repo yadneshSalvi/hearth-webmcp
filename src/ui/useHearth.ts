@@ -251,6 +251,9 @@ export function useHearth(): Hearth {
         return;
       }
       if (isTypingTarget(event.target)) return;
+      // A modal owns the keyboard while it is up: H, T, 1 and 2 must not change the scene behind
+      // a confirmation the human has not answered yet. Escape stays with the sheet's own handler.
+      if (event.key !== "Escape" && sheetIsOpen()) return;
       if (command && event.key.toLowerCase() === "z") {
         event.preventDefault();
         if (event.shiftKey) redoSteps(1);

@@ -1,6 +1,7 @@
 import type { CatalogSource } from "./describe";
 import { truncateList } from "./describe";
 import type { Furniture, Variant } from "./types";
+import { productFor } from "./catalog";
 
 /** Compact differences between two saved room layouts. */
 export interface VariantDiff {
@@ -12,7 +13,7 @@ export interface VariantDiff {
 }
 
 function itemName(item: Furniture, catalog: CatalogSource): string {
-  const cat = Array.isArray(catalog) ? catalog.find((candidate) => candidate.id === item.catalogId) : catalog.byId(item.catalogId);
+  const cat = Array.isArray(catalog) ? catalog.find((candidate) => candidate.id === item.catalogId) : productFor(item, catalog);
   return cat?.name ?? item.catalogId;
 }
 

@@ -1,4 +1,4 @@
-import { createCatalog } from "../../engine/catalog";
+import { productFor, createCatalog } from "../../engine/catalog";
 import { resolveWall } from "../../engine/geometry";
 import type { CatalogItem, Colorway, Furniture, Opening, Room, Scene, Variant, Wall } from "../../engine/types";
 import type { CatalogProduct, Result, ShopifyCart } from "../../shopify/types";
@@ -129,7 +129,7 @@ export function resolveVariant(scene: Scene, roomId: string, ref: string): Varia
 }
 
 export function resolveColorway(state: HearthState, item: Furniture, ref: string): Colorway | Err {
-  const product = createCatalog(state.catalog).byId(item.catalogId);
+  const product = productFor(item, state.catalog);
   if (!product) return notFound("Product", item.catalogId, state.catalog);
   const colorway = createCatalog(state.catalog).resolveColorway(product, ref);
   return colorway ?? notFound("Colorway", ref, product.colorways);

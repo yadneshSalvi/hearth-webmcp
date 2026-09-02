@@ -1,5 +1,5 @@
 import type { ColorwayId } from "../tokens";
-import type { CatalogItem, Category, Colorway } from "./types";
+import type { CatalogItem, Category, Colorway, Dims } from "./types";
 
 /** Read-only catalog lookup and fuzzy-resolution API. */
 export interface Catalog {
@@ -111,6 +111,39 @@ export function createCatalog(items: CatalogItem[]): Catalog {
     resolveColorway,
     nextItemId,
   };
+}
+
+/** Anything that can answer "which product is this id": a catalog, a plain list, or a lookup function. */
+export type ProductSource = Catalog | CatalogItem[] | ((id: string) => CatalogItem | undefined);
+
+/** A placed item, or anything that names a product and may carry its own size. */
+export interface SizedRef {
+  catalogId: string;
+  dims?: Dims;
+}
+
+function lookupProduct(source: ProductSource, id: string): CatalogItem | undefined {
+  if (typeof source === "function") return source(id);
+  if (Array.isArray(source)) return source.find((item) => item.id === id);
+  return source.byId(id);
+}
+
+/**
+ * The product with a placed item's own size in place of the catalog size (SCENE_SCHEMA.md
+ * §Effective dimensions). Returns the catalog record untouched when the item has no override, so
+ * identity-based memoisation keeps working for the common case.
+ */
+export function withItemDims(item: SizedRef, product: CatalogItem): CatalogItem {
+  const dims = item.dims;
+  if (!dims) return product;
+  if (dims.w === product.dims.w && dims.d === product.dims.d && dims.h === product.dims.h) return product;
+  return { ...product, dims: { w: dims.w, d: dims.d, h: dims.h } };
+}
+
+/** Resolves a placed item's product with its effective dimensions. Every footprint path uses this. */
+export function productFor(item: SizedRef, source: ProductSource): CatalogItem | undefined {
+  const product = lookupProduct(source, item.catalogId);
+  return product ? withItemDims(item, product) : undefined;
 }
 
 /** Narrows a string to a supported colorway id when one exists. */

@@ -21,12 +21,12 @@ function contractTools(): ContractTool[] {
 }
 
 describe("tool contract coverage", () => {
-  it("implements all 36 contract names", () => {
+  it("implements all 40 contract names", () => {
     const contract = contractTools();
     const implemented = allTools(toolContext());
-    expect(contract).toHaveLength(36);
-    expect(implemented).toHaveLength(36);
-    expect(new Set(implemented.map(({ name }) => name)).size).toBe(36);
+    expect(contract).toHaveLength(40);
+    expect(implemented).toHaveLength(40);
+    expect(new Set(implemented.map(({ name }) => name)).size).toBe(40);
     expect(implemented.map(({ name }) => name).sort()).toEqual(contract.map(({ name }) => name).sort());
   });
 
@@ -43,8 +43,8 @@ describe("tool contract coverage", () => {
 
   it("defines every name exactly once", () => {
     const definitions = allToolDefinitions(toolContext());
-    expect(definitions).toHaveLength(36);
-    expect(new Set(definitions.map(({ name }) => name)).size).toBe(36);
+    expect(definitions).toHaveLength(40);
+    expect(new Set(definitions.map(({ name }) => name)).size).toBe(40);
     for (const tool of definitions) {
       expect(tool.name).toMatch(/^[a-z][a-z0-9_]*$/);
       expect(tool.title).toBeTruthy();

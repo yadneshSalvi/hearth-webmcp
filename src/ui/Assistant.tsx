@@ -10,7 +10,7 @@
  * the confirmation dialog.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createCatalog } from "../engine/catalog";
+import { productFor } from "../engine/catalog";
 import { hearthStore, useHearthStore } from "../state/store";
 import { createAssistant } from "./assistantClient";
 import type { AssistantEvents, AssistantSession } from "./assistantClient";
@@ -180,7 +180,7 @@ function Opening({ prompts, onPick }: { prompts: string[]; onPick(prompt: string
       </p>
       <p className="text-[12px] leading-relaxed text-ink-muted">
         ChatGPT or Chrome over WebMCP is the real thing; this is the fallback. It calls the same{" "}
-        <span className="numerals text-ink">{tools > 0 ? tools : 26}</span> tools on{" "}
+        <span className="numerals text-ink">{tools > 0 ? tools : 29}</span> tools on{" "}
         <code className="font-mono text-[11px] text-ink">document.modelContext</code> — every move lands in the log.
       </p>
       <p className="label-caps text-[10px]">Try</p>
@@ -210,7 +210,7 @@ function useStarterPrompts(): string[] {
   return useMemo(() => {
     const room = scene.rooms.find((candidate) => candidate.id === scene.meta.activeRoomId) ?? scene.rooms[0];
     const selected = scene.furniture.find((item) => item.id === scene.meta.selection.itemId);
-    const product = selected ? createCatalog(catalogItems).byId(selected.catalogId) : undefined;
+    const product = selected ? productFor(selected, catalogItems) : undefined;
     return promptSuggestions({
       mode: scene.meta.mode,
       roomName: room?.name ?? "room",

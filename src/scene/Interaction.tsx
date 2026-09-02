@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useThree } from "@react-three/fiber";
 import { rotateBy } from "../engine/anchors";
-import { createCatalog } from "../engine/catalog";
+import { productFor, createCatalog } from "../engine/catalog";
 import type { CatalogItem, Room, Rotation, Vec2 } from "../engine/types";
 import { hearthStore, useHearthStore } from "../state/store";
 import {
@@ -222,7 +222,7 @@ export function Interaction() {
     const startDrag = (press: Press) => {
       const state = hearthStore.getState();
       const found = state.scene.furniture.find((entry) => entry.id === press.itemId);
-      const product = found ? catalog.byId(found.catalogId) : undefined;
+      const product = found ? productFor(found, catalog) : undefined;
       const room = found ? state.scene.rooms.find((entry) => entry.id === found.roomId) : undefined;
       if (!found || !product || !room) return;
       if (found.locked) {
@@ -252,7 +252,7 @@ export function Interaction() {
       const camera = event.shiftKey || panModifierHeld();
       const found = camera ? undefined : itemAt(event.clientX, event.clientY);
       const room = found ? state.scene.rooms.find((entry) => entry.id === found.roomId) : undefined;
-      const product = found ? catalog.byId(found.catalogId) : undefined;
+      const product = found ? productFor(found, catalog) : undefined;
       let grab: Vec2 = { x: 0, y: 0 };
       let planeY = 0;
       if (found && room && product) {
@@ -381,7 +381,7 @@ export function Interaction() {
   const world = gesture && gestureRoom ? roomToWorldCm(gestureRoom, gesture.pose.pos) : undefined;
   const dropRoom = drop ? rooms.find((entry) => entry.id === drop.pose.roomId) : undefined;
   const selected = useHearthStore((state) => state.scene.furniture.find((entry) => entry.id === state.scene.meta.selection.itemId));
-  const selectedProduct = selected ? catalog.byId(selected.catalogId) : undefined;
+  const selectedProduct = selected ? productFor(selected, catalog) : undefined;
   const selectedRoom = selected ? rooms.find((entry) => entry.id === selected.roomId) : undefined;
   const toolbar = selected && selectedRoom ? roomToWorldCm(selectedRoom, selected.pos) : undefined;
   // The pill sits above the item as it is actually standing: a lamp on a table is 75 cm up, so

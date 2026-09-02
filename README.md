@@ -1,7 +1,7 @@
 # Hearth Studio — design a home *with* your agent
 
 > A warm 3D interior-design studio that humans and AI agents share. Your agent sees the rooms, places furniture,
-> checks clearances and door swings, shops a real Shopify catalog, and prepares checkout — through **36 WebMCP tools**
+> checks clearances and door swings, shops a real Shopify catalog, and prepares checkout — through **40 WebMCP tools**
 > registered on the page with `document.modelContext.registerTool`. You drag, it plans; both of you see the same scene.
 
 **Live:** https://hearth.yadneshsalvi.com (mirror: https://hearth-wheat-ten.vercel.app) · **Video:** _coming_ · **Tools contract:** [TOOLS.md](TOOLS.md) · Licence: MIT
@@ -48,17 +48,21 @@ call land in one shared history. `?` opens the full map.
 | **Click** a floor | make that room the active one | **R** · **⇧R** | turn the selected item |
 | **Drag furniture** | move it, with magnets and live dimensions | **⌘Z** · **⇧⌘Z** | undo · redo |
 
-**Layouts** in the top bar swaps the whole floor plan; **Build** mode edits rooms, doors and windows.
+**Layouts** in the top bar swaps the whole floor plan — or **imports your own**: drop a floor-plan image anywhere on the studio
+and Hearth reads the room names, printed sizes, doors and windows, then builds the home to scale (furnished if you like).
+**Build** mode edits rooms, doors and windows: resize a room from any corner and the neighbouring rooms move with the wall.
+Select a piece and the inspector's **Size** steppers stretch it in cm (the 3D model follows); the catalog's **Match size**
+chip ranks Shopify products by how close they are to it, and says *Same size* or the cm difference per side.
 
 ## What the agent can do
 
-26 tools are registered the moment the page loads; 10 more appear when they make sense (a preview exists, two layouts are
+29 tools are registered the moment the page loads; 11 more appear when they make sense (a preview exists, two layouts are
 saved, the cart has lines, or you switch to Build mode). Every tool description is ≤ 500 characters, every result ≤ 1.5 K,
 per Chrome's guidance — enforced in CI. Full contract: [TOOLS.md](TOOLS.md).
 
 | Read the scene | Design | Shop | Build |
 |---|---|---|---|
-| `get_scene_summary`, `get_room_details`, `get_selection`, `measure`, `get_conflicts`, `get_design_report` | `place_furniture`, `move_furniture` (semantic anchors: *against the north wall, facing the window, next to the sofa*), `arrange_room`, `apply_palette`, `set_time_of_day`, `set_view`, `set_accessibility_mode`, `save_variant`, `load_variant`, `compare_variants`, `undo`, `clear_room` | `search_catalog`, `get_product`, `preview_in_room`, `confirm_preview`, `update_cart`, `get_cart`, `get_checkout_link` | `apply_template`, `create_room`, `update_room`, `add_opening`, `move_opening`, `remove_opening` |
+| `get_scene_summary`, `get_room_details`, `get_selection`, `measure`, `get_conflicts`, `get_design_report` | `place_furniture`, `move_furniture` (semantic anchors: *against the north wall, facing the window, next to the sofa*), `resize_furniture` (width, depth, height or a percentage; the model stretches and every rule follows), `arrange_room`, `apply_palette`, `set_time_of_day`, `set_view`, `set_accessibility_mode`, `save_variant`, `load_variant`, `compare_variants`, `undo`, `clear_room`, `clear_home`, `restore_furniture` | `search_catalog` (filters, wall fit, and *closest size*: `like_item` or target cm → `exact` / `close` / `off` with the cm delta), `get_product` (`compare_to` a placed item), `preview_in_room`, `confirm_preview`, `update_cart`, `get_cart`, `get_checkout_link` | `apply_template`, `import_floor_plan` (a floor-plan image → rooms to scale, doors, windows, starter furniture), `create_room`, `update_room` (anchor corner, neighbours pushed), `add_opening`, `move_opening`, `remove_opening` |
 
 ```ts
 // src/tools/registry.ts — one AbortController per tool group; groups appear/disappear with app state
@@ -86,10 +90,12 @@ document.modelContext.registerTool(
 
 | | |
 |---|---|
-| ![The Tools panel listing the WebMCP tools registered on the page with their schemas](docs/tools-panel.png) <br> **The tools, as an agent sees them** — 26 registered on load, each with its title, description and JSON Schema. | ![A door-swing conflict drawn as a dashed amber arc, with the inspector offering the fix in centimetres](docs/conflict.png) <br> **Conflicts are diagrams, not error text** — a dashed door-swing arc, and a fix in centimetres. |
+| ![The Tools panel listing the WebMCP tools registered on the page with their schemas](docs/tools-panel.png) <br> **The tools, as an agent sees them** — 29 registered on load, each with its title, description and JSON Schema. | ![A door-swing conflict drawn as a dashed amber arc, with the inspector offering the fix in centimetres](docs/conflict.png) <br> **Conflicts are diagrams, not error text** — a dashed door-swing arc, and a fix in centimetres. |
 | ![Accessibility mode on: 90 cm paths and a 150 cm turning circle drawn on the floor](docs/accessibility.png) <br> **Accessibility mode** — 90 cm paths and Ø150 cm turning circles, checked by the engine. | ![A ghost preview of a sofa in the room with the cart panel showing the line and subtotal](docs/shop-preview.png) <br> **Try before you buy** — `preview_in_room` ghosts the product; confirming it adds the Shopify line. |
 | ![The exported design board: dollhouse render, plan, palette and the item list with prices](docs/board.png) <br> **`export_design_board`** — one 1600 × 1000 PNG with the render, the plan, the palette and the bill. | ![The Layouts sheet: seven floor plans from studio to five bedrooms, each drawn as a mini plan with its room count and area](docs/layouts.png) <br> **Seven floor plans, one click or one `apply_template`** — studio, 1–5 bedrooms and a loft, each arriving furnished and conflict-free. |
 | ![The entire five-bedroom home framed in dollhouse view, with the Entire home inspector card](docs/entire-home.png) <br> **The whole home** — `H`, the room switcher or `set_view {focus:"home"}`; the studio pulls back here after every layout change. | ![The living room seen from a low, face-on angle after orbiting, with a selected sofa and its mini toolbar](docs/orbit.png) <br> **Your camera** — drag the floor to pan, right-drag to orbit, scroll to zoom, `0` to come home; walls and neighbours' furniture step aside. |
+| ![The Import a floor plan sheet: the uploaded 2 BHK plan on the left, the rooms it found with their sizes and a mini plan on the right](docs/import-plan.png) <br> **Your own floor plan** — drop an image, Hearth reads the room names and printed sizes, doors and windows, and shows what it will build; agents call `import_floor_plan`. | ![The seven-room home built from the plan, furnished, framed as the entire home](docs/imported-home.png) <br> **…built to scale** — shared walls, paired doors, an entrance, exterior windows and conflict-free starter furniture, ready to design. |
+| ![The inspector's Size steppers with a stretched sofa and the catalog ranking sofas by closeness to that size](docs/resize-match.png) <br> **Exact sizes** — every piece has its cm; stretch it with the steppers or `resize_furniture`, and the catalog (or `search_catalog like_item`) ranks Shopify products by closeness: *Same size*, or the cm difference per side. | |
 
 ## How it's built
 

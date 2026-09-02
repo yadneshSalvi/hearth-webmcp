@@ -178,8 +178,10 @@ test.describe("layouts", () => {
       const node = document.activeElement as HTMLElement | null;
       return (node?.getAttribute("aria-label") ?? node?.textContent ?? "").trim().slice(0, 32);
     });
-    // Tab order: the Furnished toggle, then the cards, and the close button last.
+    // Tab order: the Furnished toggle, the import button, then the cards, and the close button last.
     expect(await focused()).toBe("Furnished");
+    await page.keyboard.press("Tab");
+    expect(await focused()).toBe("Import your own plan");
     await page.keyboard.press("Tab");
     expect(await focused()).toContain(`Apply the ${templateLabel("studio")} layout`);
 

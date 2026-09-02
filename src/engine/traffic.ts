@@ -3,6 +3,7 @@ import { clearanceZone, walkwayMin } from "./clearance";
 import { openingClearZone } from "./doors";
 import { distancePointSegment, footprint, pointInPoly, polyBBox } from "./geometry";
 import type { Category, Room, Scene, Vec2 } from "./types";
+import { productFor } from "./catalog";
 
 const GRID_CM = 10;
 const EPSILON = 1e-7;
@@ -75,7 +76,7 @@ function furnitureUsePoints(scene: Scene, room: Room, catalog: Catalog): Endpoin
     .filter((item) => item.roomId === room.id && item.status === "placed")
     .sort((a, b) => a.id.localeCompare(b.id))
     .flatMap((item) => {
-      const cat = catalog.byId(item.catalogId);
+      const cat = productFor(item, catalog);
       if (!cat || !USE_CATEGORIES.has(cat.category)) return [];
       const zone = clearanceZone(item, cat);
       return zone.length > 0 ? [{ id: item.id, point: center(zone), excluded: [zone, footprint(item, cat)] }] : [];
@@ -154,7 +155,7 @@ function buildGrid(scene: Scene, room: Room, catalog: Catalog, clearanceCost: bo
   const softZones: Bounds[] = [];
   for (const item of scene.furniture) {
     if (item.roomId !== room.id || item.status !== "placed") continue;
-    const cat = catalog.byId(item.catalogId);
+    const cat = productFor(item, catalog);
     if (!cat) continue;
     if (!NON_BLOCKING.has(cat.category)) blockers.push({ id: item.id, box: polyBBox(footprint(item, cat)) });
     if (clearanceCost) {

@@ -1,4 +1,5 @@
 import type { StoreApi } from "zustand";
+import type { PlanReader } from "../floorplan/schema";
 import type { ShopifyClient } from "../shopify/types";
 import { desiredToolGroups } from "../state/selectors";
 import type { HearthStore, ToolGroup } from "../state/types";
@@ -54,6 +55,7 @@ export interface RegistryOptions {
   store: StoreApi<HearthStore>;
   ui: ToolUi;
   shopify: ShopifyClient;
+  planReader?: PlanReader;
   now?: () => number;
   schedule?: (fn: () => void) => void;
 }
@@ -92,6 +94,7 @@ export function createRegistry(options: RegistryOptions): Registry {
     store: options.store,
     ui: options.ui,
     shopify: options.shopify,
+    ...(options.planReader ? { planReader: options.planReader } : {}),
     source: "agent",
   };
   const definitions = allToolDefinitions(placeholderContext).sort((a, b) => a.name.localeCompare(b.name));
@@ -115,6 +118,7 @@ export function createRegistry(options: RegistryOptions): Registry {
           store: options.store,
           ui: options.ui,
           shopify: options.shopify,
+          ...(options.planReader ? { planReader: options.planReader } : {}),
           source,
           ...(signal ? { signal } : {}),
         };

@@ -194,8 +194,17 @@
       }
     },
     {
+      "name": "clear_home",
+      "description": "Removes every item from every room after the human confirms in a dialog on the page. The removed layout is kept so restore_furniture (or undo) can bring it back. Returns cancelled if the human declines.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
       "name": "clear_room",
-      "description": "Removes every item from a room after the human confirms in a dialog on the page. Returns cancelled if the human declines.",
+      "description": "Removes every item from a room after the human confirms in a dialog on the page. The removed layout is kept so restore_furniture (or undo) can bring it back. Returns cancelled if the human declines.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -425,7 +434,7 @@
     },
     {
       "name": "get_product",
-      "description": "Full details of one catalog product: dimensions in cm, price in USD, colorways, front clearance needed, seat count, style tags and which walls of a room it fits with the spare cm. Use it to confirm a product before placing, previewing or adding it to the cart.",
+      "description": "Full details of one catalog product: dimensions in cm, price in USD, colorways, front clearance needed, seat count, style tags and which walls of a room it fits with the spare cm. Pass compare_to (a placed item) to learn whether the product matches that item's size exactly, closely or not. Use it to confirm a product before placing, previewing or adding it to the cart.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -438,6 +447,11 @@
             "type": "string",
             "minLength": 1,
             "description": "Room id or name, e.g. living or Living Room. Defaults to the active room."
+          },
+          "compare_to": {
+            "description": "Placed item id or name (or selected) to compare sizes with; adds size_match with the cm difference per side.",
+            "type": "string",
+            "minLength": 1
           }
         },
         "required": [
@@ -476,6 +490,27 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "import_floor_plan",
+      "description": "Builds the home from a floor-plan image: the plan the human uploaded in the studio (the default) or an image_url. A vision model reads room names, printed dimensions, doors and windows; the engine lays the rooms out to scale in cm, adds doors and windows, and furnished adds starter furniture. Takes 20 to 60 s. Asks for confirmation if the current home has furniture.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "image_url": {
+            "description": "http(s) URL of a floor-plan image (png, jpg, webp, ≤ 8 MB). Omit to use the plan the human uploaded in the studio.",
+            "type": "string",
+            "maxLength": 2000,
+            "format": "uri"
+          },
+          "furnished": {
+            "default": false,
+            "description": "true adds starter furniture to every room (bed, wardrobe, sofa, table…) placed by the engine.",
+            "type": "boolean"
+          }
+        },
         "additionalProperties": false
       }
     },
@@ -1004,6 +1039,57 @@
       }
     },
     {
+      "name": "resize_furniture",
+      "description": "Changes a placed item's size in cm: width, depth and height, or scale_percent of its catalog size; reset restores the catalog size. The 3D model stretches to the new size and every rule (overlap, clearance, walls) uses it. Nudges the item up to 60 cm to stay inside the room and reports conflicts. Returns the new and the catalog dimensions and the closest catalog product to the new size.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Placed item id (e.g. sofa-1) or its name. Use selected for the human's current selection."
+          },
+          "width_cm": {
+            "description": "New width in cm (10–1000), left–right facing the front. Sides not given keep their current size.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "depth_cm": {
+            "description": "New depth in cm (10–1000), front–back.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "height_cm": {
+            "description": "New height in cm (10–1000), floor to top.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "scale_percent": {
+            "description": "Scale every side to this percentage of the catalog size, 25–400; 100 restores it.",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "reset": {
+            "description": "true restores the catalog size.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "item"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "restore_furniture",
+      "description": "Brings back the furniture removed by the last clear_home or clear_room, into the rooms it came from. Items whose room no longer exists are skipped and listed. Returns not_found when nothing has been cleared.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
       "name": "save_variant",
       "description": "Saves the current furniture layout of a room under a name (for example Cosy or Media wall) so it can be restored with load_variant or, once two or more exist, compared side by side with compare_variants.",
       "inputSchema": {
@@ -1029,7 +1115,7 @@
     },
     {
       "name": "search_catalog",
-      "description": "Searches Hearth Studio's furniture catalog (Shopify). Filter by category, maximum price in USD, maximum width and depth in cm, style, colorway, or the wall it must fit (fits_wall) in a room. Returns up to 6 products with id, price, dimensions, colorways and a fit note such as fits north wall · 12 cm spare. Product ids from here are used by place_furniture, preview_in_room and update_cart.",
+      "description": "Searches Hearth Studio's furniture catalog (Shopify). Filter by category, maximum price in USD, maximum width and depth in cm, style, colorway, or the wall it must fit (fits_wall) in a room. Give target dimensions (width_cm, depth_cm, height_cm) or like_item to rank by closest size: each result then says exact, close or off with the cm difference. Returns up to 6 products with id, price, dimensions, colorways and a fit note. Ids feed place_furniture, preview_in_room and update_cart.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1098,6 +1184,32 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 6
+          },
+          "width_cm": {
+            "description": "Target width in cm; results are ranked by how close their size is (see dims_match).",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "depth_cm": {
+            "description": "Target depth in cm; results are ranked by how close their size is (see dims_match).",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "height_cm": {
+            "description": "Target height in cm; results are ranked by how close their size is (see dims_match).",
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "like_item": {
+            "description": "Placed item id or name (or selected) whose current size is the target; its category is used unless category is given.",
+            "type": "string",
+            "minLength": 1
+          },
+          "tolerance_cm": {
+            "description": "How many cm per side still count as close (default 10). exact = every side within 1 cm.",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 200
           }
         },
         "additionalProperties": false
@@ -1283,7 +1395,7 @@
     },
     {
       "name": "update_room",
-      "description": "Changes a room's name, type, width and depth in cm, floor material or wall colour. Items that no longer fit are reported so you can move them.",
+      "description": "Changes a room's name, type, width and depth in cm, floor material or wall colour. When resizing, anchor_corner (default nw) is the corner that stays put and the opposite walls move; rooms beyond a moving wall are pushed along with it unless push_neighbors is false. Openings keep their place on the wall. Items that no longer fit are reported so you can move them.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1343,6 +1455,20 @@
               "blue-tint",
               "terracotta-tint"
             ]
+          },
+          "anchor_corner": {
+            "description": "Corner that stays fixed while resizing: nw (default), ne, sw or se. The opposite walls move.",
+            "type": "string",
+            "enum": [
+              "nw",
+              "ne",
+              "sw",
+              "se"
+            ]
+          },
+          "push_neighbors": {
+            "description": "true (default) shifts the rooms beyond a moving wall so they keep touching; false leaves them where they are.",
+            "type": "boolean"
           }
         },
         "additionalProperties": false

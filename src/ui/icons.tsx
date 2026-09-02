@@ -76,6 +76,12 @@ export const IconCopy = icon(<><rect x="3.4" y="3.4" width="9" height="9" rx="1.
 export const IconCheck = icon(<path d="M4.8 10.4 8.4 14 15.2 6.4" />);
 export const IconPlus = icon(<><path d="M10 5.4v9.2" /><path d="M5.4 10h9.2" /></>);
 export const IconMinus = icon(<path d="M5.4 10h9.2" />);
+/** A file coming up into the studio: the floor-plan import. */
+export const IconUpload = icon(<><path d="M10 13.2V4.6" /><path d="M6.6 8 10 4.6 13.4 8" /><path d="M4.2 12.8v1.6a1.4 1.4 0 0 0 1.4 1.4h8.8a1.4 1.4 0 0 0 1.4-1.4v-1.6" /></>);
+/** Two corners pulling apart: a size change. */
+export const IconResize = icon(<><path d="M4.4 15.6 15.6 4.4" /><path d="M4.4 10.6v5h5" /><path d="M15.6 9.4v-5h-5" /></>);
+/** A spent layout coming back: restore. */
+export const IconRestore = icon(<><path d="M4.6 10a5.4 5.4 0 1 0 1.6-3.8" /><path d="M4.4 4.8v3.4h3.4" /></>);
 export const IconTools = icon(<><circle cx="10" cy="5.2" r="1.9" /><circle cx="5" cy="14.4" r="1.9" /><circle cx="15" cy="14.4" r="1.9" /><path d="M8.7 6.9 6.3 12.7" /><path d="M11.3 6.9l2.4 5.8" /><path d="M6.9 14.4h6.2" /></>);
 export const IconHuman = icon(<><circle cx="10" cy="7" r="2.8" /><path d="M4.8 16.6a5.2 5.2 0 0 1 10.4 0" /></>);
 export const IconAgent = icon(<path d="M10 3.4l1.6 4.5 4.5 1.6-4.5 1.6L10 15.6l-1.6-4.5L3.9 9.5l4.5-1.6z" />);

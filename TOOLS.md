@@ -1,6 +1,6 @@
 # TOOLS.md — the WebMCP tool contract for Hearth (registry, handlers, UI, evals all obey this file)
 
-Hearth registers **36 distinct tools, 26 visible by default**, on `document.modelContext`. This file is
+Hearth registers **40 distinct tools, 29 visible by default**, on `document.modelContext`. This file is
 the single source of truth for names, titles, descriptions, input schemas, result shapes, output budgets and
 the registration lifecycle. Change it here first; code follows. Descriptions are tuned by the lead only.
 
@@ -40,7 +40,7 @@ the registration lifecycle. Change it here first; code follows. Descriptions are
   Shopify-sourced text). Nothing else is supported by Chrome/ChatGPT today.
 - **Side effects are visible before the promise resolves:** the store is updated, the orb has flown, the receipt
   line is written, then the result returns (Chrome: "update UI state before returning").
-- **Confirmation:** `clear_room` and `apply_template` (on a furnished home) open an in-page dialog and await it;
+- **Confirmation:** `clear_room`, `clear_home`, and `apply_template` / `import_floor_plan` (on a furnished home) open an in-page dialog and await it;
   45 s without an answer → `{ok:false, error:"cancelled", detail:"No confirmation within 45 s"}`; decline → `cancelled`.
 - **Coordinates never leak math to the model:** anchors (`§1`) do the geometry; raw `pos` is an override only.
 - **Every mutating tool result includes `room`** (id) and the affected item ids so the agent can verify.
@@ -93,15 +93,15 @@ nudge along the wall/axis up to **60 cm** (5 cm steps, nearest first) and report
 | Group | Tools | Registered when |
 |---|---|---|
 | `core` | 1–10 | always (on mount, before first paint of the status chip) |
-| `design` | 11–23 | always |
+| `design` | 11–23, 37–39 | always |
 | `shop` | 24–25 | always |
 | `present` | 26 | always |
 | `preview` | 27–28 | a ghost (preview) item exists |
 | `variants` | 29 | any room has ≥ 2 saved variants |
 | `checkout` | 30 | the cart has ≥ 1 line |
-| `build` | 31–36 | `meta.mode === "build"` |
+| `build` | 31–36, 40 | `meta.mode === "build"` |
 
-Visible by default = core 10 + design 13 + shop 2 + present 1 = **26**.
+Visible by default = core 10 + design 16 + shop 2 + present 1 = **29**.
 
 ## 3. The tools
 
@@ -177,26 +177,32 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 
 ### 7. `search_catalog` · core · R U
 **Title:** Search catalog
-**Description:** Searches Hearth Studio's furniture catalog (Shopify). Filter by category, maximum price in USD, maximum width and depth in cm, style, colorway, or the wall it must fit (fits_wall) in a room. Returns up to 6 products with id, price, dimensions, colorways and a fit note such as fits north wall · 12 cm spare. Product ids from here are used by place_furniture, preview_in_room and update_cart.
+**Description:** Searches Hearth Studio's furniture catalog (Shopify). Filter by category, maximum price in USD, maximum width and depth in cm, style, colorway, or the wall it must fit (fits_wall) in a room. Give target dimensions (width_cm, depth_cm, height_cm) or like_item to rank by closest size: each result then says exact, close or off with the cm difference. Returns up to 6 products with id, price, dimensions, colorways and a fit note. Ids feed place_furniture, preview_in_room and update_cart.
 **Input:**
 ```ts
 { query?: string; category?: Category; max_price_usd?: number; max_width_cm?: number; max_depth_cm?: number;
-  fits_wall?: string; room?: string; style?: string; colorway?: string; limit?: number /* 1–6, default 6 */ }
+  fits_wall?: string; room?: string; style?: string; colorway?: string; limit?: number /* 1–6, default 6 */;
+  width_cm?: number; depth_cm?: number; height_cm?: number; like_item?: string; tolerance_cm?: number /* default 10 */ }
 ```
+- `width_cm` / `depth_cm` / `height_cm` — "Target width/depth/height in cm; results are ranked by how close their size is (see dims_match)."
+- `like_item` — "Placed item id or name (or selected) whose current size is the target; its category is used unless category is given."
+- `tolerance_cm` — "How many cm per side still count as close (default 10). exact = every side within 1 cm."
+- Any target dimension (or `like_item`) switches ranking to size distance (sum of |Δ| over the given sides), then wall fit, then price. Each row gains `dims_match` (`exact` | `close` | `off`) and `delta_cm` (e.g. `"w+5 d-3 h0"`). The `hint` says whether an exact match exists.
 - `query` — "Free-text search, e.g. small oak desk."
 - `category` — enum `sofa|armchair|bed|wardrobe|table|desk|chair|shelf|tv-unit|rug|floor-lamp|table-lamp|plant|decor`.
 - `fits_wall` — "Only products whose width fits a free span on this wall (north, east, south, west or wall id) of the room."
 - `style` — "Style tag such as scandinavian, japandi, mid-century, rustic, modern."
-**Result:** `{"ok":true,"count":4,"results":[{"id":"sofa-endre","name":"Endre Sofa","category":"sofa","price_usd":790,"dims":"220x95x85","colorways":"oak, sage, terracotta","fit":"fits north wall · 40 cm spare","style":"scandinavian"}],"hint":"…"}`
-**Budget:** ≤ 6 rows, no descriptions, colorways as one string.
+**Result:** `{"ok":true,"count":4,"results":[{"id":"sofa-endre","name":"Endre Sofa","category":"sofa","price_usd":790,"dims":"220x95x85","colorways":"oak, sage, terracotta","fit":"fits north wall · 40 cm spare","style":"scandinavian","dims_match":"close","delta_cm":"w+5 d0 h-2"}],"target_dims":"215x95x87","exact_match":false,"hint":"…"}`
+**Budget:** ≤ 6 rows, no descriptions, colorways as one string; `dims_match`/`delta_cm`/`target_dims`/`exact_match` only when a size target was given.
 **Receipt:** "Searched catalog: sofas under $800 (4)"
 
 ### 8. `get_product` · core · R U
 **Title:** Product details
-**Description:** Full details of one catalog product: dimensions in cm, price in USD, colorways, front clearance needed, seat count, style tags and which walls of a room it fits with the spare cm. Use it to confirm a product before placing, previewing or adding it to the cart.
-**Input:** `{ product: string, room?: string }`
-**Result:** `{"ok":true,"product":{"id":"sofa-endre","name":"Endre Sofa","category":"sofa","price_usd":790,"dims":"220x95x85","clearance_front_cm":75,"seat_count":3,"colorways":["oak","sage","terracotta"],"style_tags":["scandinavian"],"description":"…≤200"},"fits":{"room":"living","walls":[{"wall":"w0","side":"north","fits":true,"spare_cm":40}]},"in_scene":["sofa-1"],"hint":"…"}`
-**Budget:** description ≤ 200 chars; walls ≤ 6.
+**Description:** Full details of one catalog product: dimensions in cm, price in USD, colorways, front clearance needed, seat count, style tags and which walls of a room it fits with the spare cm. Pass compare_to (a placed item) to learn whether the product matches that item's size exactly, closely or not. Use it to confirm a product before placing, previewing or adding it to the cart.
+**Input:** `{ product: string, room?: string, compare_to?: string }`
+- `compare_to` — "Placed item id or name (or selected) to compare sizes with; adds size_match with the cm difference per side."
+**Result:** `{"ok":true,"product":{"id":"sofa-endre","name":"Endre Sofa","category":"sofa","price_usd":790,"dims":"220x95x85","clearance_front_cm":75,"seat_count":3,"colorways":["oak","sage","terracotta"],"style_tags":["scandinavian"],"description":"…≤200"},"fits":{"room":"living","walls":[{"wall":"w0","side":"north","fits":true,"spare_cm":40}]},"in_scene":["sofa-1"],"size_match":{"item":"sofa-1","item_dims":"240x95x85","match":"close","delta_cm":"w-20 d0 h0"},"hint":"…"}`
+**Budget:** description ≤ 200 chars; walls ≤ 6; `size_match` only with `compare_to`.
 **Receipt:** "Read product Endre Sofa"
 
 ### 9. `get_cart` · core · R
@@ -310,9 +316,9 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 
 ### 23. `clear_room` · design · **confirm**
 **Title:** Clear room
-**Description:** Removes every item from a room after the human confirms in a dialog on the page. Returns cancelled if the human declines.
+**Description:** Removes every item from a room after the human confirms in a dialog on the page. The removed layout is kept so restore_furniture (or undo) can bring it back. Returns cancelled if the human declines.
 **Input:** `{ room?: string }`
-**Result:** `{"ok":true,"room":"living","removed":7,"hint":"undo restores them."}` · `{"ok":false,"error":"cancelled","detail":"The human declined to clear Living Room."}`
+**Result:** `{"ok":true,"room":"living","removed":7,"removed_ids":["…"],"hint":"restore_furniture or undo brings them back."}` · `{"ok":false,"error":"cancelled","detail":"The human declined to clear Living Room."}`
 **Receipt:** "Cleared Living Room (7 items)" / "Clear Living Room — declined"
 
 ---
@@ -400,9 +406,12 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 
 ### 33. `update_room` · build
 **Title:** Update room
-**Description:** Changes a room's name, type, width and depth in cm, floor material or wall colour. Items that no longer fit are reported so you can move them.
-**Input:** `{ room?: string, name?: string, type?: RoomType, width_cm?: number, depth_cm?: number, floor?: Floor, wall_color?: WallColor }`
-**Result:** `{"ok":true,"room":{"id":"living","name":"Living Room","size_cm":"560x440","area_m2":24.6},"items_outside":["shelf-1"],"conflicts":[…],"hint":"…"}`
+**Description:** Changes a room's name, type, width and depth in cm, floor material or wall colour. When resizing, anchor_corner (default nw) is the corner that stays put and the opposite walls move; rooms beyond a moving wall are pushed along with it unless push_neighbors is false. Openings keep their place on the wall. Items that no longer fit are reported so you can move them.
+**Input:** `{ room?: string, name?: string, type?: RoomType, width_cm?: number, depth_cm?: number, floor?: Floor, wall_color?: WallColor, anchor_corner?: "nw"|"ne"|"sw"|"se", push_neighbors?: boolean /* default true */ }`
+- `anchor_corner` — "Corner that stays fixed while resizing: nw (default), ne, sw or se. The opposite walls move."
+- `push_neighbors` — "true (default) shifts the rooms beyond a moving wall so they keep touching; false leaves them where they are."
+- Furniture in the room keeps its world position; openings on the resized room keep their world position along their wall, sliding back inside when a shrink would leave them past the wall's end. A wall shorter than one of its openings refuses the resize with `invalid` naming the opening.
+**Result:** `{"ok":true,"room":{"id":"living","name":"Living Room","size_cm":"560x440","area_m2":24.6},"items_outside":["shelf-1"],"shifted_rooms":["kitchen","bath"],"conflicts":[…],"hint":"…"}`
 **Receipt:** "Updated Living Room · 560×440 cm"
 
 ### 34. `add_opening` · build
@@ -429,6 +438,46 @@ result · budget policy · receipt summary (≤ 80 chars, shown in the Activity 
 **Result:** `{"ok":true,"room":"living","removed":{"id":"window-2","kind":"window"},"hint":"…"}`
 **Receipt:** "Removed window-2"
 
+### 37. `resize_furniture` · design
+**Title:** Resize furniture
+**Description:** Changes a placed item's size in cm: width, depth and height, or scale_percent of its catalog size; reset restores the catalog size. The 3D model stretches to the new size and every rule (overlap, clearance, walls) uses it. Nudges the item up to 60 cm to stay inside the room and reports conflicts. Returns the new and the catalog dimensions and the closest catalog product to the new size.
+**Input:** `{ item: string, width_cm?: number, depth_cm?: number, height_cm?: number, scale_percent?: number, reset?: boolean }`
+- `width_cm` / `depth_cm` / `height_cm` — "New width/depth/height in cm (10–1000). Sides not given keep their current size."
+- `scale_percent` — "Scale every side to this percentage of the catalog size, 25–400; 100 restores it."
+- `reset` — "true restores the catalog size."
+- Width is left–right facing the front, depth front–back, height floor to top. At least one field is required. The item keeps its rotation; if the larger footprint would leave the room or collide, the engine nudges it up to 60 cm (`nudged_cm`); if no nudge works the size is still applied and the conflicts say what to move.
+**Result:** `{"ok":true,"room":"living","item":{"id":"sofa-1","name":"Endre Sofa","dims":"240x95x85","catalog_dims":"220x95x85","scale":"109%","pos":[260,47],"rotation":0},"item_ids":["sofa-1"],"nudged_cm":0,"conflicts":[],"closest_product":{"id":"sofa-vik","name":"Vik Sofa","dims":"240x96x84","match":"close","delta_cm":"w0 d+1 h-1"},"hint":"…"}`
+**Receipt:** "Resized Endre Sofa → 240×95×85 cm" / "Reset Endre Sofa to its catalog size"
+
+### 38. `clear_home` · design · **confirm**
+**Title:** Clear all furniture
+**Description:** Removes every item from every room after the human confirms in a dialog on the page. The removed layout is kept so restore_furniture (or undo) can bring it back. Returns cancelled if the human declines.
+**Input:** `{}`
+**Confirm:** "Clear the whole home and remove 24 items?"
+**Result:** `{"ok":true,"room":"living","removed":24,"rooms_cleared":6,"removed_ids":["…"],"hint":"restore_furniture brings everything back; undo also works."}` · `{"ok":false,"error":"cancelled","detail":"The human declined to clear the home."}`
+**Budget:** `removed_ids` ≤ 20 then `more`.
+**Receipt:** "Cleared the whole home (24 items)" / "Clear the home — declined"
+
+### 39. `restore_furniture` · design
+**Title:** Restore furniture
+**Description:** Brings back the furniture removed by the last clear_home or clear_room, into the rooms it came from. Items whose room no longer exists are skipped and listed. Returns not_found when nothing has been cleared.
+**Input:** `{}`
+**Result:** `{"ok":true,"room":"living","restored":24,"rooms":["living","kitchen"],"item_ids":["…"],"skipped":[],"hint":"Cart lines removed by the clear are not re-added; use update_cart."}` · `{"ok":false,"error":"not_found","detail":"Nothing has been cleared yet.","alternatives":[]}`
+**Budget:** `item_ids` ≤ 20 then `more`.
+**Receipt:** "Restored 24 items"
+
+### 40. `import_floor_plan` · build · **confirm if the home has furniture**
+**Title:** Import floor plan
+**Description:** Builds the home from a floor-plan image: the plan the human uploaded in the studio (the default) or an image_url. A vision model reads room names, printed dimensions, doors and windows; the engine lays the rooms out to scale in cm, adds doors and windows, and furnished adds starter furniture. Takes 20 to 60 s. Asks for confirmation if the current home has furniture.
+**Input:** `{ image_url?: string, furnished?: boolean }`
+- `image_url` — "http(s) URL of a floor-plan image (png, jpg, webp, ≤ 8 MB). Omit to use the plan the human uploaded in the studio."
+- `furnished` — "true adds starter furniture to every room (bed, wardrobe, sofa, table…) placed by the engine."
+- Pipeline: `POST /api/floorplan` (server-side vision call, structured output) → `planToScene` (src/engine/floorplan.ts: per-axis scale from the printed dimensions, edge clustering so rooms share walls, overlap resolution, paired doors on shared walls, an entrance door, windows on exterior walls, a door-graph connectivity pass) → `applyImportedPlan` (keeps mode, time of day, accessibility, palette; frames the whole home). Outdoor areas (balconies, decks) are skipped and listed.
+**Confirm:** "Replace this home and its 24 placed items with the imported floor plan?"
+**Result:** `{"ok":true,"room":"living","plan":{"title":"2 BHK with deck","confidence":0.88,"units":"ft"},"rooms":[{"id":"bed-1","name":"M. Bedroom","size_cm":"275x305"},…],"openings":11,"items":9,"item_ids":["…"],"skipped":["Deck (outdoor)"],"notes":["…"],"hint":"The studio shows the whole home; set_view with a room id zooms in, set_mode design furnishes."}` · `{"ok":false,"error":"not_found","detail":"No floor plan has been uploaded. Ask the human to drop one on the studio, or pass image_url."}` · `{"ok":false,"error":"unavailable","detail":"The plan reader could not read this image: …"}`
+**Budget:** rooms ≤ 12, notes ≤ 4, `item_ids` ≤ 20.
+**Receipt:** "Imported floor plan · 8 rooms (furnished)" / "Import floor plan — declined"
+
 ## 4. Registration lifecycle (`src/tools/registry.ts`)
 
 ```ts
@@ -438,7 +487,7 @@ interface ToolSpec<I extends z.ZodObject> {
   name: string; title: string; description: string; group: ToolGroup;
   input: I;                                   // zod → JSON Schema via z.toJSONSchema(input, { target: "draft-7" }) — no $refs, no unions in top-level params except anyOf for along/offset
   readOnly?: boolean; untrusted?: boolean; waitForTools?: boolean;
-  confirm?: (input: z.infer<I>, s: Scene) => string | null;   // message → await ui.confirm(message); null = no dialog
+  confirm?: (input: z.infer<I>, s: Scene, state: HearthState) => string | null;   // message → await ui.confirm(message); null = no dialog (import_floor_plan reads ui.uploadedPlan)
   handler: (input: z.infer<I>, ctx: ToolContext) => Promise<ToolResult> | ToolResult;
   summarize: (input: z.infer<I>, result: ToolResult) => string; // receipt line ≤ 80 chars
 }
@@ -464,9 +513,9 @@ interface ToolContext { store: HearthStore; ui: { confirm(msg: string): Promise<
 - **Static descriptions.** Nothing in a description depends on scene state (no re-registration churn). Live
   context is returned by `get_scene_summary`; every mutating result carries `room`.
 - **Feature detection:** `typeof document.modelContext?.registerTool === "function"`. Registration happens
-  synchronously in the Studio's first client effect so DevTools/Lighthouse list the 26 default tools cold.
+  synchronously in the Studio's first client effect so DevTools/Lighthouse list the 29 default tools cold.
 - **Mirror:** a `toolchange` listener calls `getTools()` and stores `{name,title,description,inputSchema}` in the
-  store for the Tools panel and the status chip ("Agent tools · 26 ready"). Registry exposes `execute(name, input)`
+  store for the Tools panel and the status chip ("Agent tools · 29 ready"). Registry exposes `execute(name, input)`
   for tests and the fallback assistant (identical path → identical orb/receipt behaviour); non-test mirror calls
   are rejected with `blocked` when the tool's group gate is closed.
 - **Receipts:** every execution appends `{ id, t, source, tool, title, summary, input, result, itemIds }` to

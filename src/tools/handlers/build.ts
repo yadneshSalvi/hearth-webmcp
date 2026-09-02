@@ -2,6 +2,7 @@ import * as z from "zod";
 import { createCatalog } from "../../engine/catalog";
 import { conflictsForItem, evaluateRoom } from "../../engine/conflicts";
 import { roomAreaM2, roomSize, walls } from "../../engine/geometry";
+import { CORNERS } from "../../engine/rooms";
 import { templateLabel, templateShortLabel } from "../../engine/templates";
 import { ROOM_TYPES, TEMPLATE_IDS } from "../../engine/types";
 import type { Conflict } from "../../engine/types";
@@ -130,7 +131,7 @@ export function updateRoomTool(): DefinedTool {
   return defineTool({
     name: "update_room",
     title: "Update room",
-    description: "Changes a room's name, type, width and depth in cm, floor material or wall colour. Items that no longer fit are reported so you can move them.",
+    description: "Changes a room's name, type, width and depth in cm, floor material or wall colour. When resizing, anchor_corner (default nw) is the corner that stays put and the opposite walls move; rooms beyond a moving wall are pushed along with it unless push_neighbors is false. Openings keep their place on the wall. Items that no longer fit are reported so you can move them.",
     group: "build",
     input: z.object({
       room: roomParam.optional(),
@@ -140,6 +141,8 @@ export function updateRoomTool(): DefinedTool {
       depth_cm: z.number().int().positive().optional().describe(describeParam("New room depth in cm.")),
       floor: z.enum(floors).optional().describe(describeParam("New floor material.")),
       wall_color: z.enum(wallColors).optional().describe(describeParam("New wall colour token.")),
+      anchor_corner: z.enum(CORNERS).optional().describe(describeParam("Corner that stays fixed while resizing: nw (default), ne, sw or se. The opposite walls move.")),
+      push_neighbors: z.boolean().optional().describe(describeParam("true (default) shifts the rooms beyond a moving wall so they keep touching; false leaves them where they are.")),
     }).strict(),
     handler(input, context) {
       const state = context.store.getState();
@@ -149,13 +152,15 @@ export function updateRoomTool(): DefinedTool {
         .some((value) => value !== undefined);
       if (!hasPatch) return { ok: false, error: "invalid", detail: "Give at least one room field to update.", suggestion: "Set name, type, width_cm, depth_cm, floor or wall_color." };
       try {
-        const outside = context.store.getState().updateRoom(sourceForStore(context.source), room.id, {
+        const { outside, shifted } = context.store.getState().updateRoom(sourceForStore(context.source), room.id, {
           name: input.name,
           type: input.type,
           width_cm: input.width_cm,
           depth_cm: input.depth_cm,
           floor: input.floor,
           wall_color: input.wall_color,
+          anchorCorner: input.anchor_corner,
+          pushNeighbors: input.push_neighbors,
         });
         const updated = context.store.getState().scene.rooms.find((candidate) => candidate.id === room.id);
         if (!updated) return { ok: false, error: "unavailable", detail: "The updated room could not be read." };
@@ -166,9 +171,14 @@ export function updateRoomTool(): DefinedTool {
           room: { id: updated.id, name: updated.name, size_cm: roomSize(updated), area_m2: roomAreaM2(updated) },
           items_outside: outside,
           item_ids: outside,
+          shifted_rooms: shifted,
           conflicts: conflicts.slice(0, 6).map(conflictRow),
           conflicts_count: conflicts.length,
-          hint: outside.length ? "Move the listed items back inside the resized room." : "The room and its furniture still fit.",
+          hint: outside.length
+            ? "Move the listed items back inside the resized room."
+            : shifted.length
+              ? `${shifted.length} neighbouring room${shifted.length === 1 ? "" : "s"} moved to keep touching; the furniture still fits.`
+              : "The room and its furniture still fit.",
         };
       } catch (error) {
         return fromCaught(error);

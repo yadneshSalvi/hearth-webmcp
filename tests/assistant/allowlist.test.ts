@@ -7,7 +7,7 @@ describe("assistant tool allowlist", () => {
   it("stays synchronized with all handler definitions", () => {
     const handlerNames = allTools(toolContext()).map((tool) => tool.name).sort();
     expect(HEARTH_TOOL_NAMES).toEqual(handlerNames);
-    expect(new Set(HEARTH_TOOL_NAMES).size).toBe(36);
+    expect(new Set(HEARTH_TOOL_NAMES).size).toBe(40);
   });
 });
 

@@ -8,7 +8,7 @@ import { roomSize } from "../engine/geometry";
 import type { Opening, Room, RoomType, TemplateId } from "../engine/types";
 import { hearthStore } from "../state/store";
 import { HearthError } from "../state/types";
-import type { OpeningInput, OpeningPatch, RoomPatch, RoomPlacement } from "../state/types";
+import type { OpeningInput, OpeningPatch, RoomPatch, RoomPlacement, RoomUpdateReport } from "../state/types";
 import { templateConfirmMessage } from "./templates";
 import { historyMarker, toolUi, undoTo } from "./useHearth";
 import { pushToast } from "./toast-bus";
@@ -52,17 +52,26 @@ export async function applyTemplate(template: TemplateId, furnished: boolean): P
 /** Patches a room; openings that no longer fit refuse the resize, items left outside warn. */
 export function updateRoom(room: Room, patch: RoomPatch): boolean {
   const marker = historyMarker();
-  let outside: string[] = [];
+  let report: RoomUpdateReport = { outside: [], shifted: [] };
   const ok = attempt(`${room.name} cannot change that way`, () => {
-    outside = hearthStore.getState().updateRoom("human", room.id, patch);
+    report = hearthStore.getState().updateRoom("human", room.id, patch);
   });
   if (!ok) return false;
-  const updated = hearthStore.getState().scene.rooms.find((candidate) => candidate.id === room.id);
-  if (outside.length > 0) {
+  const state = hearthStore.getState();
+  const updated = state.scene.rooms.find((candidate) => candidate.id === room.id);
+  if (report.outside.length > 0) {
     pushToast({
-      title: `${outside.length === 1 ? "1 item is" : `${outside.length} items are`} outside ${updated?.name ?? room.name}`,
+      title: `${report.outside.length === 1 ? "1 item is" : `${report.outside.length} items are`} outside ${updated?.name ?? room.name}`,
       detail: "Move them back inside, or undo the resize.",
       tone: "warn",
+      action: { label: "Undo", run: () => undoTo(marker) },
+    });
+  } else if (report.shifted.length > 0 && updated) {
+    const names = report.shifted.map((id) => state.scene.rooms.find((candidate) => candidate.id === id)?.name ?? id);
+    pushToast({
+      title: `${updated.name} is now ${roomSize(updated).replace("x", " × ")} cm`,
+      detail: `${names.slice(0, 3).join(", ")}${names.length > 3 ? ` and ${names.length - 3} more` : ""} moved to keep touching it.`,
+      tone: "info",
       action: { label: "Undo", run: () => undoTo(marker) },
     });
   }

@@ -6,6 +6,8 @@
  */
 import { useMemo, useState } from "react";
 import { polyBBox, roomAreaM2 } from "../engine/geometry";
+import type { Corner } from "../engine/rooms";
+import { CORNERS } from "../engine/rooms";
 import type { Room, RoomType, TemplateId } from "../engine/types";
 import { ROOM_TYPES } from "../engine/types";
 import { hearthStore, useHearthStore } from "../state/store";
@@ -15,7 +17,7 @@ import type { Floor, WallColor } from "../tokens";
 import { BuildOpenings } from "./BuildOpenings";
 import { applyTemplate, createRoom, updateRoom } from "./buildOps";
 import { useCopyFlash } from "./clipboard";
-import { IconAgent, IconCheck, IconChevronDown, IconChevronRight, IconPanelLeft, IconPlus, IconRoom } from "./icons";
+import { IconAgent, IconCheck, IconChevronDown, IconChevronRight, IconPanelLeft, IconPlus, IconRoom, IconUpload } from "./icons";
 import { Button, Chip, Field, IconButton, Panel, Segmented, Stepper } from "./primitives";
 import type { SegmentedOption } from "./primitives";
 import { plural } from "./format";
@@ -40,6 +42,7 @@ const PLACES: readonly { value: RoomPlacement; label: string }[] = [
 
 const ROOM_STEP = 20;
 const MIN_SIDE = 120;
+const CORNER_LABELS: Record<Corner, string> = { nw: "NW", ne: "NE", sw: "SW", se: "SE" };
 
 function floorLabel(floor: Floor): string {
   return floor.replace(/-/g, " ").replace(/^./, (first) => first.toUpperCase());
@@ -86,6 +89,7 @@ function SwatchRow<T extends string>({ label, options, value, onChange }: {
 
 function TemplateSection() {
   const template = useHearthStore((state) => state.scene.meta.template);
+  const imported = useHearthStore((state) => state.scene.meta.importedPlan);
   const [choice, setChoice] = useState<TemplateId>(template ?? "2br");
   const [furnished, setFurnished] = useState(true);
 
@@ -103,15 +107,19 @@ function TemplateSection() {
         </Button>
       </div>
       <p className="text-[11.5px] leading-snug text-ink-muted">
-        {template ? `This home came from the ${template.toUpperCase()} template. ` : ""}
+        {template ? `This home came from the ${template.toUpperCase()} template. ` : imported ? `This home was built from your floor plan “${imported.title}”. ` : ""}
         Applying one replaces every room; you will be asked first.
       </p>
+      <Button size="sm" icon={IconUpload} block data-import-plan="" onClick={() => hearthStore.getState().setUi({ importSheetOpen: true })}>
+        Import your own floor plan
+      </Button>
     </section>
   );
 }
 
 function RoomEditor({ room }: { room: Room }) {
   const [name, setName] = useState(room.name);
+  const [anchor, setAnchor] = useState<Corner>("nw");
   const box = useMemo(() => polyBBox(room.poly), [room]);
   const width = Math.round(box.w);
   const depth = Math.round(box.d);
@@ -138,8 +146,17 @@ function RoomEditor({ room }: { room: Room }) {
         }}
       />
       <div className="flex gap-2">
-        <Stepper label="Width" className="flex-1" value={width} step={ROOM_STEP} min={MIN_SIDE} onChange={(value) => updateRoom(room, { width_cm: value })} />
-        <Stepper label="Depth" className="flex-1" value={depth} step={ROOM_STEP} min={MIN_SIDE} onChange={(value) => updateRoom(room, { depth_cm: value })} />
+        <Stepper label="Width" className="flex-1" value={width} step={ROOM_STEP} min={MIN_SIDE} onChange={(value) => updateRoom(room, { width_cm: value, anchorCorner: anchor })} />
+        <Stepper label="Depth" className="flex-1" value={depth} step={ROOM_STEP} min={MIN_SIDE} onChange={(value) => updateRoom(room, { depth_cm: value, anchorCorner: anchor })} />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <span className="label-caps">Keep corner · the opposite walls move</span>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Corner that stays fixed while resizing">
+          {CORNERS.map((corner) => (
+            <Chip key={corner} active={anchor === corner} data-anchor-corner={corner} onClick={() => setAnchor(corner)}>{CORNER_LABELS[corner]}</Chip>
+          ))}
+        </div>
+        <p className="text-[11.5px] leading-snug text-ink-muted">Rooms beyond a moving wall move with it, so the plan stays joined.</p>
       </div>
       <SwatchRow
         label="Floor"
@@ -181,7 +198,8 @@ function RoomsSection({ rooms, activeRoomId }: { rooms: Room[]; activeRoomId: st
                 <span className="label-caps shrink-0 text-[10px] text-ink-faint">{roomTypeLabel(room.type)}</span>
                 {active ? <IconChevronDown size={15} className="shrink-0 text-ink-faint" /> : <IconChevronRight size={15} className="shrink-0 text-ink-faint" />}
               </button>
-              {active ? <RoomEditor key={room.id} room={room} /> : null}
+              {/* Keyed on the name too: an imported home reuses ids like "living" for a different room. */}
+              {active ? <RoomEditor key={`${room.id}:${room.name}`} room={room} /> : null}
             </li>
           );
         })}

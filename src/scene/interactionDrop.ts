@@ -6,7 +6,7 @@
  * re-reads it authoritatively. Ghost updates are `quiet`, so a drag-over never touches undo.
  */
 import { useEffect } from "react";
-import { resolveColorway } from "../engine/catalog";
+import { productFor, resolveColorway } from "../engine/catalog";
 import type { Catalog } from "../engine/catalog";
 import type { CatalogItem, Furniture, Room, Rotation, Vec2 } from "../engine/types";
 import { hearthStore } from "../state/store";
@@ -90,7 +90,7 @@ export function useCatalogDrop({ catalog, floorAt, poseRequest, onPreview }: Cat
     };
 
     const resolveAt = (clientX: number, clientY: number): Pose | undefined => {
-      const product = held.payload ? catalog.byId(held.payload.catalogId) : undefined;
+      const product = held.payload ? productFor(held.payload, catalog) : undefined;
       if (!held.payload || !product) return undefined;
       const state = hearthStore.getState();
       const point = floorAt(clientX, clientY);
@@ -149,7 +149,7 @@ export function useCatalogDrop({ catalog, floorAt, poseRequest, onPreview }: Cat
       } catch {
         pose = undefined;
       }
-      const product = held.payload ? catalog.byId(held.payload.catalogId) : undefined;
+      const product = held.payload ? productFor(held.payload, catalog) : undefined;
       const colorway = held.payload?.colorway;
       held.payload = undefined;
       dropGhost();

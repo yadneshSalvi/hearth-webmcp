@@ -84,12 +84,12 @@ class DelayedBuildModelContext extends EventTarget implements WebMCP.ModelContex
 }
 
 describe("registry lifecycle against the real polyfill", () => {
-  it("registers exactly 26 default tools synchronously and alphabetically", async () => {
+  it("registers exactly 29 default tools synchronously and alphabetically", async () => {
     const modelContext = loadRealPolyfill();
     const registry = registryWith(modelContext);
     registry.start();
     const names = (await modelContext.getTools()).map(({ name }) => name);
-    expect(names).toHaveLength(26);
+    expect(names).toHaveLength(29);
     expect(names).toEqual([...names].sort());
     expect(names).toContain("set_mode");
     expect(names).toContain("export_design_board");
@@ -111,7 +111,7 @@ describe("registry lifecycle against the real polyfill", () => {
     queued.splice(0).forEach((fn) => fn());
     expect(await building).toMatchObject({ ok: true, tools_ready: true });
     expect((await modelContext.getTools()).map(({ name }) => name)).toContain("apply_template");
-    expect(await modelContext.getTools()).toHaveLength(32);
+    expect(await modelContext.getTools()).toHaveLength(36);
     const designing = registry.execute("set_mode", { mode: "design" }, "agent");
     await Promise.resolve();
     await Promise.resolve();
@@ -119,7 +119,7 @@ describe("registry lifecycle against the real polyfill", () => {
     queued.splice(0).forEach((fn) => fn());
     expect(await designing).toMatchObject({ ok: true, tools_ready: true });
     expect((await modelContext.getTools()).map(({ name }) => name)).not.toContain("apply_template");
-    expect(await modelContext.getTools()).toHaveLength(26);
+    expect(await modelContext.getTools()).toHaveLength(29);
     registry.stop();
   });
 
@@ -201,7 +201,7 @@ describe("registry lifecycle against the real polyfill", () => {
     });
     const names = (await modelContext.getTools()).map(({ name }) => name);
     expect(names).toContain("get_checkout_link");
-    expect(names).toHaveLength(30);
+    expect(names).toHaveLength(33);
     registry.stop();
   });
 
@@ -342,7 +342,7 @@ describe("registry lifecycle against the real polyfill", () => {
     const modelContext = loadRealPolyfill();
     const registry = registryWith(modelContext);
     registry.start();
-    await vi.waitFor(() => expect(hearthStore.getState().tools.available).toHaveLength(26));
+    await vi.waitFor(() => expect(hearthStore.getState().tools.available).toHaveLength(29));
     expect(hearthStore.getState().tools.status).toBe("polyfill");
     expect(hearthStore.getState().tools.available[0]?.title).toBeTruthy();
     registry.stop();

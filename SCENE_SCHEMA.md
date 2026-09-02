@@ -64,6 +64,7 @@ interface Furniture {
   status: "placed" | "ghost";                   // ghost = shop try-in-room preview
   locked?: boolean;                             // arrange_room keeps locked items
   shopifyVariantId?: string;
+  dims?: { w: number; d: number; h: number };   // per-item size override (resize_furniture / inspector); absent = catalog dims
 }
 
 interface Variant { name: string; roomId: string; furniture: Furniture[]; savedAt: number }
@@ -77,6 +78,8 @@ interface SceneMeta {
   activeRoomId: string;
   budgetUsd?: number;
   selection: { itemId?: string; roomId?: string; hoverItemId?: string; lastMovedItemId?: string };
+  template?: TemplateId;                        // which built-in plan the home came from (unset after an import)
+  importedPlan?: { title: string; confidence: number; roomsDetected: number; skipped: string[] }; // set by import_floor_plan
 }
 
 interface Scene {
@@ -87,6 +90,12 @@ interface Scene {
   meta: SceneMeta;
 }
 ```
+
+## Effective dimensions (engine/catalog.ts)
+`productFor(item, catalog)` returns the catalog product with `item.dims` (when set) in place of `dims`. **Every** footprint,
+clearance, span, stacking and rendering path resolves a placed item through it, so a resized sofa is a wider sofa for
+the rules engine and for the 3D model (the renderer scales the GLB per axis by `item.dims / catalog.dims`). `clearanceFront`
+does not scale. Sizes are clamped to 10–1000 cm per side and 25–400 % of the catalog size.
 
 ## Derived helpers (engine/geometry.ts)
 - `walls(room): Wall[]` · `footprint(item, catalog): Vec2[4]` (rotated rectangle) ·
@@ -112,6 +121,23 @@ interface Conflict {
 homes include living, kitchen/dining, their named bedrooms, bath(s), and a hall. Each template ships
 realistic door swings and exterior windows; every template has an optional deterministic furnished
 layout, and `2br` remains the **pre-furnished golden-hour onboarding scene**.
+
+## Imported floor plans (`src/engine/floorplan.ts`)
+A `ParsedPlan` (from `/api/floorplan`: rooms with name, type, printed dimension label, `width_cm`/`depth_cm`, an
+image-fraction bbox, `doors_to`, window sides; entrance room; confidence) becomes a scene through `planToScene`:
+1. per-axis scale from the labelled rooms (median cm per image fraction), unlabelled rooms sized from their bbox;
+2. room edges clustered (≤ 25 cm) so neighbours share one wall coordinate — Hearth walls have no thickness, so a printed
+   interior size grows by up to half a wall; residual overlaps are pushed apart along the axis of least penetration;
+3. ids by type in template style (`living`, `bed-1`, `bath`, `bath-2`, `hall`…), floors by type (bath terrazzo, kitchen stone, bedroom pale-oak);
+4. doors: one 90 cm pair per `doors_to` link on a shared wall (both rooms list it, template style), an entrance door on an
+   exterior wall of the entrance room, then a connectivity pass that adds doors until every room is reachable;
+5. windows on the listed sides when that wall span is exterior (120–180 cm, sill 90);
+6. `outdoor`/`other` areas are skipped and reported in `skipped`; `meta.importedPlan` records title, confidence, counts.
+`starterFurniture(scene, catalog)` optionally furnishes each room by type through `resolveAnchor` (never overlapping, never outside).
+
+## Cleared-furniture snapshot (`ui.lastCleared`, not part of the scene)
+`clear_room` / `clear_home` keep `{ scope, roomId?, furniture[], at }` in UI state so `restore_furniture` can put the
+items back without walking the undo stack; a restore re-ids items whose ids are taken and skips rooms that no longer exist.
 
 ## Invariants (tested)
 - Furniture footprint lies inside its room; no two placed items overlap (ghosts may).

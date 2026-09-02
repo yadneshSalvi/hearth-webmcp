@@ -16,6 +16,10 @@ export interface PromptContext {
   cartLines: number;
   variants: number;
   accessibility: boolean;
+  /** A floor-plan image is waiting in the studio for import_floor_plan. */
+  uploadedPlan?: boolean;
+  /** Something was just cleared and can be restored. */
+  cleared?: boolean;
 }
 
 function lower(name: string): string {
@@ -61,11 +65,15 @@ function modePrompts(ctx: PromptContext): string[] {
  */
 export function promptSuggestions(ctx: PromptContext): string[] {
   const candidates: string[] = [];
+  if (ctx.uploadedPlan) candidates.push("Build my home from the plan I uploaded");
+  if (ctx.cleared) candidates.push("Bring the furniture back");
   if (ctx.selectionName) candidates.push(`Move the ${ctx.selectionName} 40 cm from the window`);
   const kind = ctx.conflictKinds[0];
   if (kind) candidates.push(`Fix the ${conflictPhrase(kind)} in the ${lower(ctx.roomName)}`);
   candidates.push(...modePrompts(ctx));
   if (!ctx.accessibility) candidates.push("Make this room wheelchair friendly");
+  if (ctx.selectionName) candidates.push(`Make the ${ctx.selectionName} 20 cm wider`, `Shop for a ${ctx.selectionName}-sized piece`);
+  candidates.push("Clear all the furniture in the home");
   candidates.push(...fillers(ctx));
 
   const seen = new Set<string>();

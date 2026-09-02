@@ -27,7 +27,7 @@ function bind(tool: ReturnType<typeof defineTool>): void {
 }
 
 describe("parameter aliases through the real tools", () => {
-  /** The 36 real handlers, bound to the local Shopify client and the test store. */
+  /** The 40 real handlers, bound to the local Shopify client and the test store. */
   function tools() {
     return allToolDefinitions(toolContext());
   }

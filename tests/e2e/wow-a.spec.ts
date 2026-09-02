@@ -149,15 +149,15 @@ test.describe("wow pass", () => {
     await expect(page.getByText("Time of day → evening")).toBeVisible();
   });
 
-  test("the build panel adds a window on the north wall, with 32 tools registered", async ({ page }) => {
+  test("the build panel adds a window on the north wall, with 36 tools registered", async ({ page }) => {
     await openStudio(page);
     await page.getByRole("radio", { name: "Build" }).click();
 
-    // Build mode registers the six build tools on top of the 26 defaults.
-    await expect.poll(async () => (await toolNames(page)).length).toBe(32);
+    // Build mode registers the six build tools on top of the 29 defaults.
+    await expect.poll(async () => (await toolNames(page)).length).toBe(36);
     await page.getByRole("button", { name: /WebMCP polyfill/ }).click();
     const tools = page.getByRole("complementary", { name: "Agent tools registered on this page" });
-    await expect(tools.getByRole("button", { name: /^Copy the tool name/ })).toHaveCount(32);
+    await expect(tools.getByRole("button", { name: /^Copy the tool name/ })).toHaveCount(36);
     await expect(tools.getByRole("heading", { name: "Build" })).toBeVisible();
     await page.keyboard.press("Escape");
 

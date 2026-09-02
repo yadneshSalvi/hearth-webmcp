@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
+import { readPlan } from "../floorplan/client";
 import type { ShopifyClient } from "../shopify/types";
 import { hearthStore } from "../state/store";
 import type { ToolUi } from "./define";
@@ -34,6 +35,7 @@ export function useWebMCP(options: UseWebMCPOptions): { status: WebMCPStatus; re
         store: hearthStore,
         ui: configuration.ui,
         shopify: configuration.shopify,
+        planReader: readPlan,
       });
       registryRef.current = created;
       created.start();

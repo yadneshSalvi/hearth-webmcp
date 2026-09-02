@@ -5,7 +5,7 @@
  * The studio registers on `document.modelContext` only when the browser already has WebMCP
  * (`useHearth` starts the registry `native-only`, so the status chip stays honest about a flagless
  * browser). Opening the Assistant is the explicit request for the polyfill instead: this loads it
- * and, when no registry claimed the page, starts one over it — so the panel executes the same 26
+ * and, when no registry claimed the page, starts one over it — so the panel executes the same 29
  * tools, through the same path, with the same orb, pulse and receipts (TOOLS.md §4).
  *
  * The registry it owns is published so the chrome can keep reading tool groups and `readOnlyHint`
@@ -14,6 +14,7 @@
  * Assistant tint instead of being filed as an agent's work.
  */
 import { useSyncExternalStore } from "react";
+import { readPlan } from "../floorplan/client";
 import type { ShopifyClient } from "../shopify/types";
 import { hearthStore } from "../state/store";
 import type { ToolUi } from "../tools/define";
@@ -50,7 +51,7 @@ export function ensureAssistantTools(deps: { ui: ToolUi; shopify: ShopifyClient 
     const modelContext = document.modelContext;
     if (kind === "unavailable" || !modelContext) return "unavailable";
     if (!owned && unclaimed()) {
-      owned = createRegistry({ modelContext, store: hearthStore, ui: deps.ui, shopify: deps.shopify });
+      owned = createRegistry({ modelContext, store: hearthStore, ui: deps.ui, shopify: deps.shopify, planReader: readPlan });
       owned.start();
       emit();
     }

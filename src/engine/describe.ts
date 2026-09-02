@@ -1,6 +1,7 @@
 import type { Catalog } from "./catalog";
 import { freeSpans, roomArea, roomSize, rotateDims, walls } from "./geometry";
 import type { CatalogItem, Dims, Furniture, Opening, Room, Scene, Span, Vec2 } from "./types";
+import { productFor } from "./catalog";
 
 /** Catalog input accepted by compact engine describers. */
 export type CatalogSource = Catalog | CatalogItem[];
@@ -17,10 +18,6 @@ export interface CartDescription {
     itemId?: string;
   }>;
   subtotalUsd: number;
-}
-
-function catalogItem(catalog: CatalogSource, id: string): CatalogItem | undefined {
-  return Array.isArray(catalog) ? catalog.find((item) => item.id === id) : catalog.byId(id);
 }
 
 /** Formats catalog dimensions as compact WxDxH centimetres. */
@@ -52,7 +49,7 @@ export function spansStr(spans: readonly Span[]): string {
 /** Formats one furniture row for get_room_details. */
 export function itemLine(item: Furniture, cat: CatalogItem): string {
   const [x, y] = posArr(item.pos);
-  return `${item.id} ${cat.name} @${x},${y} r${item.rotation} ${footStr(cat, item.rotation)} ${item.colorway}${item.status === "ghost" ? " ghost" : ""}`;
+  return `${item.id} ${cat.name} @${x},${y} r${item.rotation} ${footStr(cat, item.rotation)} ${item.colorway}${item.dims ? " resized" : ""}${item.status === "ghost" ? " ghost" : ""}`;
 }
 
 /** Formats one room row for get_scene_summary. */
@@ -125,7 +122,7 @@ export function roomDetails(scene: Scene, room: Room, catalog: CatalogSource, co
   const described = scene.furniture
     .filter((item) => item.roomId === room.id)
     .flatMap((item) => {
-      const cat = catalogItem(catalog, item.catalogId);
+      const cat = productFor(item, catalog);
       return cat ? [itemLine(item, cat)] : [];
     });
   const itemRows = truncateList(described, 12);
@@ -160,12 +157,17 @@ function selectedItem(scene: Scene, catalog: CatalogSource, itemId: string | und
   pos: [number, number];
   rotation: Furniture["rotation"];
   dims: string;
+  catalog_dims?: string;
 } | null {
   const item = scene.furniture.find((candidate) => candidate.id === itemId);
   if (!item) return null;
-  const cat = catalogItem(catalog, item.catalogId);
+  const cat = productFor(item, catalog);
   if (!cat) return null;
-  return { id: item.id, name: cat.name, room: item.roomId, pos: posArr(item.pos), rotation: item.rotation, dims: dimsStr(cat.dims) };
+  const original = item.dims ? productFor({ catalogId: item.catalogId }, catalog) : undefined;
+  return {
+    id: item.id, name: cat.name, room: item.roomId, pos: posArr(item.pos), rotation: item.rotation, dims: dimsStr(cat.dims),
+    ...(original ? { catalog_dims: dimsStr(original.dims) } : {}),
+  };
 }
 
 /** Builds the fixed-size get_selection data payload. */

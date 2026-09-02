@@ -12,6 +12,7 @@ import {
 } from "./geometry";
 import { SIDES } from "./types";
 import type { CatalogItem, Furniture, Opening, Scene, Side, Span, Vec2, Wall } from "./types";
+import { productFor } from "./catalog";
 
 /** A wall, placed item or opening resolved inside one room. */
 export type MeasureSubject =
@@ -27,6 +28,7 @@ export type MeasureResult = {
   length_cm?: number;
   free_spans?: Span[];
   dims?: string;
+  catalog_dims?: string;
   footprint?: string;
   pos?: [number, number];
   rotation?: Furniture["rotation"];
@@ -42,10 +44,6 @@ export type MeasureResult = {
   error: "not_found";
   alternatives: string[];
 };
-
-function catalogItem(catalog: CatalogSource, id: string): CatalogItem | undefined {
-  return Array.isArray(catalog) ? catalog.find((item) => item.id === id) : catalog.byId(id);
-}
 
 function normalize(value: string): string {
   return value.trim().toLowerCase();
@@ -78,12 +76,12 @@ export function resolveSubject(scene: Scene, roomId: string, ref: string, catalo
     if (selected) return itemSubject(selected, catalog);
   }
   const exactItem = roomItems.find((item) => normalize(item.id) === needle)
-    ?? unique(roomItems.filter((item) => normalize(catalogItem(catalog, item.catalogId)?.name ?? "") === needle));
+    ?? unique(roomItems.filter((item) => normalize(productFor(item, catalog)?.name ?? "") === needle));
   if (exactItem) return itemSubject(exactItem, catalog);
   const prefixItem = unique(roomItems.filter((item) => normalize(item.id).startsWith(needle)
-    || normalize(catalogItem(catalog, item.catalogId)?.name ?? "").startsWith(needle)));
+    || normalize(productFor(item, catalog)?.name ?? "").startsWith(needle)));
   if (prefixItem) return itemSubject(prefixItem, catalog);
-  const containsItem = unique(roomItems.filter((item) => normalize(catalogItem(catalog, item.catalogId)?.name ?? "").includes(needle)));
+  const containsItem = unique(roomItems.filter((item) => normalize(productFor(item, catalog)?.name ?? "").includes(needle)));
   if (containsItem) return itemSubject(containsItem, catalog);
 
   const roomOpenings = scene.openings.filter((opening) => opening.roomId === roomId);
@@ -94,7 +92,7 @@ export function resolveSubject(scene: Scene, roomId: string, ref: string, catalo
 }
 
 function itemSubject(item: Furniture, catalog: CatalogSource): MeasureSubject {
-  const name = catalogItem(catalog, item.catalogId)?.name;
+  const name = productFor(item, catalog)?.name;
   return { kind: "item", id: item.id, ...(name ? { name } : {}) };
 }
 
@@ -119,7 +117,7 @@ function alternatives(scene: Scene, roomId: string, ref: string, catalog: Catalo
   if (!room) return scene.rooms.map((candidate) => candidate.id).slice(0, 3);
   const candidates = [
     ...walls(room).flatMap((wall) => [wall.side, wall.id]),
-    ...scene.furniture.filter((item) => item.roomId === roomId).flatMap((item) => [item.id, catalogItem(catalog, item.catalogId)?.name]),
+    ...scene.furniture.filter((item) => item.roomId === roomId).flatMap((item) => [item.id, productFor(item, catalog)?.name]),
     ...scene.openings.filter((opening) => opening.roomId === roomId).map((opening) => opening.id),
   ].filter((candidate): candidate is string => Boolean(candidate));
   const distinct = [...new Set(candidates)];
@@ -160,12 +158,14 @@ function standalone(scene: Scene, roomId: string, subject: MeasureSubject, catal
   }
   if (subject.kind === "item") {
     const item = furniture(scene, subject);
-    const cat = item && catalogItem(catalog, item.catalogId);
+    const cat = item && productFor(item, catalog);
     if (!item || !cat) return { ok: false, error: "not_found", alternatives: alternatives(scene, roomId, subject.id, catalog) };
+    const original = item.dims ? productFor({ catalogId: item.catalogId }, catalog) : undefined;
     return {
       ok: true,
       subject,
       dims: dimsStr(cat.dims),
+      ...(original ? { catalog_dims: dimsStr(original.dims) } : {}),
       footprint: footStr(cat, item.rotation),
       pos: posArr(item.pos),
       rotation: item.rotation,
@@ -244,19 +244,19 @@ function pairDistance(scene: Scene, roomId: string, left: MeasureSubject, right:
   const rightOpening = opening(scene, right);
 
   if (leftItem && rightWall) {
-    const cat = catalogItem(catalog, leftItem.catalogId);
+    const cat = productFor(leftItem, catalog);
     return cat ? itemToWallDistance(leftItem, cat, rightWall) : undefined;
   }
   if (rightItem && leftWall) {
-    const cat = catalogItem(catalog, rightItem.catalogId);
+    const cat = productFor(rightItem, catalog);
     return cat ? itemToWallDistance(rightItem, cat, leftWall) : undefined;
   }
   if (leftItem && rightOpening) {
-    const cat = catalogItem(catalog, leftItem.catalogId);
+    const cat = productFor(leftItem, catalog);
     return cat ? itemOpeningDistance(leftItem, cat, rightOpening, room) : undefined;
   }
   if (rightItem && leftOpening) {
-    const cat = catalogItem(catalog, rightItem.catalogId);
+    const cat = productFor(rightItem, catalog);
     return cat ? itemOpeningDistance(rightItem, cat, leftOpening, room) : undefined;
   }
   if (leftWall && rightWall) return wallWallDistance(leftWall, rightWall);
@@ -300,7 +300,7 @@ export function measure(
   if (left.kind === "item" && right.kind === "item") {
     const leftItem = furniture(scene, left);
     const rightItem = furniture(scene, right);
-    if (!leftItem || !rightItem || !catalogItem(catalog, leftItem.catalogId) || !catalogItem(catalog, rightItem.catalogId)) {
+    if (!leftItem || !rightItem || !productFor(leftItem, catalog) || !productFor(rightItem, catalog)) {
       return { ok: false, error: "not_found", alternatives: alternatives(scene, roomId, subject, catalog) };
     }
     const gap = gapBetween(leftItem, rightItem, Array.isArray(catalog) ? catalog : catalog.all());

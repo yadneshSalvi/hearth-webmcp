@@ -2,6 +2,7 @@ import type { Catalog } from "./catalog";
 import { turningCircleDiameter } from "./clearance";
 import { footprint, polyInside, polysOverlap } from "./geometry";
 import type { CatalogItem, Category, Furniture, Scene, Vec2 } from "./types";
+import { productFor } from "./catalog";
 
 const CIRCLE_RADIUS = turningCircleDiameter / 2;
 const REACH_DEPTH_CM = 120;
@@ -65,7 +66,7 @@ function obstacles(scene: Scene, roomId: string, itemId: string, catalog: Catalo
     .filter((candidate) => candidate.roomId === roomId && candidate.id !== itemId && candidate.status === "placed")
     .sort((a, b) => a.id.localeCompare(b.id))
     .flatMap((candidate) => {
-      const cat = catalog.byId(candidate.catalogId);
+      const cat = productFor(candidate, catalog);
       return cat && !NON_BLOCKING.has(cat.category) ? [{ id: candidate.id, poly: footprint(candidate, cat) }] : [];
     });
 }
@@ -99,7 +100,7 @@ export function turningCircleCandidates(
   catalog: Catalog,
 ): TurningCircleCandidate[] {
   const room = scene.rooms.find((candidate) => candidate.id === roomId);
-  const cat = catalog.byId(item.catalogId);
+  const cat = productFor(item, catalog);
   if (!room || !cat || item.roomId !== roomId || !TURNING_CATEGORIES.has(cat.category)) return [];
   const roomObstacles = obstacles(scene, roomId, item.id, catalog);
   return candidateCenters(item, cat).map((candidateCenter) => {
@@ -161,7 +162,7 @@ export function accessibilityIssues(scene: Scene, roomId: string, catalog: Catal
     .filter((item) => item.roomId === roomId && item.status === "placed")
     .sort((a, b) => a.id.localeCompare(b.id));
   for (const item of items) {
-    const cat = catalog.byId(item.catalogId);
+    const cat = productFor(item, catalog);
     if (!cat) continue;
     if (TURNING_CATEGORIES.has(cat.category)) {
       const best = findTurningCircle(scene, roomId, item, catalog);

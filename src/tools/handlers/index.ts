@@ -5,14 +5,15 @@ import {
   addOpeningTool, applyTemplateTool, createRoomTool, moveOpeningTool, removeOpeningTool, updateRoomTool,
 } from "./build";
 import {
-  applyPaletteTool, clearRoomTool, loadVariantTool, saveVariantTool, setAccessibilityModeTool,
-  setTimeOfDayTool, setViewTool, undoTool,
+  applyPaletteTool, clearHomeTool, clearRoomTool, loadVariantTool, restoreFurnitureTool, saveVariantTool,
+  setAccessibilityModeTool, setTimeOfDayTool, setViewTool, undoTool,
 } from "./design";
+import { importFloorPlanTool } from "./floorplan";
 import {
   confirmPreviewTool, getCheckoutLinkTool, previewInRoomTool, updateCartTool,
 } from "./commerce";
 import { getProductTool, searchCatalogTool } from "./catalog";
-import { removeFurnitureTool, setColorwayTool } from "./furniture";
+import { removeFurnitureTool, resizeFurnitureTool, setColorwayTool } from "./furniture";
 import { arrangeRoomTool, moveFurnitureTool, placeFurnitureTool } from "./placement";
 import { cancelPreviewTool } from "./preview";
 import { exportDesignBoardTool } from "./presentation";
@@ -45,7 +46,7 @@ function bindStandalone(tools: DefinedTool[], context: ToolContext): DefinedTool
   return tools;
 }
 
-/** All 36 fully implemented Hearth WebMCP handler definitions. */
+/** All 40 fully implemented Hearth WebMCP handler definitions. */
 export function allTools(context: ToolContext): DefinedTool[] {
   let groupedNames: ReadonlyMap<ToolGroup, readonly string[]> = new Map();
   const tools = [
@@ -85,12 +86,16 @@ export function allTools(context: ToolContext): DefinedTool[] {
     addOpeningTool(),
     moveOpeningTool(),
     removeOpeningTool(),
+    resizeFurnitureTool(),
+    clearHomeTool(),
+    restoreFurnitureTool(),
+    importFloorPlanTool(),
   ];
   groupedNames = toolNamesByGroup(tools);
   return bindStandalone(tools, context);
 }
 
-/** All 36 static definitions used by the lifecycle registry. */
+/** All 40 static definitions used by the lifecycle registry. */
 export function allToolDefinitions(context: ToolContext): DefinedTool[] {
   return allTools(context);
 }

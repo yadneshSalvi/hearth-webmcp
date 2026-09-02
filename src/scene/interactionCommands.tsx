@@ -18,6 +18,7 @@ import { getDraggingItemId, getHoveredRoomId } from "./interactionDrag";
 import type { Pose } from "./interactionDrag";
 import { roomToWorldCm } from "./interactionMath";
 import { M } from "./math";
+import { productFor } from "../engine/catalog";
 
 /** How long a one-shot pulse cue stays on an item. */
 const PULSE_MS = 900;
@@ -98,7 +99,7 @@ export function nearestItem(
   if (!room) return undefined;
   const origin = from ? from.pos : roomCentre(room);
   const candidates = furniture.filter(
-    (entry) => entry.roomId === room.id && entry.status === "placed" && entry.id !== from?.id && catalog.byId(entry.catalogId) !== undefined,
+    (entry) => entry.roomId === room.id && entry.status === "placed" && entry.id !== from?.id && productFor(entry, catalog) !== undefined,
   );
   const distance = (entry: Furniture) => Math.hypot(entry.pos.x - origin.x, entry.pos.y - origin.y);
   if (!from) return [...candidates].sort((a, b) => distance(a) - distance(b))[0];

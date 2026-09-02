@@ -1,6 +1,6 @@
 # Hearth WebMCP tools
 
-The registry exposes 36 static definitions and registers 26 always-on tools before first paint.
+The registry exposes 40 static definitions and registers 29 always-on tools before first paint.
 
 ```text
 start → core + design + shop + present

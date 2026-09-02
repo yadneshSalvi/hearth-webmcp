@@ -4,6 +4,7 @@ import type { Catalog } from "./catalog";
 import { clearanceZone } from "./clearance";
 import { footprint, freeSpans, polysOverlap, walls } from "./geometry";
 import type { CatalogItem, Category, Furniture, Opening, Room, Rotation, Scene, Side, Span, Vec2, Wall } from "./types";
+import { productFor } from "./catalog";
 
 /** Choreographed layout modes exposed by arrange_room. */
 export type ArrangeStyle = "conversation" | "media" | "open" | "work";
@@ -24,10 +25,6 @@ type SpanCache = Map<string, Span[]>;
 const OPPOSITE: Record<Side, Side> = { north: "south", east: "west", south: "north", west: "east" };
 const STACKABLE = new Set<Category>(["table-lamp", "decor"]);
 const SURFACE = new Set<Category>(["table", "desk", "shelf", "tv-unit"]);
-
-function lookup(catalog: CatalogSource, id: string): CatalogItem | undefined {
-  return Array.isArray(catalog) ? catalog.find((item) => item.id === id) : catalog.byId(id);
-}
 
 function clone(item: Furniture): Furniture {
   return { ...item, pos: { ...item.pos } };
@@ -70,9 +67,9 @@ function largestWindow(scene: Scene, roomId: string): Opening | undefined {
 
 function resolveFocusItem(items: Furniture[], ref: string, catalog: CatalogSource): Furniture | undefined {
   const needle = ref.trim().toLowerCase();
-  const exact = items.filter((item) => item.id.toLowerCase() === needle || lookup(catalog, item.catalogId)?.name.toLowerCase() === needle);
+  const exact = items.filter((item) => item.id.toLowerCase() === needle || productFor(item, catalog)?.name.toLowerCase() === needle);
   if (exact.length === 1) return exact[0];
-  const prefix = items.filter((item) => item.id.toLowerCase().startsWith(needle) || lookup(catalog, item.catalogId)?.name.toLowerCase().startsWith(needle));
+  const prefix = items.filter((item) => item.id.toLowerCase().startsWith(needle) || productFor(item, catalog)?.name.toLowerCase().startsWith(needle));
   return prefix.length === 1 ? prefix[0] : undefined;
 }
 
@@ -120,9 +117,9 @@ function wallRequests(
 }
 
 function mediaPlan(scene: Scene, room: Room, items: Furniture[], catalog: CatalogSource, seed: number, cache: SpanCache): MediaPlan {
-  const sofa = items.find((item) => lookup(catalog, item.catalogId)?.category === "sofa");
-  const tv = items.find((item) => lookup(catalog, item.catalogId)?.category === "tv-unit");
-  const sofaCat = sofa && lookup(catalog, sofa.catalogId); const tvCat = tv && lookup(catalog, tv.catalogId);
+  const sofa = items.find((item) => productFor(item, catalog)?.category === "sofa");
+  const tv = items.find((item) => productFor(item, catalog)?.category === "tv-unit");
+  const sofaCat = sofa && productFor(sofa, catalog); const tvCat = tv && productFor(tv, catalog);
   if (!sofa || !tv || !sofaCat || !tvCat) return { sofaId: sofa?.id, tvId: tv?.id };
   const pairs = walls(room).flatMap((sofaWall) => walls(room)
     .filter((tvWall) => tvWall.side === OPPOSITE[sofaWall.side])
@@ -161,12 +158,12 @@ function cornerRequests(room: Room, cat: CatalogItem): PlacementRequest[] {
 }
 
 function surfaceRequest(working: Scene, roomId: string, catalog: CatalogSource): PlacementRequest | undefined {
-  const surface = working.furniture.find((item) => item.roomId === roomId && SURFACE.has(lookup(catalog, item.catalogId)?.category ?? "rug"));
+  const surface = working.furniture.find((item) => item.roomId === roomId && SURFACE.has(productFor(item, catalog)?.category ?? "rug"));
   return surface ? { pos: { ...surface.pos }, rotation: surface.rotation } : undefined;
 }
 
 function nearestSeating(working: Scene, roomId: string, catalog: CatalogSource): Furniture | undefined {
-  return working.furniture.find((item) => item.roomId === roomId && ["sofa", "armchair", "bed"].includes(lookup(catalog, item.catalogId)?.category ?? ""));
+  return working.furniture.find((item) => item.roomId === roomId && ["sofa", "armchair", "bed"].includes(productFor(item, catalog)?.category ?? ""));
 }
 
 function requestsFor(
@@ -186,11 +183,11 @@ function requestsFor(
   }
   if (style === "work" && cat.category === "desk" && window) preferred.push({ anchor: { under: `window:${window.id}` } });
   if (style === "work" && cat.category === "chair") {
-    const desk = working.furniture.find((entry) => lookup(catalog, entry.catalogId)?.category === "desk" && entry.roomId === room.id);
+    const desk = working.furniture.find((entry) => productFor(entry, catalog)?.category === "desk" && entry.roomId === room.id);
     if (desk) preferred.push({ anchor: { next_to: desk.id, side: "front", gap_cm: 10, facing: desk.id } });
   }
   if (cat.category === "rug") {
-    const seating = working.furniture.filter((entry) => entry.roomId === room.id && ["sofa", "armchair"].includes(lookup(catalog, entry.catalogId)?.category ?? ""));
+    const seating = working.furniture.filter((entry) => entry.roomId === room.id && ["sofa", "armchair"].includes(productFor(entry, catalog)?.category ?? ""));
     if (seating.length) preferred.push({ pos: { x: seating.reduce((sum, entry) => sum + entry.pos.x, 0) / seating.length, y: seating.reduce((sum, entry) => sum + entry.pos.y, 0) / seating.length }, rotation: 90 });
     preferred.push({ anchor: { centered: true }, rotation: 90 }, { anchor: { centered: true }, rotation: 0 });
   }
@@ -224,7 +221,7 @@ function clearancePenalty(working: Scene, placed: Furniture, cat: CatalogItem, c
   const poly = footprint(placed, cat); const ownClearance = clearanceZone(placed, cat);
   let penalty = 0;
   for (const other of working.furniture.filter((entry) => entry.roomId === placed.roomId)) {
-    const otherCat = lookup(catalog, other.catalogId);
+    const otherCat = productFor(other, catalog);
     if (!otherCat || otherCat.category === "rug") continue;
     const otherPoly = footprint(other, otherCat); const otherClearance = clearanceZone(other, otherCat);
     if ((ownClearance.length && polysOverlap(ownClearance, otherPoly)) || (otherClearance.length && polysOverlap(otherClearance, poly))) penalty += 1;
@@ -260,12 +257,12 @@ export function arrangeRoom(
   if (!room) return { furniture: original, moved: [], kept: [], note: `Room ${roomId} was not found` };
   const roomItems = original.filter((item) => item.roomId === roomId && item.status === "placed");
   if (roomItems.length === 0) return { furniture: original, moved: [], kept: [], note: `${room.name} is empty; nothing to arrange` };
-  if (roomItems.every((item) => lookup(catalog, item.catalogId)?.category === "rug")) {
+  if (roomItems.every((item) => productFor(item, catalog)?.category === "rug")) {
     return { furniture: original, moved: [], kept: roomItems.map((item) => item.id), note: `${room.name} only has a rug; layout kept` };
   }
 
   const keepLocked = opts.keepLocked ?? true; const seed = opts.seed ?? 0;
-  const fixed = roomItems.filter((item) => (keepLocked && item.locked) || !lookup(catalog, item.catalogId));
+  const fixed = roomItems.filter((item) => (keepLocked && item.locked) || !productFor(item, catalog));
   const focal = focalReference(scene, room, roomItems, catalog, opts.focus);
   if (focal.item && !fixed.some((item) => item.id === focal.item?.id)) fixed.push(focal.item);
   const fixedIds = new Set(fixed.map((item) => item.id));
@@ -276,13 +273,13 @@ export function arrangeRoom(
   const arrangeable = roomItems
     .filter((item) => !fixedIds.has(item.id))
     .sort((a, b) => {
-      const catA = lookup(catalog, a.catalogId) as CatalogItem; const catB = lookup(catalog, b.catalogId) as CatalogItem;
+      const catA = productFor(a, catalog) as CatalogItem; const catB = productFor(b, catalog) as CatalogItem;
       return orderFor(style, catA.category) - orderFor(style, catB.category)
         || catB.dims.w * catB.dims.d - catA.dims.w * catA.dims.d || a.id.localeCompare(b.id);
     });
 
   for (const item of arrangeable) {
-    const cat = lookup(catalog, item.catalogId) as CatalogItem;
+    const cat = productFor(item, catalog) as CatalogItem;
     const requests = requestsFor(item, cat, style, working, room, catalog, seed, focal, media, spanCache);
     const placed = placeOne(working, room, item, cat, requests, catalog, style === "work" && cat.category === "chair");
     if (!placed) return { furniture: original, moved: [], kept: roomItems.map((entry) => entry.id), note: `${room.name} kept its existing valid layout; no complete ${style} fit` };

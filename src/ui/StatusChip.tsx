@@ -1,8 +1,8 @@
 "use client";
 /**
  * Honest status. The chip reads the store's mirror of `document.modelContext`, so what it says is
- * exactly what an agent would find registered on this page (TOOLS.md §4) — "Native WebMCP · 26
- * ready" where the browser has it, "WebMCP polyfill · 26 ready" where the bundled polyfill stands in.
+ * exactly what an agent would find registered on this page (TOOLS.md §4) — "Native WebMCP · 29
+ * ready" where the browser has it, "WebMCP polyfill · 29 ready" where the bundled polyfill stands in.
  * Beside it, a menu with the three things a human can do about that: inspect the tools, connect a
  * real agent, or open the fallback assistant.
  *

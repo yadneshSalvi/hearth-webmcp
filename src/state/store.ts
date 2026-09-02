@@ -2,8 +2,8 @@ import { createStore, useStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { temporal } from "zundo";
 import { catalogSource } from "../../data/catalog.source";
-import { nextItemId, resolveColorway } from "../engine/catalog";
-import { footprint, polyBBox, polyInside, resolveWall } from "../engine/geometry";
+import { nextItemId, productFor, resolveColorway } from "../engine/catalog";
+import { resizeRoom } from "../engine/rooms";
 import { createTemplate } from "../engine/templates";
 import type { Furniture, Opening, Room } from "../engine/types";
 import { palettePresets } from "../tokens";
@@ -107,7 +107,7 @@ export const hearthStore = createStore<HearthStore>()(
       placeItem: (source, input) => {
         const state = get();
         const room = requiredRoom(state, input.roomId);
-        const product = catalog.byId(input.catalogId);
+        const product = productFor(input, catalog);
         if (!product) throw new HearthError("not_found", `Product ${input.catalogId} was not found`);
         assertRotation(input.rotation);
         const colorway = resolveColorway(product, input.colorway ?? product.colorways[0]?.id ?? "");
@@ -160,7 +160,7 @@ export const hearthStore = createStore<HearthStore>()(
 
       setColorway: (source, id, value) => {
         const found = requiredItem(get(), id);
-        const product = catalog.byId(found.catalogId);
+        const product = productFor(found, catalog);
         const colorway = product && resolveColorway(product, value);
         if (!product || !colorway) throw new HearthError("invalid", `Colorway ${value} is not available for ${productName(found)}`);
         set((draft) => {
@@ -187,7 +187,7 @@ export const hearthStore = createStore<HearthStore>()(
 
       setGhost: (source, furniture, opts) => {
         requiredRoom(get(), furniture.roomId);
-        const product = catalog.byId(furniture.catalogId);
+        const product = productFor(furniture, catalog);
         if (!product) throw new HearthError("not_found", `Product ${furniture.catalogId} was not found`);
         assertRotation(furniture.rotation);
         if (!resolveColorway(product, furniture.colorway)) throw new HearthError("invalid", `Colorway ${furniture.colorway} is not available for ${product.name}`);
@@ -210,7 +210,7 @@ export const hearthStore = createStore<HearthStore>()(
       confirmGhost: (source) => {
         const found = get().scene.furniture.find((item) => item.status === "ghost");
         if (!found) throw new HearthError("not_found", "No preview ghost exists");
-        const product = catalog.byId(found.catalogId) as NonNullable<ReturnType<typeof catalog.byId>>;
+        const product = productFor(found, catalog) as NonNullable<ReturnType<typeof catalog.byId>>;
         const id = nextItemId(product.category, get().scene.furniture.map((item) => item.id));
         const confirmed = { ...found, id, status: "placed" as const, pos: { ...found.pos } };
         set((draft) => {
@@ -316,7 +316,7 @@ export const hearthStore = createStore<HearthStore>()(
         const reassigned: Array<{ from: string; to: string }> = [];
         for (const item of furniture) {
           if (!outsideIds.has(item.id)) continue;
-          const product = catalog.byId(item.catalogId);
+          const product = productFor(item, catalog);
           if (!product) throw new HearthError("invalid", `Variant ${variant.name} contains unknown product ${item.catalogId}`);
           const from = item.id;
           const to = nextItemId(product.category, usedIds);
@@ -359,14 +359,84 @@ export const hearthStore = createStore<HearthStore>()(
       },
       clearRoom: (source, roomId) => {
         const room = requiredRoom(get(), roomId);
-        const ids = get().scene.furniture.filter((item) => item.roomId === roomId).map((item) => item.id);
+        const removed = get().scene.furniture.filter((item) => item.roomId === roomId && item.status !== "ghost");
+        const ids = removed.map((item) => item.id);
         set((draft) => {
           draft.scene.furniture = draft.scene.furniture.filter((item) => item.roomId !== roomId);
           draft.cart.lines = draft.cart.lines.filter((line) => !line.itemId || !ids.includes(line.itemId));
           recomputeCart(draft.cart);
           draft.ui.compare = undefined;
+          draft.ui.lastCleared = { scope: "room", roomId, roomName: room.name, furniture: structuredClone(removed), at: Date.now() };
           prepend(draft, activity(source, "Clear room", `cleared ${room.name}`, ids));
         });
+      },
+      clearHome: (source) => {
+        const removed = get().scene.furniture.filter((item) => item.status !== "ghost");
+        const ids = removed.map((item) => item.id);
+        set((draft) => {
+          draft.scene.furniture = [];
+          draft.cart.lines = draft.cart.lines.filter((line) => !line.itemId || !ids.includes(line.itemId));
+          recomputeCart(draft.cart);
+          draft.ui.compare = undefined;
+          draft.scene.meta.selection.itemId = undefined;
+          draft.scene.meta.selection.hoverItemId = undefined;
+          draft.ui.lastCleared = { scope: "home", furniture: structuredClone(removed), at: Date.now() };
+          prepend(draft, activity(source, "Clear home", `cleared every room (${ids.length} item${ids.length === 1 ? "" : "s"})`, ids));
+        });
+        return ids;
+      },
+      restoreFurniture: (source) => {
+        const snapshot = get().ui.lastCleared;
+        if (!snapshot || snapshot.furniture.length === 0) throw new HearthError("not_found", "Nothing has been cleared yet");
+        const state = get();
+        const rooms = new Set(state.scene.rooms.map((room) => room.id));
+        const taken = new Set(state.scene.furniture.map((item) => item.id));
+        const restored: Furniture[] = [];
+        const skipped: string[] = [];
+        for (const item of snapshot.furniture) {
+          if (!rooms.has(item.roomId)) { skipped.push(item.id); continue; }
+          const product = catalog.byId(item.catalogId);
+          if (!product) { skipped.push(item.id); continue; }
+          const id = taken.has(item.id) ? nextItemId(product.category, taken) : item.id;
+          taken.add(id);
+          const { cartLineId: _line, ...rest } = item;
+          void _line;
+          restored.push({ ...structuredClone(rest), id, status: "placed" });
+        }
+        set((draft) => {
+          draft.scene.furniture.push(...restored);
+          draft.ui.compare = undefined;
+          draft.ui.lastCleared = undefined;
+          prepend(draft, activity(source, "Restore furniture", `restored ${restored.length} item${restored.length === 1 ? "" : "s"}`, restored.map((item) => item.id)));
+        });
+        return { restored: restored.map((item) => item.id), skipped, rooms: [...new Set(restored.map((item) => item.roomId))] };
+      },
+      resizeItem: (source, id, patch, opts) => {
+        const found = requiredItem(get(), id);
+        const product = catalog.byId(found.catalogId);
+        if (!product) throw new HearthError("not_found", `Product ${found.catalogId} was not found`);
+        const dims = patch.dims;
+        if (dims && ![dims.w, dims.d, dims.h].every((side) => Number.isFinite(side) && side > 0)) {
+          throw new HearthError("invalid", "Dimensions must be positive numbers in cm");
+        }
+        // A stepper held down is one change: repeats land quietly on the first press's receipt and
+        // undo step, and that receipt is rewritten to name the size the run ended on.
+        quietly(opts, () => set((draft) => {
+          const item = draft.scene.furniture.find((candidate) => candidate.id === id) as typeof draft.scene.furniture[number];
+          if (dims) item.dims = { w: Math.round(dims.w), d: Math.round(dims.d), h: Math.round(dims.h) };
+          else delete item.dims;
+          if (patch.pos) item.pos = { ...patch.pos };
+          draft.ui.compare = undefined;
+          const size = item.dims ?? product.dims;
+          const entry = activity(source, "Resize furniture", dims
+            ? `resized ${product.name} to ${size.w}×${size.d}×${size.h} cm`
+            : `reset ${product.name} to its catalog size`, [id]);
+          const top = draft.activity[0];
+          if (opts?.quiet && top && top.title === "Resize furniture" && top.source === source && top.itemIds.includes(id)) {
+            top.summary = entry.summary;
+            top.t = entry.t;
+          } else if (!opts?.quiet) prepend(draft, entry);
+        }));
       },
       applyArrangement: (source, roomId, furniture) => {
         const room = requiredRoom(get(), roomId);
@@ -393,6 +463,29 @@ export const hearthStore = createStore<HearthStore>()(
         draft.ui.compare = undefined;
         prepend(draft, activity(source, "Apply template", `applied the ${id} template${furnished ? " furnished" : ""}`));
       }),
+      applyImportedPlan: (source, imported, label) => {
+        if (imported.rooms.length === 0) throw new HearthError("invalid", "An imported plan needs at least one room");
+        for (const item of imported.furniture) {
+          if (!imported.rooms.some((room) => room.id === item.roomId)) throw new HearthError("invalid", `Item ${item.id} belongs to an unknown room`);
+          if (!catalog.byId(item.catalogId)) throw new HearthError("not_found", `Product ${item.catalogId} was not found`);
+        }
+        set((draft) => {
+          const { mode, timeOfDay, accessibilityMode, paletteId } = draft.scene.meta;
+          const scene = cloneScene(imported);
+          scene.meta.mode = mode;
+          scene.meta.timeOfDay = timeOfDay;
+          scene.meta.accessibilityMode = accessibilityMode;
+          scene.meta.paletteId = paletteId;
+          scene.meta.selection = {};
+          delete scene.meta.template;
+          for (const item of scene.furniture) delete item.cartLineId;
+          draft.scene = scene;
+          for (const line of draft.cart.lines) delete line.itemId;
+          draft.ui.compare = undefined;
+          draft.ui.lastCleared = undefined;
+          prepend(draft, activity(source, "Import floor plan", `built the home from ${label} · ${scene.rooms.length} room${scene.rooms.length === 1 ? "" : "s"}`));
+        });
+      },
 
       createRoom: (source, input) => {
         const width = input.width ?? input.width_cm;
@@ -415,35 +508,33 @@ export const hearthStore = createStore<HearthStore>()(
         return structuredClone(room);
       },
       updateRoom: (source, id, patch) => {
-        const current = requiredRoom(get(), id);
-        const oldBox = polyBBox(current.poly);
-        const width = patch.width ?? patch.width_cm ?? oldBox.w;
-        const depth = patch.depth ?? patch.depth_cm ?? oldBox.d;
-        if (width <= 0 || depth <= 0) throw new HearthError("invalid", "Room width and depth must be positive");
-        const poly = current.poly.map((point) => ({ x: oldBox.minX + (point.x - oldBox.minX) * width / oldBox.w, y: oldBox.minY + (point.y - oldBox.minY) * depth / oldBox.d }));
-        const resized = { ...current, poly };
-        const invalidOpenings = get().scene.openings.flatMap((opening) => {
-          if (opening.roomId !== id) return [];
-          const wall = resolveWall(resized, opening.wallId);
-          if (wall && opening.offset >= 0 && opening.width > 0 && opening.offset + opening.width <= wall.length) return [];
-          const end = opening.offset + opening.width;
-          return [`${opening.id} (${opening.offset}-${end} cm) no longer fits the ${Math.round(wall?.length ?? 0)} cm ${wall?.side ?? opening.wallId} wall`];
-        });
-        if (invalidOpenings.length > 0) throw new HearthError("invalid", invalidOpenings.join("; "));
-        const outside = get().scene.furniture.filter((item) => item.roomId === id).filter((item) => {
-          const product = catalog.byId(item.catalogId);
-          return product ? !polyInside(poly, footprint(item, product)) : true;
-        }).map((item) => item.id);
+        requiredRoom(get(), id);
+        const width = patch.width ?? patch.width_cm;
+        const depth = patch.depth ?? patch.depth_cm;
+        if ((width !== undefined && width <= 0) || (depth !== undefined && depth <= 0)) throw new HearthError("invalid", "Room width and depth must be positive");
+        const resizing = width !== undefined || depth !== undefined;
+        const resized = resizing
+          ? resizeRoom(get().scene, id, { width, depth, anchorCorner: patch.anchorCorner, pushNeighbors: patch.pushNeighbors }, catalog)
+          : undefined;
+        if (resized && !resized.ok) throw new HearthError("invalid", resized.detail);
         set((draft) => {
+          if (resized?.ok) {
+            draft.scene.rooms = resized.rooms.map((room) => ({ ...room, poly: room.poly.map((point) => ({ ...point })), origin: { ...room.origin } }));
+            draft.scene.openings = resized.openings.map((opening) => ({ ...opening }));
+            draft.scene.furniture = resized.furniture.map((item) => ({ ...item, pos: { ...item.pos } }));
+          }
           const room = draft.scene.rooms.find((candidate) => candidate.id === id) as typeof draft.scene.rooms[number];
-          room.poly = poly;
           if (patch.name) room.name = patch.name;
           if (patch.type) room.type = patch.type;
           if (patch.floor) room.floor = patch.floor;
           if (patch.wallColor ?? patch.wall_color) room.wallColor = patch.wallColor ?? patch.wall_color;
-          prepend(draft, activity(source, "Update room", `updated ${room.name}`, outside));
+          draft.ui.compare = undefined;
+          const what = resized?.ok
+            ? `resized ${room.name} to ${resized.size.w}×${resized.size.d} cm${resized.shifted.length > 0 ? ` (moved ${resized.shifted.length} room${resized.shifted.length === 1 ? "" : "s"})` : ""}`
+            : `updated ${room.name}`;
+          prepend(draft, activity(source, "Update room", what, resized?.ok ? resized.outside : []));
         });
-        return outside;
+        return { outside: resized?.ok ? resized.outside : [], shifted: resized?.ok ? resized.shifted : [] };
       },
       addOpening: (source, input) => {
         const resolved = validateOpening(get(), input);

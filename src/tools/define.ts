@@ -1,9 +1,10 @@
 import * as z from "zod";
 import type { StoreApi } from "zustand";
 import type { ConflictKind, Scene } from "../engine/types";
+import type { PlanReader } from "../floorplan/schema";
 import type { ShopifyClient } from "../shopify/types";
 import { desiredToolGroups } from "../state/selectors";
-import type { ActionSource, HearthStore, ToolGroup } from "../state/types";
+import type { ActionSource, HearthState, HearthStore, ToolGroup } from "../state/types";
 import { beginToolBatch, endToolBatch } from "../state/tool-batch";
 import { normalizeToolInput } from "./params";
 import { waitForToolsReady } from "./readiness";
@@ -58,6 +59,8 @@ export interface ToolContext {
   store: StoreApi<HearthStore>;
   ui: ToolUi;
   shopify: ShopifyClient;
+  /** The floor-plan reader (`/api/floorplan`); absent where the page has no network (tests). */
+  planReader?: PlanReader;
   signal?: AbortSignal;
   source: ToolSource;
 }
@@ -73,7 +76,8 @@ export interface ToolSpec<InputSchema extends z.ZodObject = z.ZodObject> {
   readOnly?: boolean;
   untrusted?: boolean;
   waitForTools?: boolean;
-  confirm?(input: ToolInput<InputSchema>, scene: Scene): string | null;
+  /** The question to ask before running, or null. `state` is the whole store for tools whose answer depends on UI state. */
+  confirm?(input: ToolInput<InputSchema>, scene: Scene, state: HearthState): string | null;
   cancelledDetail?(input: ToolInput<InputSchema>, scene: Scene): string;
   handler(input: ToolInput<InputSchema>, context: ToolContext): Promise<ToolResult> | ToolResult;
   summarize(input: ToolInput<InputSchema>, result: ToolResult): string;
@@ -322,7 +326,7 @@ export async function executeDefinedTool(
   try {
     let confirmation: string | null;
     try {
-      confirmation = tool.spec.confirm?.(parsed.data, context.store.getState().scene) ?? null;
+      confirmation = tool.spec.confirm?.(parsed.data, context.store.getState().scene, context.store.getState()) ?? null;
     } catch (error) {
       result = { ok: false, error: "unavailable", detail: error instanceof Error ? error.message.slice(0, 500) : "Confirmation is unavailable." };
       safeRecordReceipt(tool, runtime, source, receiptInput, result);

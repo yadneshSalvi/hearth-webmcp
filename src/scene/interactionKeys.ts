@@ -17,6 +17,7 @@ import { hearthStore } from "../state/store";
 import { deleteItem, isTyping, nearestItem } from "./interactionCommands";
 import { resolvePose } from "./interactionDrag";
 import type { PoseRequest } from "./interactionDrag";
+import { productFor } from "../engine/catalog";
 
 /** Invalid-nudge feedback lingers this long before the rose ring settles back. */
 const PULSE_MS = 900;
@@ -90,7 +91,7 @@ export function useInteractionKeys({ catalog, poseRequest, abandon, isDragging }
       if (isTyping(event.target) || event.metaKey || event.ctrlKey) return;
       const state = hearthStore.getState();
       const selected = state.scene.furniture.find((entry) => entry.id === state.scene.meta.selection.itemId);
-      const product = selected ? catalog.byId(selected.catalogId) : undefined;
+      const product = selected ? productFor(selected, catalog) : undefined;
       const room = selected ? state.scene.rooms.find((entry) => entry.id === selected.roomId) : undefined;
       const ready = selected !== undefined && product !== undefined && room !== undefined;
 

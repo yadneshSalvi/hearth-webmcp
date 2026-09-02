@@ -10,6 +10,7 @@ import type { CatalogItem, Furniture, Room, TimeOfDay } from "../engine/types";
 import type { PaletteId } from "../tokens";
 import { floorHex, palettePresets, wallColorHex } from "../tokens";
 import { colorwayHex, colorwayLabel, dimsLine, plural, timeOfDayLabel, usd } from "./format";
+import { productFor } from "../engine/catalog";
 
 export const BOARD_WIDTH = 1600;
 export const BOARD_HEIGHT = 1000;
@@ -224,7 +225,7 @@ export function boardRows(
   const groups = new Map<string, { product: CatalogItem; colorway: string; count: number }>();
   let totalUsd = 0;
   for (const item of items) {
-    const product = byId(item.catalogId);
+    const product = productFor(item, byId);
     if (!product) continue;
     totalUsd += product.price ?? 0;
     const key = groupKey(item);

@@ -50,7 +50,7 @@ export function EnableSheet() {
       body: (
         <>
           Open Hearth in ChatGPT&rsquo;s built-in browser (<Kbd>⌘</Kbd> <Kbd>⇧</Kbd> <Kbd>B</Kbd>) and turn
-          <span className="text-ink"> Site tools </span> on. The 26 tools appear in the conversation.
+          <span className="text-ink"> Site tools </span> on. The 29 tools appear in the conversation.
         </>
       ),
     },

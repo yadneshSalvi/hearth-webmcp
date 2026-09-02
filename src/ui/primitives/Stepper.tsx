@@ -47,7 +47,7 @@ export function Stepper({
       <div className="flex items-center gap-1">
         <IconButton
           icon={IconMinus}
-          label={`Decrease ${label.toLowerCase()} by ${step} ${unit}`}
+          label={`Decrease ${label.toLowerCase()} by ${step} ${unit || "cm"}`}
           size="sm"
           tooltip={false}
           disabled={value <= min}
@@ -59,16 +59,16 @@ export function Stepper({
           aria-label={label}
           aria-valuenow={value}
           aria-valuemin={min}
-          aria-valuetext={`${value} ${unit}`}
+          aria-valuetext={`${value} ${unit || "cm"}`}
           {...(max === Number.MAX_SAFE_INTEGER ? {} : { "aria-valuemax": max })}
           onKeyDown={onKeyDown}
           className="numerals flex h-7 min-w-0 flex-1 items-center justify-center rounded-chip border border-hairline bg-plaster/70 px-1 text-[12.5px] text-ink"
         >
-          {value} {unit}
+          {unit ? `${value} ${unit}` : value}
         </span>
         <IconButton
           icon={IconPlus}
-          label={`Increase ${label.toLowerCase()} by ${step} ${unit}`}
+          label={`Increase ${label.toLowerCase()} by ${step} ${unit || "cm"}`}
           size="sm"
           tooltip={false}
           disabled={value >= max}

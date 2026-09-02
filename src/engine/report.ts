@@ -15,6 +15,7 @@ import { clip } from "./describe";
 import { openingSegment } from "./doors";
 import { distancePointSegment, footprint, polyBBox, roomArea, roomAreaM2, walls } from "./geometry";
 import type { CatalogItem, Conflict, Furniture, Room, Scene, Vec2, Wall } from "./types";
+import { productFor } from "./catalog";
 /** The six integer scores in a Hearth design critique. */
 export interface DesignScores { balance: number; focal_point: number; conversation: number; lighting: number; storage: number; traffic: number }
 /** Compact design-report payload consumed by get_design_report. */
@@ -31,9 +32,6 @@ function profileFor(room: Room): Profile {
   if (room.type === "kitchen" || room.type === "dining") return "dining";
   return room.type === "bedroom" || room.type === "office" ? room.type : "living";
 }
-function catalogItem(catalog: CatalogSource, id: string): CatalogItem | undefined {
-  return Array.isArray(catalog) ? catalog.find((item) => item.id === id) : catalog.byId(id);
-}
 function score(value: number): number { return Math.max(0, Math.min(10, Math.round(value))); }
 function safeSummary(value: string): string { return clip(value.replaceAll("!", ""), 200); }
 function roomItems(scene: Scene, roomId: string): Furniture[] {
@@ -41,7 +39,7 @@ function roomItems(scene: Scene, roomId: string): Furniture[] {
 }
 function resolvedItems(scene: Scene, room: Room, catalog: CatalogSource): ResolvedItem[] {
   return roomItems(scene, room.id).flatMap((item) => {
-    const cat = catalogItem(catalog, item.catalogId);
+    const cat = productFor(item, catalog);
     return cat ? [{ item, cat }] : [];
   });
 }

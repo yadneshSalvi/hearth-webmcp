@@ -1,7 +1,8 @@
 import type { ColorwayId, Floor, PaletteId, WallColor } from "../tokens";
 import type {
-  ActionSource, Conflict, Furniture, Mode, Opening, Room, RoomType, Rotation, Scene, Selection, Side, TemplateId, TimeOfDay, Vec2, View, Yaw,
+  ActionSource, Conflict, Dims, Furniture, Mode, Opening, Room, RoomType, Rotation, Scene, Selection, Side, TemplateId, TimeOfDay, Vec2, View, Yaw,
 } from "../engine/types";
+import type { Corner } from "../engine/rooms";
 
 export type { ActionSource } from "../engine/types";
 
@@ -86,6 +87,29 @@ export interface HearthUiState {
   cartOpen?: boolean;
   shortcutsOpen?: boolean;
   enableSheetOpen?: boolean;
+  /** The furniture the last clear_room / clear_home removed, so restore_furniture can put it back. */
+  lastCleared?: ClearedSnapshot;
+  /** The floor-plan image the human dropped on the studio, waiting for import_floor_plan. */
+  uploadedPlan?: UploadedPlan;
+  /** The floor-plan import sheet (src/ui/ImportPlanSheet.tsx). */
+  importSheetOpen?: boolean;
+}
+
+export interface ClearedSnapshot {
+  scope: "home" | "room";
+  roomId?: string;
+  roomName?: string;
+  furniture: Furniture[];
+  at: number;
+}
+
+export interface UploadedPlan {
+  name: string;
+  /** data: URL (png, jpeg or webp), ≤ 8 MB. */
+  dataUrl: string;
+  width: number;
+  height: number;
+  at: number;
 }
 
 /** Rules-engine output the renderer draws as floor diagrams (src/scene/Overlays.tsx). */
@@ -144,6 +168,25 @@ export interface RoomPatch {
   floor?: Floor;
   wallColor?: WallColor;
   wall_color?: WallColor;
+  /** The corner that stays fixed while resizing (default nw). */
+  anchorCorner?: Corner;
+  /** Shift rooms beyond a moving wall so they keep touching (default true). */
+  pushNeighbors?: boolean;
+}
+
+/** What a room resize did besides resizing (TOOLS.md §33). */
+export interface RoomUpdateReport {
+  /** Items in the room whose footprint no longer lies inside it. */
+  outside: string[];
+  /** Rooms moved to follow a wall. */
+  shifted: string[];
+}
+
+/** What restore_furniture put back (TOOLS.md §39). */
+export interface RestoreReport {
+  restored: string[];
+  skipped: string[];
+  rooms: string[];
 }
 
 /**
@@ -186,10 +229,21 @@ export interface HearthActions {
   loadVariant(source: ActionSource, roomId: string, name: string): Array<{ from: string; to: string }>;
   deleteVariant(source: ActionSource, roomId: string, name: string): void;
   clearRoom(source: ActionSource, roomId: string): void;
+  /** Removes every item in every room; the layout is kept in `ui.lastCleared` for restoreFurniture. */
+  clearHome(source: ActionSource): string[];
+  /** Puts back the last cleared layout. Throws not_found when nothing was cleared. */
+  restoreFurniture(source: ActionSource): RestoreReport;
+  /**
+   * Sets or clears a placed item's own size (undefined = catalog size), optionally moving it in the
+   * same step. `quiet` folds a stepper's rapid repeats into the receipt and undo step of the first.
+   */
+  resizeItem(source: ActionSource, id: string, patch: { dims?: Dims; pos?: Vec2 }, opts?: QuietOpts): void;
+  /** Replaces the home with a scene built from an imported floor plan (keeps mode, light, accessibility, palette). */
+  applyImportedPlan(source: ActionSource, scene: Scene, label: string): void;
   applyArrangement(source: ActionSource, roomId: string, furniture: Furniture[]): void;
   applyTemplate(source: ActionSource, id: TemplateId, furnished: boolean): void;
   createRoom(source: ActionSource, input: RoomInput): Room;
-  updateRoom(source: ActionSource, id: string, patch: RoomPatch): string[];
+  updateRoom(source: ActionSource, id: string, patch: RoomPatch): RoomUpdateReport;
   addOpening(source: ActionSource, input: OpeningInput): Opening;
   moveOpening(source: ActionSource, id: string, patch: OpeningPatch): void;
   removeOpening(source: ActionSource, id: string): void;

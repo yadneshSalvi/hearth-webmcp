@@ -122,7 +122,7 @@ describe("phase-gate regressions", () => {
 
   it("returns invalid from update_room when a shrink would strand openings", async () => {
     hearthStore.getState().setMode("human", "build");
-    const result = await registry().execute("update_room", { room: "living", width_cm: 200 }, "agent");
+    const result = await registry().execute("update_room", { room: "living", width_cm: 150 }, "agent");
     expect(result).toMatchObject({ ok: false, error: "invalid", detail: expect.stringContaining("window-living-north") });
     expect(hearthStore.getState().scene.rooms.find((room) => room.id === "living")?.poly[1]?.x).toBe(520);
   });

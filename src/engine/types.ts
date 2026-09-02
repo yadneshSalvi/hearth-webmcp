@@ -126,6 +126,8 @@ export interface Furniture {
   shopifyVariantId?: string;
   /** Cart line linked to this item (SHOPIFY.md §7). */
   cartLineId?: string;
+  /** Per-item size override in cm (resize_furniture, inspector); absent = the catalog size. */
+  dims?: Dims;
 }
 
 export interface Variant {
@@ -159,8 +161,18 @@ export interface SceneMeta {
   activeRoomId: string;
   budgetUsd?: number;
   selection: Selection;
-  /** Which template the home was created from (for get_scene_summary). */
+  /** Which template the home was created from (for get_scene_summary); unset after a floor-plan import. */
   template?: TemplateId;
+  /** Set by import_floor_plan: what the plan reader saw. */
+  importedPlan?: ImportedPlanMeta;
+}
+
+export interface ImportedPlanMeta {
+  title: string;
+  confidence: number;
+  roomsDetected: number;
+  /** Areas the import left out, e.g. "Deck (outdoor)". */
+  skipped: string[];
 }
 
 export interface Scene {

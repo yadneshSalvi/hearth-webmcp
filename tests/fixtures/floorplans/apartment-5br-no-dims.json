@@ -1,0 +1,351 @@
+{
+ "title": "Residential floor plan",
+ "units": "unknown",
+ "north_up": true,
+ "rooms": [
+  {
+   "name": "Primary Bedroom",
+   "type": "bedroom",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.011,
+    "y0": 0.023,
+    "x1": 0.28,
+    "y1": 0.315
+   },
+   "doors_to": [
+    "Living Room"
+   ],
+   "windows": [
+    "north"
+   ]
+  },
+  {
+   "name": "Living Room",
+   "type": "living",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.28,
+    "y0": 0.007,
+    "x1": 0.561,
+    "y1": 0.293
+   },
+   "doors_to": [
+    "Primary Bedroom",
+    "Dining"
+   ],
+   "windows": [
+    "north"
+   ]
+  },
+  {
+   "name": "Laundry",
+   "type": "other",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.012,
+    "y0": 0.319,
+    "x1": 0.107,
+    "y1": 0.457
+   },
+   "doors_to": [
+    "Entrance Hall"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Bathroom 1",
+   "type": "bath",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.108,
+    "y0": 0.319,
+    "x1": 0.28,
+    "y1": 0.457
+   },
+   "doors_to": [
+    "Entrance Hall"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Entrance Hall",
+   "type": "hall",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.006,
+    "y0": 0.457,
+    "x1": 0.281,
+    "y1": 0.588
+   },
+   "doors_to": [
+    "outside",
+    "Laundry",
+    "Bathroom 1",
+    "Powder",
+    "Dining"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Powder",
+   "type": "bath",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.012,
+    "y0": 0.591,
+    "x1": 0.108,
+    "y1": 0.691
+   },
+   "doors_to": [
+    "Entrance Hall"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Pantry",
+   "type": "other",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.012,
+    "y0": 0.692,
+    "x1": 0.109,
+    "y1": 0.819
+   },
+   "doors_to": [
+    "Kitchen"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Kitchen",
+   "type": "kitchen",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.109,
+    "y0": 0.591,
+    "x1": 0.326,
+    "y1": 0.822
+   },
+   "doors_to": [
+    "Pantry",
+    "Dining"
+   ],
+   "windows": [
+    "south"
+   ]
+  },
+  {
+   "name": "Dining",
+   "type": "dining",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.28,
+    "y0": 0.293,
+    "x1": 0.561,
+    "y1": 0.832
+   },
+   "doors_to": [
+    "Living Room",
+    "Entrance Hall",
+    "Kitchen",
+    "Family Room",
+    "Balcony"
+   ],
+   "windows": [
+    "south"
+   ]
+  },
+  {
+   "name": "Balcony",
+   "type": "outdoor",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.108,
+    "y0": 0.83,
+    "x1": 0.564,
+    "y1": 0.996
+   },
+   "doors_to": [
+    "Dining"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Bedroom 5",
+   "type": "bedroom",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.563,
+    "y0": 0.006,
+    "x1": 0.708,
+    "y1": 0.249
+   },
+   "doors_to": [
+    "Family Room"
+   ],
+   "windows": [
+    "north"
+   ]
+  },
+  {
+   "name": "Bathroom 3",
+   "type": "bath",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.709,
+    "y0": 0.006,
+    "x1": 0.847,
+    "y1": 0.249
+   },
+   "doors_to": [
+    "Family Room"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Bedroom 4",
+   "type": "bedroom",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.848,
+    "y0": 0.006,
+    "x1": 0.988,
+    "y1": 0.249
+   },
+   "doors_to": [
+    "Family Room"
+   ],
+   "windows": [
+    "north"
+   ]
+  },
+  {
+   "name": "Family Room",
+   "type": "living",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.562,
+    "y0": 0.248,
+    "x1": 0.906,
+    "y1": 0.594
+   },
+   "doors_to": [
+    "Dining",
+    "Bedroom 5",
+    "Bathroom 3",
+    "Bedroom 4",
+    "Storage",
+    "Bedroom 2",
+    "Bedroom 3"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Storage",
+   "type": "other",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.907,
+    "y0": 0.333,
+    "x1": 0.988,
+    "y1": 0.478
+   },
+   "doors_to": [
+    "Family Room"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Bedroom 2",
+   "type": "bedroom",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.562,
+    "y0": 0.592,
+    "x1": 0.708,
+    "y1": 0.832
+   },
+   "doors_to": [
+    "Family Room",
+    "Bathroom 2"
+   ],
+   "windows": [
+    "south"
+   ]
+  },
+  {
+   "name": "Bathroom 2",
+   "type": "bath",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.709,
+    "y0": 0.592,
+    "x1": 0.847,
+    "y1": 0.832
+   },
+   "doors_to": [
+    "Bedroom 2",
+    "Bedroom 3"
+   ],
+   "windows": []
+  },
+  {
+   "name": "Bedroom 3",
+   "type": "bedroom",
+   "dimension_label": "",
+   "width_cm": 0,
+   "depth_cm": 0,
+   "bbox": {
+    "x0": 0.848,
+    "y0": 0.592,
+    "x1": 0.989,
+    "y1": 0.832
+   },
+   "doors_to": [
+    "Family Room",
+    "Bathroom 2"
+   ],
+   "windows": [
+    "south"
+   ]
+  }
+ ],
+ "entrance_room": "Entrance Hall",
+ "confidence": 0.76,
+ "notes": "No printed room dimensions or scale are present, so physical dimensions are recorded as zero. WIC recesses were omitted; some bathroom and utility-room door connections are partially obscured and inferred."
+}

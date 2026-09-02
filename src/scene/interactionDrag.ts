@@ -16,6 +16,7 @@ import {
   neighbourGap, poseFootprint, snapToWalls, stackSurfaceFor,
 } from "./interactionMath";
 import type { AlignGuide, Axis, DimensionLine, NeighbourGap, NeighbourRef, SnapMemory, StackTarget } from "./interactionMath";
+import { productFor } from "../engine/catalog";
 
 /** The id a not-yet-placed catalog drop carries while the engine validates it. */
 export const DROP_ID = "__drop__";
@@ -118,7 +119,7 @@ export function roomNeighbours(scene: Scene, catalog: Catalog, roomId: string, e
   const refs: NeighbourRef[] = [];
   for (const item of scene.furniture) {
     if (item.roomId !== roomId || item.id === exclude || item.status === "ghost") continue;
-    const product = catalog.byId(item.catalogId);
+    const product = productFor(item, catalog);
     if (product) refs.push({ item, product });
   }
   return refs;
@@ -237,7 +238,7 @@ export function validatePose(request: PoseRequest, snap: { pos: Vec2; rotation: 
   // Openings keep their ids (door-1 reads fine); furniture gets its catalog name.
   const nameOf = (id: string): string => {
     const other = scene.furniture.find((entry) => entry.id === id);
-    return (other && catalog.byId(other.catalogId)?.name) ?? id;
+    return (other && productFor(other, catalog)?.name) ?? id;
   };
   return { valid: blocking === undefined, reason: blocking ? conflictReason(blocking, itemId, nameOf) : undefined };
 }

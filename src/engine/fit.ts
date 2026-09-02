@@ -1,6 +1,9 @@
 import type { Catalog } from "./catalog";
+import { productFor } from "./catalog";
+import { compareDims } from "./dims";
+import type { DimsComparison } from "./dims";
 import { footprint, freeSpans, polyInside, resolveWall, walls } from "./geometry";
-import type { CatalogItem, Category, Room, Scene, Side, Span, Vec2, Wall } from "./types";
+import type { CatalogItem, Category, Dims, Room, Scene, Side, Span, Vec2, Wall } from "./types";
 
 type CatalogSource = Catalog | CatalogItem[];
 
@@ -27,6 +30,20 @@ export interface CatalogSearch {
   style?: string;
   colorway?: string;
   limit?: number;
+  /** Target size; when given, results rank by size distance first (TOOLS.md §7). */
+  targetDims?: Partial<Dims>;
+  /** Per-side tolerance for a "close" match, cm (default 10). */
+  toleranceCm?: number;
+}
+
+/** True when the query names at least one target side. */
+export function hasTargetDims(target: Partial<Dims> | undefined): target is Partial<Dims> {
+  return target !== undefined && (["w", "d", "h"] as const).some((side) => typeof target[side] === "number" && Number.isFinite(target[side]));
+}
+
+/** The size comparison for one result against the query's target, or undefined without a target. */
+export function sizeComparison(item: CatalogItem, query: Pick<CatalogSearch, "targetDims" | "toleranceCm">): DimsComparison | undefined {
+  return hasTargetDims(query.targetDims) ? compareDims(item.dims, query.targetDims, query.toleranceCm) : undefined;
 }
 
 function words(value: string): string[] {
@@ -41,10 +58,6 @@ function prefixMatch(query: string, fields: string[]): boolean {
 
 function spanLength(span: Span): number {
   return span.end - span.start;
-}
-
-function lookup(catalog: CatalogSource, id: string): CatalogItem | undefined {
-  return Array.isArray(catalog) ? catalog.find((item) => item.id === id) : catalog.byId(id);
 }
 
 function projections(wall: Wall, point: Vec2): { along: number; inward: number } {
@@ -66,7 +79,7 @@ function depthBlockers(
 ): Span[] {
   return scene.furniture.flatMap((item): Span[] => {
     if (item.roomId !== room.id || item.status !== "placed" || ignored.has(item.id)) return [];
-    const itemCat = lookup(catalog, item.catalogId);
+    const itemCat = productFor(item, catalog);
     if (!itemCat) return [];
     const projected = footprint(item, itemCat).map((point) => projections(wall, point));
     const minDepth = Math.min(...projected.map((point) => point.inward));
@@ -190,8 +203,10 @@ export function searchCatalog(
     return true;
   });
   const limit = Math.max(1, Math.min(6, Math.trunc(query.limit ?? 6)));
+  const distance = (item: CatalogItem): number => sizeComparison(item, query)?.distanceCm ?? 0;
   return filtered
-    .sort((a, b) => (fitSpare.get(a.id) ?? 0) - (fitSpare.get(b.id) ?? 0)
+    .sort((a, b) => distance(a) - distance(b)
+      || (fitSpare.get(a.id) ?? 0) - (fitSpare.get(b.id) ?? 0)
       || (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY)
       || a.name.localeCompare(b.name))
     .slice(0, limit);

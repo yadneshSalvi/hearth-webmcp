@@ -1,5 +1,6 @@
 import type { Catalog } from "./catalog";
 import type { CatalogItem, Furniture, Opening, Room, Rotation, Scene, Side, Span, Vec2, Wall } from "./types";
+import { productFor } from "./catalog";
 
 const EPSILON = 1e-7;
 
@@ -243,10 +244,6 @@ function backEdge(item: Furniture, cat: CatalogItem): [Vec2, Vec2] {
   }
 }
 
-function catalogLookup(catalog: Catalog | CatalogItem[], id: string): CatalogItem | undefined {
-  return Array.isArray(catalog) ? catalog.find((item) => item.id === id) : catalog.byId(id);
-}
-
 function projectedDistance(wall: Wall, point: Vec2): number {
   const dx = wall.b.x - wall.a.x;
   const dy = wall.b.y - wall.a.y;
@@ -268,7 +265,7 @@ export function freeSpans(
   const ignored = new Set(opts.ignoreItemIds ?? []);
   for (const item of scene.furniture) {
     if (item.roomId !== room.id || item.status !== "placed" || ignored.has(item.id)) continue;
-    const cat = catalogLookup(catalog, item.catalogId);
+    const cat = productFor(item, catalog);
     if (!cat) continue;
     const [a, b] = backEdge(item, cat);
     if (distancePointSegment(a, wall.a, wall.b) <= 5 + EPSILON && distancePointSegment(b, wall.a, wall.b) <= 5 + EPSILON) {
@@ -324,8 +321,8 @@ export function itemToWallDistance(item: Furniture, cat: CatalogItem, wall: Wall
 
 /** Returns the signed axis gap and direction from item A toward item B; overlap is negative. */
 export function gapBetween(itemA: Furniture, itemB: Furniture, catalog: Catalog | CatalogItem[]): { gap_cm: number; direction: Side } {
-  const catA = catalogLookup(catalog, itemA.catalogId);
-  const catB = catalogLookup(catalog, itemB.catalogId);
+  const catA = productFor(itemA, catalog);
+  const catB = productFor(itemB, catalog);
   if (!catA || !catB) throw new Error("Unknown catalog item while measuring gap");
   const a = polyBBox(footprint(itemA, catA));
   const b = polyBBox(footprint(itemB, catB));

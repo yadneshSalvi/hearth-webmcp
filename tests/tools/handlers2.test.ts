@@ -95,7 +95,7 @@ describe("second-round handlers", () => {
         preview: "preview_in_room → confirm_preview, cancel_preview",
         variants: "save 2 variants in one room → compare_variants",
         checkout: "add an item to the cart → get_checkout_link",
-        build: "set_mode build → apply_template, create_room, update_room, add_opening, move_opening, remove_opening",
+        build: "set_mode build → apply_template, create_room, update_room, add_opening, move_opening, remove_opening, import_floor_plan",
       },
     });
 

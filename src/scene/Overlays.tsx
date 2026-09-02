@@ -17,6 +17,7 @@ import { palette } from "../tokens";
 import { useReducedMotion, useStudioAwake } from "./idle";
 import { M } from "./math";
 import { useConflicts, useFurniture, useMeta, useProductLookup, useRooms } from "./useSceneStore";
+import { productFor } from "../engine/catalog";
 
 const ZONE_KINDS = new Set(["overlap", "outside", "clearance", "access_path", "turning_circle", "reach"]);
 const GUIDE_CATEGORIES = new Set(["sofa", "bed", "desk"]);
@@ -121,7 +122,7 @@ function AccessibilityGuides() {
     const radius = turningCircleDiameter / 2;
     return furniture
       .filter((item) => item.roomId === room.id && item.status !== "ghost")
-      .map((item) => ({ item, product: byId(item.catalogId) }))
+      .map((item) => ({ item, product: productFor(item, byId) }))
       .filter((entry) => entry.product && GUIDE_CATEGORIES.has(entry.product.category))
       .map((entry) => {
         const product = entry.product;

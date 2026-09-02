@@ -74,13 +74,13 @@ test.describe("studio chrome", () => {
     await expect(page.getByRole("heading", { name: "Living Room" })).toBeVisible();
     // The polyfill is in play, so the chip must say so rather than claiming native support — and it
     // still owes the human the number of tools an agent would find.
-    await expect(page.getByRole("button", { name: /WebMCP polyfill · 26 ready/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /WebMCP polyfill · 29 ready/ })).toBeVisible();
   });
 
-  test("registers the 26 default tools and lists them with schemas", async ({ page }) => {
+  test("registers the 29 default tools and lists them with schemas", async ({ page }) => {
     await openStudio(page);
 
-    await expect.poll(async () => (await toolNames(page)).length).toBe(26);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(29);
     const names = await toolNames(page);
     expect(names).toContain("get_scene_summary");
     expect(names).toContain("place_furniture");
@@ -90,7 +90,7 @@ test.describe("studio chrome", () => {
     await page.getByRole("button", { name: /WebMCP polyfill/ }).click();
     const panel = page.getByRole("complementary", { name: "Agent tools registered on this page" });
     await expect(panel).toBeVisible();
-    await expect(panel.getByRole("button", { name: /^Copy the tool name/ })).toHaveCount(26);
+    await expect(panel.getByRole("button", { name: /^Copy the tool name/ })).toHaveCount(29);
     await expect(panel.getByRole("heading", { name: "Core" })).toBeVisible();
     await expect(panel.getByRole("heading", { name: "Design" })).toBeVisible();
 
@@ -101,20 +101,20 @@ test.describe("studio chrome", () => {
 
   test("switching to build mode registers the build tools", async ({ page }) => {
     await openStudio(page);
-    await expect.poll(async () => (await toolNames(page)).length).toBe(26);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(29);
 
     await page.getByRole("radio", { name: "Build" }).click();
     await expect(page.getByText("editing walls")).toBeVisible();
-    await expect.poll(async () => (await toolNames(page)).length).toBe(32);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(36);
     expect(await toolNames(page)).toContain("create_room");
 
     await page.getByRole("radio", { name: "Design" }).click();
-    await expect.poll(async () => (await toolNames(page)).length).toBe(26);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(29);
   });
 
   test("clear_room round-trips through the in-page confirmation dialog", async ({ page }) => {
     await openStudio(page);
-    await expect.poll(async () => (await toolNames(page)).length).toBe(26);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(29);
 
     // Declined: the dialog closes and the tool reports cancelled.
     const declined = runTool(page, "clear_room", { room: "living" });
@@ -166,12 +166,12 @@ test.describe("studio chrome", () => {
 
   test("a stray native drag leaves the agent's preview and its tools alone", async ({ page }) => {
     await openStudio(page);
-    await expect.poll(async () => (await toolNames(page)).length).toBe(26);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(29);
 
     const preview = await runTool(page, "preview_in_room", { product: "armchair-kyst", anchor: { centered: true } });
     expect(preview).toContain('"ok":true');
     // The preview gate opens confirm_preview and cancel_preview (TOOLS.md §2).
-    await expect.poll(async () => (await toolNames(page)).length).toBe(28);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(31);
 
     // Dragging a text selection, an image or a file anywhere on the page fires these on window.
     await page.evaluate(() => {
@@ -181,7 +181,7 @@ test.describe("studio chrome", () => {
     await page.waitForTimeout(600);
 
     expect(await toolNames(page)).toContain("cancel_preview");
-    await expect.poll(async () => (await toolNames(page)).length).toBe(28);
+    await expect.poll(async () => (await toolNames(page)).length).toBe(31);
     expect(await page.evaluate(() => (window as unknown as { __hearthStore?: { getState(): { scene: { furniture: { status: string }[] } } } })
       .__hearthStore?.getState().scene.furniture.some((item) => item.status === "ghost"))).toBe(true);
   });

@@ -13,6 +13,7 @@ import { footprint, polyBBox, polyInside } from "../engine/geometry";
 import type { CatalogItem, Furniture, Rotation, Room, Vec2 } from "../engine/types";
 import { M, WALL_T, homeBox, smoothstep } from "./space";
 import type { Box3Like, Vec3 } from "./space";
+import { productFor } from "../engine/catalog";
 
 /**
  * Mesh Y rotation for a scene rotation. 0 = front faces south (+z); the model's front is −z,
@@ -147,7 +148,7 @@ export function stackElevationCm(item: Furniture, product: CatalogItem, scene: {
   let best = 0;
   for (const other of scene.furniture) {
     if (other.id === item.id || other.roomId !== item.roomId || other.status === "ghost") continue;
-    const surface = byId(other.catalogId);
+    const surface = productFor(other, byId);
     if (!surface || !SURFACES.has(surface.category)) continue;
     if (polyInside(footprint(other, surface), own)) best = Math.max(best, surface.dims.h);
   }

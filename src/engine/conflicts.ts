@@ -5,6 +5,7 @@ import { openingClearZone, swingZone } from "./doors";
 import { footprint, overlapArea, pointInPoly, polyArea, polyBBox, polyInside, polysOverlap, rectPoly } from "./geometry";
 import { trafficPaths } from "./traffic";
 import type { CatalogItem, Conflict, ConflictKind, Furniture, Room, Scene, Side, Vec2 } from "./types";
+import { productFor } from "./catalog";
 
 const EPSILON = 1e-7;
 const STACKABLES = new Set(["table-lamp", "decor"]);
@@ -62,7 +63,7 @@ function resolvedItems(scene: Scene, roomId: string, catalog: Catalog): Resolved
     .filter((item) => item.roomId === roomId)
     .sort((a, b) => a.id.localeCompare(b.id))
     .flatMap((item) => {
-      const cat = catalog.byId(item.catalogId);
+      const cat = productFor(item, catalog);
       return cat ? [{ item, cat, poly: footprint(item, cat) }] : [];
     });
 }
@@ -254,7 +255,7 @@ function center(poly: Vec2[]): Vec2 {
 
 function endpointPoint(scene: Scene, room: Room, catalog: Catalog, id: string): Vec2 | undefined {
   const item = scene.furniture.find((candidate) => candidate.id === id);
-  const cat = item ? catalog.byId(item.catalogId) : undefined;
+  const cat = item ? productFor(item, catalog) : undefined;
   if (item && cat) {
     const zone = clearanceZone(item, cat);
     return zone.length > 0 ? center(zone) : { ...item.pos };
