@@ -50,8 +50,12 @@ export interface Registry {
   state(): { registered: Record<ToolGroup, boolean> };
 }
 
+/** The imperative WebMCP surface shared by Chrome and Codex's built-in browser. */
+export type RegistryModelContext = Pick<WebMCP.ModelContext, "registerTool" | "getTools"> &
+  Partial<Pick<WebMCP.ModelContext, "addEventListener" | "removeEventListener">>;
+
 export interface RegistryOptions {
-  modelContext: WebMCP.ModelContext;
+  modelContext: RegistryModelContext;
   store: StoreApi<HearthStore>;
   ui: ToolUi;
   shopify: ShopifyClient;
@@ -77,6 +81,8 @@ export function createRegistry(options: RegistryOptions): Registry {
   let progressRevision = 0;
   const pendingRegistrations = new Set<Promise<void>>();
   const progressWaiters = new Set<() => void>();
+  const supportsToolChangeEvents = typeof options.modelContext.addEventListener === "function"
+    && typeof options.modelContext.removeEventListener === "function";
 
   const signalProgress = (): void => {
     progressRevision += 1;
@@ -147,6 +153,7 @@ export function createRegistry(options: RegistryOptions): Registry {
       pendingRegistrations.add(tracked);
       void tracked.then(() => {
         pendingRegistrations.delete(tracked);
+        if (started && !supportsToolChangeEvents && pendingRegistrations.size === 0) mirror();
         signalProgress();
       });
     } catch (error) {
@@ -231,6 +238,7 @@ export function createRegistry(options: RegistryOptions): Registry {
       if (desired.has(group) && !registered[group]) registerGroup(group);
       else if (!desired.has(group) && registered[group]) abortGroup(group);
     }
+    if (!supportsToolChangeEvents) mirror();
     signalProgress();
   }
 
@@ -271,7 +279,7 @@ export function createRegistry(options: RegistryOptions): Registry {
       const initialGroups = new Set(desiredToolGroups(options.store.getState()));
       registerGroupsTogether(initialGroups);
       sync();
-      options.modelContext.addEventListener("toolchange", onToolChange);
+      if (supportsToolChangeEvents) options.modelContext.addEventListener?.("toolchange", onToolChange);
       mirror();
       signalProgress();
       subscription = options.store.subscribe((state) => {
@@ -289,7 +297,7 @@ export function createRegistry(options: RegistryOptions): Registry {
       syncScheduled = false;
       subscription?.();
       subscription = undefined;
-      options.modelContext.removeEventListener("toolchange", onToolChange);
+      if (supportsToolChangeEvents) options.modelContext.removeEventListener?.("toolchange", onToolChange);
       mirrorRequest += 1;
       for (const group of GROUPS) abortGroup(group);
       recentlyAborted.clear();

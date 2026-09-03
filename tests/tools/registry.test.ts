@@ -7,6 +7,7 @@ import { toolBatchIsActive } from "../../src/state/tool-batch";
 import { createConfirmGate } from "../../src/tools/confirm";
 import type { ToolResult, ToolUi } from "../../src/tools/define";
 import { createRegistry } from "../../src/tools/registry";
+import type { RegistryModelContext } from "../../src/tools/registry";
 import { emptyHome, furnished2br } from "../fixtures/scenes";
 import { clearRealPolyfill, loadRealPolyfill, resetStore, testUi } from "./helpers";
 
@@ -19,7 +20,7 @@ afterEach(() => {
 });
 
 function registryWith(
-  modelContext: WebMCP.ModelContext,
+  modelContext: RegistryModelContext,
   ui: ToolUi = testUi(),
   schedule?: (fn: () => void) => void,
 ) {
@@ -35,6 +36,30 @@ function registryWith(
 const BUILD_TOOL_NAMES = new Set([
   "add_opening", "apply_template", "create_room", "move_opening", "remove_opening", "update_room",
 ]);
+
+class CodexModelContext implements RegistryModelContext {
+  private readonly tools = new Map<string, WebMCP.ModelContextTool>();
+
+  registerTool(tool: WebMCP.ModelContextTool, options?: WebMCP.ModelContextRegisterToolOptions): Promise<void> {
+    this.tools.set(tool.name, tool);
+    options?.signal?.addEventListener("abort", () => {
+      this.tools.delete(tool.name);
+    }, { once: true });
+    return Promise.resolve();
+  }
+
+  async getTools(): Promise<WebMCP.RegisteredTool[]> {
+    return [...this.tools.values()].map((tool) => ({
+      name: tool.name,
+      title: tool.title ?? tool.name,
+      description: tool.description,
+      ...(tool.inputSchema ? { inputSchema: tool.inputSchema } : {}),
+      ...(tool.annotations ? { annotations: tool.annotations } : {}),
+      window,
+      origin: window.origin,
+    }));
+  }
+}
 
 class DelayedBuildModelContext extends EventTarget implements WebMCP.ModelContext {
   ontoolchange: ((this: WebMCP.ModelContext, ev: Event) => unknown) | null = null;
@@ -84,6 +109,24 @@ class DelayedBuildModelContext extends EventTarget implements WebMCP.ModelContex
 }
 
 describe("registry lifecycle against the real polyfill", () => {
+  it("supports Codex's imperative ModelContext without EventTarget methods", async () => {
+    const modelContext = new CodexModelContext();
+    const registry = registryWith(modelContext);
+
+    expect(() => registry.start()).not.toThrow();
+    await registry.settled();
+    expect(await modelContext.getTools()).toHaveLength(29);
+    await vi.waitFor(() => expect(hearthStore.getState().tools.available).toHaveLength(29));
+
+    hearthStore.getState().setMode("human", "build");
+    await registry.settled();
+    expect((await modelContext.getTools()).map(({ name }) => name)).toContain("apply_template");
+    await vi.waitFor(() => expect(hearthStore.getState().tools.available.map(({ name }) => name)).toContain("apply_template"));
+
+    registry.stop();
+    expect(await modelContext.getTools()).toEqual([]);
+  });
+
   it("registers exactly 29 default tools synchronously and alphabetically", async () => {
     const modelContext = loadRealPolyfill();
     const registry = registryWith(modelContext);
