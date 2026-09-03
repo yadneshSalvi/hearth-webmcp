@@ -4,7 +4,7 @@
 > checks clearances and door swings, shops a real Shopify catalog, and prepares checkout — through **40 WebMCP tools**
 > registered on the page with `document.modelContext.registerTool`. You drag, it plans; both of you see the same scene.
 
-**Live:** https://hearth.yadneshsalvi.com · **Video:** _coming_ · **Tools contract:** [TOOLS.md](TOOLS.md) · Licence: MIT
+**Live:** https://hearth.yadneshsalvi.com · **Video:** https://youtu.be/PHXlCjKWalQ · **Tools contract:** [TOOLS.md](TOOLS.md) · Licence: MIT
 
 ![Hearth in motion: an agent places furniture, arranges the room and compares two layouts](docs/hero.gif)
 
