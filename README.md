@@ -114,9 +114,9 @@ document.modelContext.registerTool(
 - **Shopify** (`src/shopify`, `app/api`): Storefront API 2026-07 (search, product, cart, checkout URL) behind route
   handlers; catalog metafields (`hearth.dims_cm`, `hearth.colorways`, …); a committed snapshot keeps browsing and
   previews working offline.
-- **Quality**: `pnpm typecheck && pnpm lint && pnpm test` (63 files / 724 tests: engine, tools, budgets, UI, camera), 60 Playwright
+- **Quality**: `pnpm typecheck && pnpm lint && pnpm test` (67 files / 773 tests: engine, tools, budgets, UI, camera, floor-plan layout), 67 Playwright
   e2e specs (drag, catalog drop, confirm dialogs, compare, board, assistant, camera gestures, layouts), a `webmcp-evals` prompt suite in
-  [`evals/`](evals/), and Lighthouse on the production build (performance 98 · accessibility 96 · best practices 100).
+  [`evals/`](evals/), and Lighthouse on the production build (accessibility 100 · best practices 100 · desktop performance 74, the 3D scene on first paint).
 
   | Eval suite (32 prompts × 2 runs, `evals/prompts.json`) | gpt-5.6-sol | claude-sonnet-5 |
   |---|---:|---:|
@@ -133,7 +133,7 @@ pnpm test                       # engine + tools + budgets
 pnpm test:e2e                   # Playwright (loads the WebMCP polyfill)
 ```
 
-The same 30 Playwright specs also run against the bundle a visitor gets. The suite reads studio
+The same Playwright specs also run against the bundle a visitor gets. The suite reads studio
 state back through `window.__hearth*`, which a production build only installs when it is asked to —
 so build with the switch on, then point the suite at it:
 
